@@ -1,0 +1,63 @@
+{
+  "name": "dlss5-swapper",
+  "version": "1.0.0",
+  "description": "One-click DLSS 5 (Neural Rendering) installer for DirectX 12 games",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "payload": "node scripts/collect-payload.js",
+    "prebuild": "npm run payload",
+    "build": "electron-builder --win",
+    "icon": "electron scripts/make-icon.js",
+    "build:portable": "electron-builder --win portable"
+  },
+  "author": "Rakan Alkhaldi",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.rakan.dlss5swapper",
+    "productName": "DLSS 5 Swapper",
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "payload",
+        "to": "payload",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "compression": "maximum",
+    "portable": {
+      "artifactName": "DLSS5-Swapper-${version}-portable.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "DLSS 5 Swapper",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "deleteAppDataOnUninstall": true,
+      "artifactName": "DLSS5-Swapper-Setup-${version}.exe"
+    }
+  }
+}

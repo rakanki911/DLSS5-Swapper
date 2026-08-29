@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:" />
+  <title>DLSS 5 Swapper</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Slow-drifting light behind the whole app. Purely decorative. -->
+  <div class="aurora" aria-hidden="true">
+    <span class="blob b1"></span>
+    <span class="blob b2"></span>
+    <span class="blob b3"></span>
+    <span class="blob b4"></span>
+  </div>
+
+  <!-- The window has no frame: this header is the drag handle and also holds
+       the window controls, so the app name is never printed twice. -->
+  <header class="topbar" id="titlebar">
+    <div class="brand">
+      <div class="logo-wrap"><img class="logo" src="icon.png" alt="" /></div>
+      <div>
+        <h1 data-i18n="appTitle">DLSS 5 Swapper</h1>
+        <p class="sub" data-i18n="appSubtitle"></p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <div class="lang-switch" id="langSwitch">
+        <button data-lang="en">EN</button>
+        <button data-lang="ar">ع</button>
+      </div>
+      <button id="settingsBtn" class="ghost icon-btn" data-i18n-title="settings">
+        <svg viewBox="0 0 24 24" class="ico"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.3a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.51-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
+        <span data-i18n="settings"></span>
+      </button>
+      <div class="win-controls">
+        <button id="minBtn" class="tb-btn" aria-label="Minimize">
+          <svg viewBox="0 0 12 12"><path d="M2 6h8" /></svg>
+        </button>
+        <button id="closeBtn" class="tb-btn danger" aria-label="Close">
+          <svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" /></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Landing -->
+    <section id="dropZone" class="dropzone">
+      <svg class="dz-icon" viewBox="0 0 48 48">
+        <path d="M6 14a3 3 0 0 1 3-3h9l4 4h17a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z"/>
+        <path class="dz-arrow" d="M24 21v11m0 0l-4.5-4.5M24 32l4.5-4.5"/>
+      </svg>
+      <h2 data-i18n="dropTitle"></h2>
+      <p class="dz-or"><span data-i18n="or"></span></p>
+      <button id="pickGameBtn" class="primary" data-i18n="pickGame"></button>
+      <p id="lastGameHint" class="last-game hidden"></p>
+    </section>
+
+    <!-- Result -->
+    <section id="result" class="hidden">
+      <div class="card game-card">
+        <div class="game-head">
+          <div class="game-id">
+            <h2 id="gameName">—</h2>
+            <p id="gameDir" class="path"></p>
+          </div>
+          <span id="apiBadge" class="badge">—</span>
+        </div>
+
+        <div class="swap" id="swapSummary"></div>
+
+        <div class="chips" id="chips"></div>
+
+        <div class="field" id="exeField">
+          <span data-i18n="exeLabel"></span>
+          <div class="select-wrap">
+            <button type="button" class="select" id="exeSelect" aria-haspopup="listbox" aria-expanded="false">
+              <span class="select-value" id="exeValue"></span>
+              <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="select-menu hidden" id="exeMenu" role="listbox"></div>
+          </div>
+        </div>
+
+        <details class="files">
+          <summary id="filesSummary"></summary>
+          <div id="filesList"></div>
+        </details>
+
+        <div class="options" id="options">
+          <label class="switch"><input type="checkbox" id="optReShade" checked /><span class="track"></span><span class="switch-label" data-i18n="optReShade"></span></label>
+          <label class="switch"><input type="checkbox" id="optAddDlss" checked /><span class="track"></span><span class="switch-label" data-i18n="optAddDlss"></span></label>
+          <label class="switch"><input type="checkbox" id="optStreamline" /><span class="track"></span><span class="switch-label" data-i18n="optStreamline"></span></label>
+          <label class="switch hidden" id="optUpgradeRow"><input type="checkbox" id="optUpgradeReShade" /><span class="track"></span><span class="switch-label" id="optUpgradeLabel"></span></label>
+        </div>
+
+        <div id="warnBox" class="warn hidden"></div>
+      </div>
+    </section>
+
+    <section id="logCard" class="card log-card hidden">
+      <div class="log-head">
+        <b data-i18n="logTitle"></b>
+        <button id="openGameBtn" class="ghost small" data-i18n="openGameFolder"></button>
+      </div>
+      <pre id="log"></pre>
+    </section>
+  </main>
+
+  <!-- Docked so the primary action never scrolls out of reach. -->
+  <div class="action-bar hidden" id="actionBar">
+    <div class="action-inner">
+      <button id="applyBtn" class="primary big">
+        <span class="spinner"></span>
+        <span id="applyLabel" data-i18n="apply"></span>
+      </button>
+      <button id="restoreBtn" class="danger hidden" data-i18n="restoreBtn"></button>
+      <button id="resetBtn" class="ghost" data-i18n="anotherGame"></button>
+    </div>
+  </div>
+
+  <!-- Settings sheet -->
+  <div id="settingsOverlay" class="overlay hidden">
+    <div class="sheet" id="settingsPanel">
+      <div class="sheet-head">
+        <b data-i18n="settings"></b>
+        <button id="closeSettingsBtn" class="tb-btn"><svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6"/></svg></button>
+      </div>
+
+      <div class="setting">
+        <div class="setting-text">
+          <b data-i18n="sourceLabel"></b>
+          <p id="sourcePath" class="path">—</p>
+          <p id="sourceStatus" class="hint">—</p>
+        </div>
+        <div class="setting-actions">
+          <span id="sourceBundled" class="pill hidden" data-i18n="bundled"></span>
+          <button id="pickSourceBtn" class="ghost small" data-i18n="change"></button>
+        </div>
+      </div>
+
+      <div class="setting">
+        <div class="setting-text">
+          <b data-i18n="reshadeLabel"></b>
+          <p id="reshadePath" class="path">—</p>
+        </div>
+        <div class="setting-actions">
+          <span id="reshadeBundled" class="pill hidden" data-i18n="bundled"></span>
+          <button id="pickReshadeBtn" class="ghost small" data-i18n="change"></button>
+        </div>
+      </div>
+
+      <div class="sheet-foot">
+        <div>
+          <p class="hint" id="appVersionLine"></p>
+          <p class="hint author" data-i18n="author"></p>
+        </div>
+        <button id="resetPathsBtn" class="ghost small" data-i18n="useBundled"></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="i18n.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
