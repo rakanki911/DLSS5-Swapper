@@ -852,7 +852,7 @@ ipcMain.handle('install', async (event, dir, exePath, requestedRoute, requestedA
     // ReShade can fail after a recoverable manifest has been written. Keep it
     // visible so the person can still restore originals from History.
     if (fs.existsSync(path.join(backupRoot(dir), 'manifest.json'))) rememberHistoryDir(dir);
-    return { ok: false, code: err.code, message: err.message };
+    return { ok: false, code: err.code, message: err.message, params: err.params || {} };
   }
 });
 
@@ -863,6 +863,6 @@ ipcMain.handle('restore', async (event, dir) => {
     rememberHistoryDir(dir);
     return { ok: true };
   } catch (err) {
-    return { ok: false, code: err.code, message: err.message };
+    return { ok: false, code: err.code, message: err.message, params: err.params || {} };
   }
 });

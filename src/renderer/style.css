@@ -536,6 +536,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
   font-size: 11.5px; font-family: Consolas, monospace; color: var(--muted);
   max-height: 130px; overflow-y: auto; white-space: pre-wrap;
 }
+.job-copy { margin-top: 8px; }
 
 /* ---------------- text containment ----------------
    Long paths and file names were pushing out of their boxes; every cell that

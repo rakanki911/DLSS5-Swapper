@@ -400,6 +400,8 @@ async function pickGame(dir) {
 let sheetGame = null;
 let sheetDetails = null;
 let jobLines = [];
+const jobHistory = new Map();
+let jobDir = null;
 // Which executable the sheet is pointed at, kept per folder so re-rendering
 // the sheet - a language switch does that - does not silently reset the choice.
 const exeChoice = new Map();
@@ -497,6 +499,7 @@ function installOptions(d, pick, dir) {
 
 function jobLog(line) {
   jobLines.push(line);
+  if (jobDir) jobHistory.set(jobDir, [...jobLines]);
   const box = document.querySelector('.job');
   if (box) { box.textContent = jobLines.join('\n'); box.scrollTop = box.scrollHeight; }
 }
@@ -505,7 +508,10 @@ async function openSheet(dir) {
   const g = state.games.find((x) => x.dir === dir);
   if (!g) return;
   sheetGame = g;
-  jobLines = [];
+  jobDir = dir;
+  // Refreshing the sheet after an install used to clear the only useful copy
+  // of a failure. Keep each game's result visible until the next attempt.
+  jobLines = [...(jobHistory.get(dir) || [])];
 
   $('overlay').classList.remove('hidden');
   $('sheet').innerHTML = '<div class="pad" style="color:var(--dim)">Reading the folder…</div>';
@@ -573,6 +579,7 @@ async function openSheet(dir) {
         <button class="btn-restore" id="doRestore"${d.hasBackup ? '' : ' disabled'}>${t('restore')}</button>
       </div>
       <div class="job" id="job">${jobLines.join('\n') || t('jobReady')}</div>
+      <button class="ghost sm job-copy" id="copyJob"${jobLines.length ? '' : ' disabled'}>Copy log</button>
     </div>`;
 
   $('sheetClose').onclick = closeSheet;
@@ -583,6 +590,10 @@ async function openSheet(dir) {
   if (routeSelect) routeSelect.onchange = () => routeChoice.set(dir, routeSelect.value);
   $('doInstall').onclick = () => runJob('install', dir);
   $('doRestore').onclick = () => runJob('restore', dir);
+  $('copyJob').onclick = async () => {
+    const text = (jobHistory.get(dir) || []).join('\n');
+    try { await navigator.clipboard.writeText(text); } catch { log(text); }
+  };
 }
 
 function wireExePicker(dir) {
@@ -613,6 +624,8 @@ async function runJob(kind, dir) {
   install.disabled = restoreBtn.disabled = true;
   install.textContent = kind === 'install' ? t('installing') : t('install');
   jobLines = [];
+  jobDir = dir;
+  jobHistory.set(dir, []);
   jobLog(kind === 'install' ? '--- installing ---' : '--- restoring ---');
 
   const pick = sheetDetails ? chosenExe(sheetDetails, dir) : null;
@@ -636,7 +649,11 @@ async function runJob(kind, dir) {
     if (g) { g.cached = await window.lab.scan(dir); renderGames(); renderRecent(); }
     setTimeout(() => openSheet(dir), 400);
   } else {
-    jobLog('failed: ' + (res.message || res.code));
+    jobLog('FAILED: ' + (res.message || res.code || 'Unknown error'));
+    if (res.code && res.code !== res.message) jobLog('code: ' + res.code);
+    if (res.params && res.params.output) jobLog('setup output:\n' + String(res.params.output).slice(-4000));
+    if (res.params && !res.params.output && Object.keys(res.params).length) jobLog('details: ' + JSON.stringify(res.params));
+    log(`Failed: ${dir} — ${res.message || res.code || 'Unknown error'}`);
     install.disabled = false;
     // A failed external ReShade setup can still have changed files. Re-read
     // the manifest so Restore originals becomes available immediately.
