@@ -13,6 +13,7 @@ const { discover, folder, dedupe, isInside, steam } = require('./src/library');
 const { contextForSteamGame, createSetupRunner } = require('./src/core/proton');
 const art = require('./src/steamart');
 const { applySwap, restore, backupRoot } = require('./src/core/apply.js');
+const { rowsForGames } = require('./src/core/history.js');
 const { scanSource } = require('./src/core/scan.js');
 const pe = require('./src/core/pe.js');
 const { ensureLumenite } = require('./src/core/runtime-components.js');
@@ -266,32 +267,33 @@ ipcMain.handle('set-theme', (_event, theme) => {
   return theme;
 });
 
-// Every game folder that carries a backup manifest, newest first.
-ipcMain.handle('history', () => {
-  const state = loadState();
-  const rows = [];
-  const dirs = new Set([...state.manual, ...state.folders.flatMap((root) => {
+function historyDirs(state) {
+  return new Set([
+    ...(state.historyDirs || []),
+    ...(state.manual || []),
+    // Steam libraries are not stored in `folders`, which used to leave every
+    // Proton install invisible in History.
+    ...steam().map((game) => game.dir),
+    ...(state.folders || []).flatMap((root) => {
     try { return fs.readdirSync(root, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => path.join(root, e.name)); }
     catch { return []; }
-  })]);
-  for (const dir of dirs) {
-    for (const name of ['manifest.json', 'manifest.json.done']) {
-      const file = path.join(dir, '_DLSS5_Backup', name);
-      if (!fs.existsSync(file)) continue;
-      try {
-        const m = JSON.parse(fs.readFileSync(file, 'utf8'));
-        rows.push({
-          name: path.basename(dir),
-          dir,
-          date: m.date,
-          replaced: (m.replaced || []).length,
-          added: (m.added || []).length,
-          undone: name.endsWith('.done')
-        });
-      } catch {}
-    }
+    })
+  ]);
+}
+
+function rememberHistoryDir(dir) {
+  const state = loadState();
+  state.historyDirs = state.historyDirs || [];
+  if (!state.historyDirs.some((item) => path.resolve(item) === path.resolve(dir))) {
+    state.historyDirs.push(dir);
+    saveState(state);
   }
-  return rows.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+
+// Every known game folder that carries an active or restored backup manifest.
+ipcMain.handle('history', () => {
+  const state = loadState();
+  return rowsForGames(historyDirs(state));
 });
 
 ipcMain.handle('settings', () => {
@@ -492,26 +494,12 @@ ipcMain.handle('touch', (_event, dir) => {
 // the backup manifests already sitting in the game folders - real installs
 // with real dates rather than an empty shelf.
 function recentsFromManifests(state) {
-  const rows = [];
-  const dirs = new Set([...(state.manual || []), ...(state.folders || []).flatMap((root) => {
-    try { return fs.readdirSync(root, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => path.join(root, e.name)); }
-    catch { return []; }
-  })]);
-  for (const dir of dirs) {
-    // A folder can hold both an active manifest and an undone one; the game
-    // still belongs in the row once, dated by whichever happened last.
-    let newest = 0;
-    for (const name of ['manifest.json', 'manifest.json.done']) {
-      const file = path.join(dir, '_DLSS5_Backup', name);
-      if (!fs.existsSync(file)) continue;
-      try {
-        const at = Date.parse(JSON.parse(fs.readFileSync(file, 'utf8')).date);
-        if (at > newest) newest = at;
-      } catch {}
-    }
-    if (newest) rows.push({ dir, at: newest });
+  const latest = new Map();
+  for (const row of rowsForGames(historyDirs(state))) {
+    const at = Date.parse(row.date) || 0;
+    if (at > (latest.get(row.dir) || 0)) latest.set(row.dir, at);
   }
-  return rows.sort((a, b) => b.at - a.at).slice(0, 12);
+  return [...latest].map(([dir, at]) => ({ dir, at })).sort((a, b) => b.at - a.at).slice(0, 12);
 }
 
 ipcMain.handle('recents', () => {
@@ -858,8 +846,12 @@ ipcMain.handle('install', async (event, dir, exePath, requestedRoute, requestedA
       }
       send({ code: 'addonInstalled', params: { name } });
     }
+    rememberHistoryDir(dir);
     return { ok: true, replaced: manifest.replaced.length, added: manifest.added.length };
   } catch (err) {
+    // ReShade can fail after a recoverable manifest has been written. Keep it
+    // visible so the person can still restore originals from History.
+    if (fs.existsSync(path.join(backupRoot(dir), 'manifest.json'))) rememberHistoryDir(dir);
     return { ok: false, code: err.code, message: err.message };
   }
 });
@@ -868,6 +860,7 @@ ipcMain.handle('restore', async (event, dir) => {
   const send = (e) => event.sender.send('job', e);
   try {
     await restore(dir, send);
+    rememberHistoryDir(dir);
     return { ok: true };
   } catch (err) {
     return { ok: false, code: err.code, message: err.message };
