@@ -179,7 +179,7 @@ Compatibility varies by renderer and game. Xenia HUD correction remains experime
 - **Anti-cheat:** red warning and optional confirmation, not a blanket block. Injection can cause crashes or account bans; the app never bypasses anti-cheat.
 - **Requirements:** Feeder needs Visual C++ runtimes (x64, plus x86 for 32-bit games). Some components download on first use.
 - **Compatibility is not guaranteed.** Keep backups; existing mods may conflict. Not every reported game crash is fixed.
-- **Linux/Proton:** source only and untested against a real game — see [Linux](#linux).
+- **Linux/Proton:** source only, and tried with stand-in DLLs rather than the real DLSS runtime — see [Linux](#linux).
 
 ---
 
