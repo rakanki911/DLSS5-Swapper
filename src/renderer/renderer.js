@@ -8,7 +8,7 @@ const state = { games: [], recents: [], history: [], newDlss: null, log: [], the
 const filters = { query: '', api: 'all', dlss: 'all', addon: 'all' };
 const gameFilters = window.gameFilters;
 
-const ORDER = ['Steam', 'Epic Games', 'GOG', 'Added by hand', 'My folders'];
+const ORDER = ['Steam', 'Epic Games', 'GOG', 'Heroic', 'Lutris', 'Added by hand', 'My folders'];
 const rank = (l) => (ORDER.indexOf(l) === -1 ? ORDER.length : ORDER.indexOf(l));
 const short = (v) => (v ? String(v).replace(/\.0$/, '') : null);
 const initials = (name) =>

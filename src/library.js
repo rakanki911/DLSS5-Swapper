@@ -139,6 +139,123 @@ function gog() {
   return games;
 }
 
+// ---------- Heroic ----------
+// Heroic keeps one plain-JSON file per store. Only the installed lists are
+// read: the library caches beside them expire and are often missing, and a
+// title is not worth a stale file when the folder name will do.
+const FLATPAK = { heroic: 'com.heroicgameslauncher.hgl', lutris: 'net.lutris.Lutris' };
+
+// A launcher installed from a distro package and the same one from Flatpak
+// keep separate config trees, and people run both.
+function xdgRoots(home, env, ...tail) {
+  const config = env.XDG_CONFIG_HOME || path.join(home, '.config');
+  return [path.join(config, ...tail), path.join(home, '.var', 'app', FLATPAK[tail[0]], 'config', ...tail)]
+    .filter((dir) => fs.existsSync(dir));
+}
+
+const firstOf = (object, ...keys) => keys.map((key) => object && object[key]).find((value) => typeof value === 'string' && value);
+const listOf = (data, key) => Array.isArray(data) ? data : (data && Array.isArray(data[key]) ? data[key]
+  : (data && typeof data === 'object' ? Object.values(data) : []));
+
+function readJson(file) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+}
+
+// The stores do not agree on their key names and Heroic has moved them
+// between versions, so take whichever spelling is present and let the folder
+// on disk decide whether the entry is still a real install.
+function heroicGame(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+  const install = entry.install && typeof entry.install === 'object' ? entry.install : entry;
+  const dir = firstOf(install, 'install_path', 'install_dir', 'path') || firstOf(entry, 'install_path', 'install_dir', 'path');
+  if (!dir || !fs.existsSync(dir)) return null;
+  // A native Linux build cannot load the Windows DLSS payload. The platform is
+  // not always recorded; when it is, an explicit non-Windows one is skipped.
+  const platform = firstOf(install, 'platform') || firstOf(entry, 'platform');
+  if (platform && !/^win/i.test(platform)) return null;
+  const name = firstOf(entry, 'title', 'name') || path.basename(dir);
+  if (NOT_A_GAME.test(name)) return null;
+  return { launcher: 'Heroic', id: firstOf(entry, 'app_name', 'appName', 'id') || null, name, dir, poster: null };
+}
+
+function heroic(options = {}) {
+  const home = options.home || os.homedir();
+  const games = [];
+  for (const root of options.roots || xdgRoots(home, options.env || process.env, 'heroic')) {
+    const stores = [
+      [path.join(root, 'legendaryConfig', 'legendary', 'installed.json'), null],
+      [path.join(root, 'nile_config', 'nile', 'installed.json'), 'installed'],
+      [path.join(root, 'gog_store', 'installed.json'), 'installed'],
+      [path.join(root, 'sideload_apps', 'library.json'), 'games']
+    ];
+    for (const [file, key] of stores) {
+      for (const entry of listOf(readJson(file), key)) {
+        const game = heroicGame(entry);
+        if (game) games.push(game);
+      }
+    }
+  }
+  return games;
+}
+
+// ---------- Lutris ----------
+// The install directory lives in Lutris' SQLite database, which would need a
+// driver this app does not ship, and its CLI takes seconds to answer. The
+// per-game config beside the database is plain YAML and holds what matters.
+//
+// Lutris writes these with PyYAML's block style: one unindented section per
+// runner, two-space indented scalars under it. Reading exactly that much is
+// enough for the executable and the keys a relative path resolves against;
+// anything nested deeper is not a scalar we want anyway.
+function yamlSection(text, section) {
+  const values = {};
+  let inside = false;
+  for (const line of text.split('\n')) {
+    if (/^\S/.test(line)) { inside = line.startsWith(section + ':'); continue; }
+    if (!inside) continue;
+    const match = line.match(/^ {2}([A-Za-z_][\w-]*): *(.*)$/);
+    if (!match) continue;
+    const raw = match[2].trim();
+    // A key with nothing after it opens a nested block. An empty string is
+    // written as '' and a missing value as null, so neither is lost here.
+    if (!raw) continue;
+    values[match[1]] = raw.startsWith("'") && raw.endsWith("'") && raw.length > 1
+      ? raw.slice(1, -1).replace(/''/g, "'")
+      : (raw.startsWith('"') && raw.endsWith('"') && raw.length > 1 ? raw.slice(1, -1) : raw);
+  }
+  return values;
+}
+
+const expandHome = (file, home) => file.startsWith('~/') ? path.join(home, file.slice(2)) : file;
+
+function lutris(options = {}) {
+  const home = options.home || os.homedir();
+  const games = [];
+  for (const root of options.roots || xdgRoots(home, options.env || process.env, 'lutris', 'games')) {
+    let files = [];
+    try { files = fs.readdirSync(root).filter((file) => file.endsWith('.yml')); } catch { continue; }
+    for (const file of files) {
+      let text;
+      try { text = fs.readFileSync(path.join(root, file), 'utf8'); } catch { continue; }
+      const game = yamlSection(text, 'game');
+      // Native Linux games are listed here too and cannot load the Windows
+      // payload, so the executable has to be a Windows one.
+      if (!game.exe || !/\.exe$/i.test(game.exe)) continue;
+      let exe = expandHome(game.exe, home);
+      if (!path.isAbsolute(exe)) exe = path.resolve(expandHome(game.working_dir || game.prefix || '', home), exe);
+      const dir = path.dirname(exe);
+      if (!fs.existsSync(dir)) continue;
+      // The file is named <slug>-<unix time>, and the slug is the only name
+      // Lutris keeps outside its database.
+      const slug = file.replace(/\.yml$/i, '').replace(/-\d+$/, '');
+      const name = slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()).trim();
+      if (!name || NOT_A_GAME.test(name)) continue;
+      games.push({ launcher: 'Lutris', id: slug, name, dir, poster: null });
+    }
+  }
+  return games;
+}
+
 // ---------- loose installs on every drive ----------
 // The launchers above already record their libraries wherever they sit, so a
 // game installed through Steam on E: is found without any of this. What is
@@ -279,7 +396,7 @@ function filterExcluded(games, excludedRoots = []) {
 }
 
 function discover(extraFolders = [], scanDrives = false, excludedRoots = [], findAutoRoots = autoRoots) {
-  const found = [...steam(), ...epic(), ...gog()];
+  const found = [...steam(), ...epic(), ...gog(), ...heroic(), ...lutris()];
   const roots = (scanDrives ? findAutoRoots() : [])
     .filter((root) => !excludedRoots.some((excluded) => isInside(root, excluded)));
   for (const dir of roots) found.push(...folder(dir, 'My folders', true));
@@ -290,4 +407,4 @@ function discover(extraFolders = [], scanDrives = false, excludedRoots = [], fin
   return { games: dedupe(filterExcluded(found, excludedRoots)), roots };
 }
 
-module.exports = { discover, folder, dedupe, autoRoots, drives, isInside, filterExcluded, steam, linuxSteamRoots };
+module.exports = { discover, folder, dedupe, autoRoots, drives, isInside, filterExcluded, steam, linuxSteamRoots, heroic, lutris, yamlSection };
