@@ -121,12 +121,15 @@ Feeder components. It is not in the repository and has to be supplied yourself; 
 starts and lists your games but cannot install. `npm run build:linux` needs it too. See
 `scripts/collect-payload.js`.
 
-> Partly tried against a real Steam Play game. What has run: the library finds it, the process
-> guard reads `/proc`, and ReShade Setup executes inside the game's own Proton prefix and leaves a
-> working add-on-capable `dxgi.dll` (6.8.0) that this app's own scanner accepts. What has not: the
-> DLSS runtime swap and restore, which need the payload; Heroic and Lutris, whose file locations
-> were read out of their own shipped code rather than tried against an install; and the OptiScaler
-> route, which needs an RTX 50. Keep your backups.
+> Tried against a real Steam Play game — on a copy of its files, with stand-in DLLs in place of the
+> DLSS runtime this repository cannot ship. An install and a restore ran end to end: the library
+> finds the game, the process guard reads `/proc`, the installer replaces the game's `nvngx_dlss.dll`
+> against its backup and adds the runtime, add-on and hook beside the executable, ReShade Setup
+> executes inside the game's own Proton prefix and leaves an add-on-capable `dxgi.dll` (6.8.0), and
+> restore puts all eleven files back byte for byte and removes everything it added. What that cannot
+> show is whether NVIDIA's own runtime then works: the stand-ins are valid PE files and nothing more.
+> Heroic and Lutris are still untried against an install, and the OptiScaler route needs an RTX 50.
+> Keep your backups.
 
 ## Emulators
 
