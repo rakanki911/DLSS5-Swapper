@@ -83,7 +83,8 @@ in Settings instead.
 **What works**
 
 - Swapping the DLSS runtime on a game that already has DLSS, and the OptiScaler route including
-  its Vulkan path.
+  its Vulkan path. Neural Rendering has been seen running this way: `inline feature 18 evaluation
+  succeeded ... 2560x1440 [native]`, frame after frame, in a real Proton game.
 - ReShade Setup, run inside the prefix the game already uses — the Steam Play prefix, or the Wine
   prefix Heroic or Lutris made for it. Installs that never reach the setup do not need a prefix at
   all.
@@ -104,9 +105,25 @@ in Settings instead.
   unavailable.
 - **Emulators**, in practice. The Linux builds people actually run are native, and the Windows
   builds that would work under Wine go through the Feeder, which is refused above.
+- **Toggling Neural Rendering off and on in the add-on's overlay**, which crashes the game a few
+  seconds later: `EXCEPTION_ACCESS_VIOLATION reading address 0xffffffffffffffff`. Neural Rendering
+  itself is stable; it is the teardown that is not. Leave it on — it is on by default.
 - The OptiScaler GPU gate compares the NVIDIA driver against a Windows version number, and the
   Linux driver does not use the same numbering. That threshold has not been checked against the
   real DLSS 5 requirement.
+
+**One thing Proton needs first**
+
+The add-on compiles a shader at runtime, and Wine's `d3dcompiler_47` — 370 KB, backed by vkd3d's
+incomplete HLSL compiler — does not implement `isnan`, so that compile fails and Neural Rendering
+never runs. Microsoft's own 4 MB DLL does. Install it into the game's prefix once:
+
+```bash
+protontricks <appid> d3dcompiler_47
+```
+
+Without it the log fills with `proxy encode compilation failed ... Function "isnan" is not
+defined`; with it, that error is gone entirely.
 
 **Running it**
 
@@ -121,8 +138,9 @@ Feeder components. It is not in the repository and has to be supplied yourself; 
 starts and lists your games but cannot install. `npm run build:linux` needs it too. See
 `scripts/collect-payload.js`.
 
-> Tried against a real Steam Play game — on a copy of its files, with stand-in DLLs in place of the
-> DLSS runtime this repository cannot ship. An install and a restore ran end to end: the library
+> Tried against a real Steam Play game, twice over: once on a copy of its files with stand-in DLLs,
+> and once for real with an actual DLSS 5 payload, where the game launched and Neural Rendering ran.
+> On the copy, an install and a restore ran end to end: the library
 > finds the game, the process guard reads `/proc`, the installer replaces the game's `nvngx_dlss.dll`
 > against its backup and adds the runtime, add-on and hook beside the executable, ReShade Setup
 > executes inside the game's own Proton prefix and leaves an add-on-capable `dxgi.dll` (6.8.0), and
