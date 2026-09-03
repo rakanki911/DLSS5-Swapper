@@ -763,6 +763,22 @@ ipcMain.handle('details', async (_event, dir) => {
 });
 
 let mutationBusy = false;
+// Steam keeps its data under two roots that are symlinked to one another, so
+// the same game is discoverable under either path and a plain string compare
+// misses half of them. Compare what the paths resolve to on disk instead.
+function protonGame(dir) {
+  const real = (file) => { try { return fs.realpathSync(file); } catch { return path.resolve(file); } };
+  const target = real(dir);
+  return steam().find((game) => real(game.dir) === target) || null;
+}
+
+// The install reached ReShade Setup on a game with no Steam Play prefix to run
+// it in. Throw where the installer already handles a failed setup: it keeps a
+// recoverable checkpoint and the journal rolls the rest back.
+function protonRequired() {
+  throw Object.assign(new Error('This step runs the Windows ReShade Setup and needs the game’s Steam Play prefix. Launch the game once with Proton, then try again.'), { code: 'errProtonRequired' });
+}
+
 async function exclusiveMutation(work) {
   if (mutationBusy) return { ok: false, code: 'errJobBusy' };
   mutationBusy = true;
@@ -793,16 +809,15 @@ ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) =>
   const route = availableRoutes.includes(requestedRoute) ? requestedRoute
     : (availableRoutes.includes(recommendedRoute) ? recommendedRoute : availableRoutes[0]);
 
-  // ReShade Setup is a Windows executable. On Linux, support Windows games
-  // launched with Steam Play by using their existing Proton prefix; native
-  // Linux games do not load the Windows DLSS/ReShade payload.
-  const protonGame = process.platform === 'linux'
-    ? steam().find((game) => path.resolve(game.dir) === path.resolve(dir))
-    : null;
-  const proton = contextForSteamGame(protonGame);
-  if (process.platform === 'linux' && !proton) {
-    return { ok: false, code: 'errProtonRequired', message: 'This installer supports Windows games launched through Steam Proton. Launch the game once with Proton, then try again.' };
-  }
+  // ReShade Setup is a Windows executable, and on Linux it runs in the Steam
+  // Play prefix the game already has. Everything else an install does - copying
+  // DLLs, writing configs - is ordinary file IO that needs no prefix, and a
+  // game that already carries an add-on ReShade never reaches the setup at all.
+  // So a missing prefix is only fatal for an install that actually gets there:
+  // hand the installer a runner that refuses instead of refusing up front, and
+  // let the journal roll back the half-done install the same way it would for
+  // any other failed setup.
+  const proton = process.platform === 'linux' ? contextForSteamGame(protonGame(dir)) : null;
   if (process.platform === 'linux' && api === 'vulkan') {
     return { ok: false, code: 'errLinuxVulkanUnsupported', message: 'The Vulkan Feeder route needs a host Vulkan layer and is not supported on Linux yet. Select a DirectX renderer in the game.' };
   }
@@ -906,7 +921,7 @@ ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) =>
       optiRoot,
       companions,
       reshadeSetup: p.reshadeSetup,
-      setupRunner: proton ? createSetupRunner(proton) : undefined,
+      setupRunner: process.platform === 'linux' ? (proton ? createSetupRunner(proton) : protonRequired) : undefined,
       vulkanLayerTarget: path.join(app.getPath('userData'), 'reshade-vulkan'),
       installReShade: true,
       addMissingDlss: true,

@@ -104,3 +104,66 @@ test('a wine process is tied to the game by what it has mapped, not by its own e
   assert.equal(row.ExecutablePath, library);
   await assert.rejects(guards.assertGameClosed(dir, exe), { code: 'errGameRunning' });
 });
+
+// Runs the real install handler with fake installers and a fake Steam root, to
+// check which games still reach the Windows ReShade Setup and which no longer
+// have to. No game files, GPU or real Steam library are touched.
+test('an install without a Steam Play prefix still runs, and only refuses where it reaches ReShade Setup', linuxOnly, async (t) => {
+  const vm = require('vm');
+  const { createRequire } = require('module');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-proton-gate-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const game = path.join(root, 'game');
+  fs.mkdirSync(game, { recursive: true });
+  const target = { path: path.join(game, 'Game.exe'), rel: 'Game.exe', bitness: 64, api: 'dxgi', apiLabel: 'DirectX 12' };
+
+  const main = path.resolve(__dirname, '../main.js');
+  const realRequire = createRequire(main);
+  const handlers = new Map();
+  const configs = [];
+  let steamGames = [];
+  const stubs = {
+    electron: { app: { setAppUserModelId() {}, whenReady: () => ({ then() {} }), on() {}, getPath: () => root },
+      BrowserWindow: { fromWebContents: () => ({ isDestroyed: () => false, getContentSize: () => [1280, 860] }) },
+      Menu: { buildFromTemplate: () => ({ popup() {} }) },
+      ipcMain: { handle: (name, fn) => handlers.set(name, fn) },
+      dialog: { showMessageBox: async () => ({ response: 0 }) }, clipboard: { writeText() {} } },
+    './src/library': { ...realRequire('./src/library'), steam: () => steamGames },
+    './src/core/scan.js': { scanGame: async () => ({ chosen: target, exeCandidates: [target], hasNativeDlss: true }) },
+    './src/core/compatibility': { assertSafeTarget() {}, hasAntiCheat: () => false },
+    './src/core/install-guards': { assertGameClosed: async () => {}, antiCheatPresent: () => false, gpuInfo: async () => [{}], gpuSupported: () => true },
+    './src/shared/install-routes': { nativeDlssPresent: () => true, routesFor: () => ['native'], recommendedRoute: () => 'native' },
+    './src/core/runtime-components.js': { missingVCRuntime: () => [], ensureLumenite: async () => null },
+    './src/core/optiscaler': { checkConflicts() {}, ensureOptiScaler: async () => root, RELEASE: { version: 'fixture' } },
+    './src/core/backend-manager': {
+      readManifest: () => null,
+      install: async (config) => {
+        configs.push(config);
+        return { version: 1, date: new Date().toISOString(), route: config.route, game: { dir: game, exe: 'Game.exe', api: 'dxgi' }, replaced: [], added: [] };
+      },
+      restore: async () => true
+    }
+  };
+  const context = vm.createContext({ require: (name) => stubs[name] || realRequire(name), __dirname: path.dirname(main), process, Buffer, console });
+  vm.runInContext(fs.readFileSync(main, 'utf8'), context, { filename: main });
+  vm.runInContext('payload = () => ({ source: { feeder: { ok32: true, ok64: true } } }); companionAddons = () => [];', context);
+  const event = { sender: { send() {} } };
+
+  // No prefix: the install is no longer refused before it starts, and the
+  // runner it carries is the one that gives up only when the setup is reached.
+  assert.equal((await handlers.get('install')(event, game, target.path, 'native', 'dxgi')).ok, true);
+  await assert.rejects(async () => configs.at(-1).setupRunner('ReShade_Setup.exe', [target.path], () => {}), { code: 'errProtonRequired' });
+
+  // With a prefix the game gets a runner that actually launches Proton: a
+  // missing setup comes back as a failed run, not as a refusal to try.
+  const steamRoot = path.join(root, 'Steam');
+  const prefix = path.join(steamRoot, 'steamapps', 'compatdata', '123', 'pfx');
+  fs.mkdirSync(prefix, { recursive: true });
+  fs.mkdirSync(path.join(steamRoot, 'steamapps', 'common', 'Proton 9.0'), { recursive: true });
+  fs.writeFileSync(path.join(steamRoot, 'steamapps', 'common', 'Proton 9.0', 'proton'), '');
+  steamGames = [{ launcher: 'Steam', id: '123', name: 'Example Game', dir: game, steamRoot, protonPrefix: prefix }];
+
+  assert.equal((await handlers.get('install')(event, game, target.path, 'native', 'dxgi')).ok, true);
+  const attempt = await configs.at(-1).setupRunner('ReShade_Setup.exe', [target.path], () => {});
+  assert.equal(attempt.code, -1, 'the runner tried to spawn Proton rather than refusing');
+});

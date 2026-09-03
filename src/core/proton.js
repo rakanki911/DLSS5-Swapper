@@ -42,9 +42,12 @@ function createSetupRunner(context) {
     let output = '';
     child.stdout.on('data', (data) => { output += data.toString(); });
     child.stderr.on('data', (data) => { output += data.toString(); });
-    child.on('error', (error) => resolve({ code: -1, output: error.message }));
-    child.on('close', (code) => resolve({ code, output: output.trim() }));
-    setTimeout(() => { try { child.kill(); } catch {} }, 120000);
+    // The kill timer has to be cleared: left running it keeps the event loop
+    // alive for two minutes after a setup that already finished.
+    const timer = setTimeout(() => { try { child.kill(); } catch {} }, 120000);
+    const settle = (result) => { clearTimeout(timer); resolve(result); };
+    child.on('error', (error) => settle({ code: -1, output: error.message }));
+    child.on('close', (code) => settle({ code, output: output.trim() }));
   });
 }
 
