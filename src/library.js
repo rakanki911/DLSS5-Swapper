@@ -153,6 +153,26 @@ function xdgRoots(home, env, ...tail) {
     .filter((dir) => fs.existsSync(dir));
 }
 
+// Lutris is deprecating ~/.config/lutris: when that folder is absent it keeps
+// its configuration in the data directory instead, which is where a current
+// install puts the per-game files. Downloaded wine runners always live in the
+// data directory, so both are needed.
+function lutrisRoots(home, env) {
+  const config = env.XDG_CONFIG_HOME || path.join(home, '.config');
+  const data = env.XDG_DATA_HOME || path.join(home, '.local', 'share');
+  const flatpak = path.join(home, '.var', 'app', FLATPAK.lutris);
+  return [[config, data], [path.join(flatpak, 'config'), path.join(flatpak, 'data')]]
+    .map(([configHome, dataHome]) => {
+      const configDir = path.join(configHome, 'lutris');
+      const dataDir = path.join(dataHome, 'lutris');
+      return {
+        games: path.join(fs.existsSync(configDir) ? configDir : dataDir, 'games'),
+        wineDir: path.join(dataDir, 'runners', 'wine')
+      };
+    })
+    .filter((root) => fs.existsSync(root.games));
+}
+
 const firstOf = (object, ...keys) => keys.map((key) => object && object[key]).find((value) => typeof value === 'string' && value);
 const listOf = (data, key) => Array.isArray(data) ? data : (data && Array.isArray(data[key]) ? data[key]
   : (data && typeof data === 'object' ? Object.values(data) : []));
@@ -178,10 +198,30 @@ function heroicGame(entry) {
   return { launcher: 'Heroic', id: firstOf(entry, 'app_name', 'appName', 'id') || null, name, dir, poster: null };
 }
 
+// Heroic writes one settings file per game, keyed inside by the same app name,
+// and falls back to the global defaults for anything the game does not
+// override. Both carry the prefix and the wine build the game is launched with.
+function heroicWine(root, appName, defaults) {
+  const perGame = appName ? readJson(path.join(root, 'GamesConfig', `${appName}.json`)) : null;
+  const settings = { ...defaults, ...((perGame && perGame[appName]) || {}) };
+  const version = settings.wineVersion || {};
+  // A CrossOver bottle is driven by CrossOver's own tooling rather than by
+  // running a binary against a prefix.
+  if (!settings.winePrefix || !version.bin || version.type === 'crossover') return null;
+  return {
+    bin: version.bin,
+    prefix: settings.winePrefix,
+    kind: version.type === 'proton' ? 'proton' : 'wine',
+    steamPath: settings.defaultSteamPath || null
+  };
+}
+
 function heroic(options = {}) {
   const home = options.home || os.homedir();
   const games = [];
   for (const root of options.roots || xdgRoots(home, options.env || process.env, 'heroic')) {
+    const global = readJson(path.join(root, 'config.json'));
+    const defaults = (global && global.defaultSettings) || {};
     const stores = [
       [path.join(root, 'legendaryConfig', 'legendary', 'installed.json'), null],
       [path.join(root, 'nile_config', 'nile', 'installed.json'), 'installed'],
@@ -191,7 +231,7 @@ function heroic(options = {}) {
     for (const [file, key] of stores) {
       for (const entry of listOf(readJson(file), key)) {
         const game = heroicGame(entry);
-        if (game) games.push(game);
+        if (game) games.push({ ...game, wine: heroicWine(root, game.id, defaults) });
       }
     }
   }
@@ -228,15 +268,38 @@ function yamlSection(text, section) {
 
 const expandHome = (file, home) => file.startsWith('~/') ? path.join(home, file.slice(2)) : file;
 
+// The handful of versions Lutris resolves to a system install rather than to
+// a runner it downloaded itself.
+const SYSTEM_WINE = {
+  'winehq-devel': '/opt/wine-devel/bin/wine',
+  'winehq-staging': '/opt/wine-staging/bin/wine',
+  'wine-development': '/usr/lib/wine-development/wine',
+  system: 'wine'
+};
+
+// A downloaded runner sits at <runners>/wine/<version>/bin/wine. A Proton
+// version is launched through umu instead, which is not covered here.
+function lutrisWine(config, wineDir, prefix, home) {
+  if (!prefix || !config.version || /proton/i.test(config.version)) return null;
+  const bin = config.version === 'custom'
+    ? config.custom_wine_path
+    : (SYSTEM_WINE[config.version] || path.join(wineDir, config.version, 'bin', 'wine'));
+  if (!bin) return null;
+  const file = expandHome(bin, home);
+  // A bare name is left for PATH to resolve; a full path has to be there.
+  if (path.isAbsolute(file) && !fs.existsSync(file)) return null;
+  return { bin: file, prefix, kind: 'wine' };
+}
+
 function lutris(options = {}) {
   const home = options.home || os.homedir();
   const games = [];
-  for (const root of options.roots || xdgRoots(home, options.env || process.env, 'lutris', 'games')) {
+  for (const root of options.roots || lutrisRoots(home, options.env || process.env)) {
     let files = [];
-    try { files = fs.readdirSync(root).filter((file) => file.endsWith('.yml')); } catch { continue; }
+    try { files = fs.readdirSync(root.games).filter((file) => file.endsWith('.yml')); } catch { continue; }
     for (const file of files) {
       let text;
-      try { text = fs.readFileSync(path.join(root, file), 'utf8'); } catch { continue; }
+      try { text = fs.readFileSync(path.join(root.games, file), 'utf8'); } catch { continue; }
       const game = yamlSection(text, 'game');
       // Native Linux games are listed here too and cannot load the Windows
       // payload, so the executable has to be a Windows one.
@@ -250,7 +313,11 @@ function lutris(options = {}) {
       const slug = file.replace(/\.yml$/i, '').replace(/-\d+$/, '');
       const name = slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()).trim();
       if (!name || NOT_A_GAME.test(name)) continue;
-      games.push({ launcher: 'Lutris', id: slug, name, dir, poster: null });
+      const prefix = game.prefix ? expandHome(game.prefix, home) : null;
+      games.push({
+        launcher: 'Lutris', id: slug, name, dir, poster: null,
+        wine: lutrisWine(yamlSection(text, 'wine'), root.wineDir, prefix, home)
+      });
     }
   }
   return games;

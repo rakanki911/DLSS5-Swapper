@@ -9,8 +9,8 @@ const { pathToFileURL } = require('url');
 const crypto = require('crypto');
 
 const { scanGame } = require('./src/core/scan.js');
-const { discover, folder, dedupe, isInside, steam } = require('./src/library');
-const { contextForSteamGame, createSetupRunner } = require('./src/core/proton');
+const { discover, folder, dedupe, isInside, steam, heroic, lutris } = require('./src/library');
+const { contextForGame, createSetupRunner } = require('./src/core/proton');
 const art = require('./src/steamart');
 const { backupRoot } = require('./src/core/apply.js');
 const { scanSource } = require('./src/core/scan.js');
@@ -766,17 +766,17 @@ let mutationBusy = false;
 // Steam keeps its data under two roots that are symlinked to one another, so
 // the same game is discoverable under either path and a plain string compare
 // misses half of them. Compare what the paths resolve to on disk instead.
-function protonGame(dir) {
+function bottleFor(dir) {
   const real = (file) => { try { return fs.realpathSync(file); } catch { return path.resolve(file); } };
   const target = real(dir);
-  return steam().find((game) => real(game.dir) === target) || null;
+  return contextForGame([...steam(), ...heroic(), ...lutris()].find((game) => real(game.dir) === target));
 }
 
-// The install reached ReShade Setup on a game with no Steam Play prefix to run
-// it in. Throw where the installer already handles a failed setup: it keeps a
+// The install reached ReShade Setup on a game with no prefix to run it in.
+// Throw where the installer already handles a failed setup: it keeps a
 // recoverable checkpoint and the journal rolls the rest back.
 function protonRequired() {
-  throw Object.assign(new Error('This step runs the Windows ReShade Setup and needs the game’s Steam Play prefix. Launch the game once with Proton, then try again.'), { code: 'errProtonRequired' });
+  throw Object.assign(new Error('This step runs the Windows ReShade Setup and needs the prefix the game is launched with. Start the game once through Steam Play, Heroic or Lutris, then try again.'), { code: 'errProtonRequired' });
 }
 
 async function exclusiveMutation(work) {
@@ -817,7 +817,7 @@ ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) =>
   // hand the installer a runner that refuses instead of refusing up front, and
   // let the journal roll back the half-done install the same way it would for
   // any other failed setup.
-  const proton = process.platform === 'linux' ? contextForSteamGame(protonGame(dir)) : null;
+  const proton = process.platform === 'linux' ? bottleFor(dir) : null;
   if (process.platform === 'linux' && api === 'vulkan') {
     return { ok: false, code: 'errLinuxVulkanUnsupported', message: 'The Vulkan Feeder route needs a host Vulkan layer and is not supported on Linux yet. Select a DirectX renderer in the game.' };
   }

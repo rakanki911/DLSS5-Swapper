@@ -126,3 +126,139 @@ test('a tilde in a Lutris path is expanded against the home it was found in', (t
   });
   assert.equal(lutris({ home, env: {} })[0].dir, dir);
 });
+
+const { contextForGame, contextForWineGame, contextForSteamGame, createSetupRunner } = require('../src/core/proton');
+const linuxOnly = { skip: process.platform !== 'linux' ? 'Linux only' : false };
+
+test('a wine game is run by pointing its own binary at its own prefix', linuxOnly, (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-wine-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const prefix = path.join(root, 'prefix');
+  fs.mkdirSync(prefix, { recursive: true });
+
+  const context = contextForWineGame({ id: 'x', wine: { bin: '/usr/bin/wine', prefix, kind: 'wine' } });
+  assert.deepEqual(context, { command: '/usr/bin/wine', lead: [], env: { WINEPREFIX: prefix } });
+
+  // Heroic can be set to Proton instead, and points the compatibility path at
+  // the prefix folder it configured rather than at wine's prefix inside it.
+  const proton = contextForWineGame({ id: '42', wine: { bin: '/opt/proton/proton', prefix, kind: 'proton', steamPath: '/steam' } });
+  assert.deepEqual(proton.lead, ['run']);
+  assert.equal(proton.env.WINEPREFIX, path.join(prefix, 'pfx'));
+  assert.equal(proton.env.STEAM_COMPAT_DATA_PATH, prefix);
+  assert.equal(proton.env.STEAM_COMPAT_CLIENT_INSTALL_PATH, '/steam');
+
+  // A prefix that is not there yet cannot be run against.
+  assert.equal(contextForWineGame({ wine: { bin: '/usr/bin/wine', prefix: path.join(root, 'gone'), kind: 'wine' } }), null);
+  assert.equal(contextForWineGame({ dir: root }), null);
+});
+
+test('a Steam Play prefix is preferred over any wine one on the same game', linuxOnly, (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-both-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const prefix = path.join(root, 'steamapps', 'compatdata', '7', 'pfx');
+  fs.mkdirSync(prefix, { recursive: true });
+  const proton = path.join(root, 'steamapps', 'common', 'Proton 9.0', 'proton');
+  fs.mkdirSync(path.dirname(proton), { recursive: true });
+  fs.writeFileSync(proton, '');
+  const wine = path.join(root, 'wineprefix');
+  fs.mkdirSync(wine);
+
+  const game = { id: '7', steamRoot: root, protonPrefix: prefix, wine: { bin: '/usr/bin/wine', prefix: wine, kind: 'wine' } };
+  assert.equal(contextForGame(game).command, proton);
+  assert.deepEqual(contextForGame(game), contextForSteamGame(game));
+});
+
+test('the setup runner really launches the configured binary inside the prefix', linuxOnly, async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-runner-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const prefix = path.join(root, 'prefix');
+  const gameDir = path.join(root, 'game');
+  fs.mkdirSync(prefix, { recursive: true });
+  fs.mkdirSync(gameDir, { recursive: true });
+
+  // Stands in for wine: reports what it was handed and where it was pointed.
+  const fake = path.join(root, 'fake-wine');
+  fs.writeFileSync(fake, '#!/bin/sh\necho "prefix=$WINEPREFIX"\necho "argv=$*"\n');
+  fs.chmodSync(fake, 0o755);
+
+  const context = contextForWineGame({ wine: { bin: fake, prefix, kind: 'wine' } });
+  const logged = [];
+  const result = await createSetupRunner(context)('/setup/ReShade_Setup.exe',
+    [path.join(gameDir, 'Game.exe'), '--api', 'dxgi', '--headless'], (code) => logged.push(code));
+
+  assert.equal(result.code, 0);
+  assert.match(result.output, new RegExp(`prefix=${prefix}$`, 'm'));
+  assert.match(result.output, /argv=\/setup\/ReShade_Setup\.exe .*Game\.exe --api dxgi --headless/);
+  assert.deepEqual(logged, ['runningSetup']);
+});
+
+test('Heroic reads the prefix from the per-game file, falling back to the global defaults', (t) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-heroic-wine-'));
+  t.after(() => fs.rmSync(home, { recursive: true, force: true }));
+  const root = path.join(home, '.config', 'heroic');
+  const dirs = {};
+  for (const name of ['Shared', 'Own', 'Bottled']) {
+    dirs[name] = path.join(home, 'Games', name);
+    fs.mkdirSync(dirs[name], { recursive: true });
+  }
+  tree(root, {
+    'config.json': { defaultSettings: {
+      winePrefix: path.join(home, 'Prefixes', 'shared'),
+      defaultSteamPath: path.join(home, '.steam', 'steam'),
+      wineVersion: { bin: '/usr/bin/wine', type: 'wine', name: 'wine-11.16' }
+    } },
+    'legendaryConfig/legendary/installed.json': {
+      shared: { app_name: 'shared', title: 'Shared', install_path: dirs.Shared },
+      own: { app_name: 'own', title: 'Own', install_path: dirs.Own },
+      bottled: { app_name: 'bottled', title: 'Bottled', install_path: dirs.Bottled }
+    },
+    // This one overrides both the prefix and the wine build.
+    'GamesConfig/own.json': { own: {
+      winePrefix: path.join(home, 'Prefixes', 'own'),
+      wineVersion: { bin: '/opt/proton/proton', type: 'proton' }
+    }, version: 'v0' },
+    // A CrossOver bottle is not driven by running a binary against a prefix.
+    'GamesConfig/bottled.json': { bottled: { winePrefix: path.join(home, 'Bottles', 'x'), wineVersion: { bin: '/x/wine', type: 'crossover' } } }
+  });
+
+  const games = heroic({ home, env: {} });
+  const of = (name) => games.find((game) => game.name === name).wine;
+  assert.deepEqual(of('Shared'), {
+    bin: '/usr/bin/wine', prefix: path.join(home, 'Prefixes', 'shared'), kind: 'wine',
+    steamPath: path.join(home, '.steam', 'steam')
+  });
+  assert.equal(of('Own').kind, 'proton');
+  assert.equal(of('Own').prefix, path.join(home, 'Prefixes', 'own'));
+  assert.equal(of('Bottled'), null);
+});
+
+test('Lutris resolves a downloaded runner, a system one, and leaves Proton alone', (t) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-lutris-wine-'));
+  t.after(() => fs.rmSync(home, { recursive: true, force: true }));
+  const prefix = path.join(home, 'Games', 'prefix');
+  const exeDir = path.join(prefix, 'drive_c', 'Game');
+  fs.mkdirSync(exeDir, { recursive: true });
+  const runner = path.join(home, '.local', 'share', 'lutris', 'runners', 'wine', 'wine-ge-8-26', 'bin');
+  fs.mkdirSync(runner, { recursive: true });
+  fs.writeFileSync(path.join(runner, 'wine'), '');
+
+  const yml = (version) => `game:\n  exe: ${path.join(exeDir, 'Game.exe')}\n  prefix: ${prefix}\nwine:\n  version: ${version}\n`;
+  // Lutris keeps its configuration in the data directory when ~/.config/lutris
+  // is absent, which is where a current install puts it.
+  tree(path.join(home, '.local', 'share', 'lutris', 'games'), {
+    'downloaded-1.yml': yml('wine-ge-8-26'),
+    'system-2.yml': yml('system'),
+    'missing-3.yml': yml('wine-ge-9-99'),
+    'ge-runner-4.yml': yml('GE-Proton9-20'),
+    'no-prefix-5.yml': `game:\n  exe: ${path.join(exeDir, 'Game.exe')}\nwine:\n  version: system\n`
+  });
+
+  const games = lutris({ home, env: {} });
+  const of = (id) => games.find((game) => game.id === id).wine;
+  assert.equal(games.length, 5, 'every game is still listed, prefix or not');
+  assert.deepEqual(of('downloaded'), { bin: path.join(runner, 'wine'), prefix, kind: 'wine' });
+  assert.deepEqual(of('system'), { bin: 'wine', prefix, kind: 'wine' });
+  assert.equal(of('missing'), null, 'a runner that is not downloaded yet');
+  assert.equal(of('ge-runner'), null, 'Proton is launched through umu, not covered here');
+  assert.equal(of('no-prefix'), null);
+});
