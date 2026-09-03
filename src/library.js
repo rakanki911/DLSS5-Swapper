@@ -187,6 +187,13 @@ function readJson(file) {
 function heroicGame(entry) {
   if (!entry || typeof entry !== 'object') return null;
   const install = entry.install && typeof entry.install === 'object' ? entry.install : entry;
+  // A DLC gets its own installed.json entry pointing at the base game's own
+  // folder - Cyberpunk 2077 lists "Cyberpunk 2077 - REDmod" as a separate,
+  // is_dlc:true entry with the identical install_path and no executable of
+  // its own. Skipping it here matters beyond the duplicate: it is also the
+  // entry dedupe() ends up keeping, since neither its title nor "REDmod"
+  // matches the /\bdlc\b/ pattern dedupe uses to prefer the other side.
+  if (install.is_dlc === true || entry.is_dlc === true) return null;
   const dir = firstOf(install, 'install_path', 'install_dir', 'path') || firstOf(entry, 'install_path', 'install_dir', 'path');
   if (!dir || !fs.existsSync(dir)) return null;
   // A native Linux build cannot load the Windows DLSS payload. The platform is

@@ -284,3 +284,34 @@ test('one folder reached by two paths is one game, not two', linuxOnly, (t) => {
   ]);
   assert.equal(games.length, 1);
 });
+
+// A DLC's installed.json entry points at the base game's own folder and can
+// carry no executable of its own. Found via a real install: Cyberpunk 2077's
+// REDmod DLC shares the base game's install_path and precedes it in the
+// store's key order, and "REDmod" does not match dedupe's /\bdlc\b/ pattern,
+// so without this filter the DLC entry is the one that survives.
+test('a DLC entry pointing at the base game\'s folder is skipped', (t) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-heroic-dlc-'));
+  t.after(() => fs.rmSync(home, { recursive: true, force: true }));
+  const dir = path.join(home, 'Games', 'BaseGame');
+  fs.mkdirSync(dir, { recursive: true });
+
+  tree(path.join(home, '.config', 'heroic'), {
+    'legendaryConfig/legendary/installed.json': {
+      // Alphabetically first, exactly as in the real installed.json.
+      '02855a2f4c044aa1a813b19f8c447fe1': {
+        app_name: '02855a2f4c044aa1a813b19f8c447fe1', title: 'Base Game - REDmod',
+        install_path: dir, is_dlc: true, executable: '', platform: 'Windows'
+      },
+      Ginger: {
+        app_name: 'Ginger', title: 'Base Game',
+        install_path: dir, is_dlc: false, executable: 'game.exe', platform: 'Windows'
+      }
+    }
+  });
+
+  const games = heroic({ home, env: {} });
+  assert.equal(games.length, 1, 'the DLC entry does not also produce a game');
+  assert.equal(games[0].id, 'Ginger');
+  assert.equal(games[0].name, 'Base Game');
+});
