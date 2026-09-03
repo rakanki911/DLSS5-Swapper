@@ -12,6 +12,7 @@
   <a href="https://github.com/rakanki911/DLSS5-Swapper/releases/latest"><img src="https://img.shields.io/github/v/release/rakanki911/DLSS5-Swapper?color=8fd400&label=release" alt="Latest release"></a>
   <a href="https://github.com/rakanki911/DLSS5-Swapper/releases"><img src="https://img.shields.io/github/downloads/rakanki911/DLSS5-Swapper/total?color=8fd400&label=downloads&cacheSeconds=300" alt="Total downloads"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%2F%2011-8fd400" alt="Windows 10/11">
+  <img src="https://img.shields.io/badge/Linux-Proton%20%2F%20Wine-8fd400" alt="Linux via Proton or Wine">
   <img src="https://img.shields.io/badge/languages-38-8fd400" alt="38 languages">
 </p>
 
@@ -28,7 +29,7 @@
 ## Features
 
 - **Easy installation:** native DLSS games, or compatible non-DLSS games through DLSS5-Feeder.
-- **Your library:** Steam, Epic, GOG, modern Xbox Game Pass folders, and manually added games/emulators.
+- **Your library:** Steam, Epic, GOG, modern Xbox Game Pass folders, and manually added games/emulators. On Linux: Steam Play, Heroic and Lutris.
 - **Search and filters:** combine title, graphics API, DLSS status/version and add-ons; click counters to filter.
 - **Flexible layout:** group by store or show everything in one list, with game artwork and light/dark themes.
 - **Controlled scanning:** full-drive scanning is **off by default**. Added folders still scan normally; enable all-drive discovery or remove scan folders in Settings.
@@ -51,17 +52,72 @@
 
 | Category | Support |
 | --- | --- |
-| **System** | Windows 10/11 x64; compatible 32-bit and 64-bit games |
+| **System** | Windows 10/11 x64; compatible 32-bit and 64-bit games. Linux: Windows games run through Proton or Wine — see [Linux](#linux) |
 | **ReShade / Feeder GPUs** | RTX 20 / 30 / 40 / 50; older-series support is reported by the bundled modified runtime's author |
 | **OptiScaler GPUs** | RTX 50 only, NVIDIA driver **616.56+**, 64-bit games with native DLSS enabled |
 | **DirectX 12** | Native DLSS, Feeder, or eligible OptiScaler games |
 | **DirectX 11** | Feeder for 32/64-bit games; eligible OptiScaler games |
 | **DirectX 9 / 8** | DX9: 32/64-bit; DX8: 32-bit, through dgVoodoo2 → DX11 → Feeder |
-| **Vulkan / OpenGL** | ReShade/Feeder; eligible Vulkan games can also use OptiScaler |
+| **Vulkan / OpenGL** | ReShade/Feeder; eligible Vulkan games can also use OptiScaler. On Linux, Vulkan is OptiScaler only |
 | **DirectX 10** | Not directly supported by Feeder; choose DX11 when available |
 
 OptiScaler's DX11/Vulkan path uses a DX12 bridge with FSR output by default.
 For Vulkan backend changes, **restore originals first**. OptiScaler is not the emulator/non-DLSS route.
+
+## Linux
+
+Windows games launched through Proton or Wine. A Linux-native build of a game cannot load the
+Windows DLSS payload and is skipped.
+
+**What is found**
+
+| Launcher | Notes |
+| --- | --- |
+| **Steam Play** | Native, and the Flatpak install. The game's own `compatdata` prefix is used |
+| **Heroic** | Epic, GOG, Amazon and sideloaded games; native and Flatpak |
+| **Lutris** | Wine games; native and Flatpak |
+
+Full-drive scanning finds nothing here — it enumerates Windows drive letters. Add folders by hand
+in Settings instead.
+
+**What works**
+
+- Swapping the DLSS runtime, and the OptiScaler route including its Vulkan path.
+- ReShade Setup, run inside the prefix the game already uses — the Steam Play prefix, or the Wine
+  prefix Heroic or Lutris made for it. Installs that never reach the setup do not need a prefix at
+  all.
+- The "close the game first" check, which reads `/proc` rather than asking PowerShell.
+
+**What does not**
+
+- **Vulkan through the Feeder.** It registers ReShade as a Windows implicit layer, and nothing on
+  Linux loads that: Wine hands layer enumeration to the host Vulkan loader, which loads `.so`
+  layers and never a Windows ReShade DLL. Use the OptiScaler route for Vulkan.
+- **Lutris games on a Proton runner**, which is launched through umu, and **Heroic CrossOver
+  bottles**. Both are found and can still take a plain DLL swap; only the ReShade Setup step is
+  unavailable.
+- **Emulators**, in practice. The Linux builds people actually run are native, and the Windows
+  builds that would work under Wine reach DLSS through Vulkan, which is the route above.
+- The OptiScaler GPU gate compares the NVIDIA driver against a Windows version number, and the
+  Linux driver does not use the same numbering. That threshold has not been checked against the
+  real DLSS 5 requirement.
+
+**Running it**
+
+There are no Linux binaries. Run from source (tested on Node 24):
+
+```bash
+npm install && npm start
+```
+
+Installing anything also needs the `payload/` folder — the DLSS 5 runtime, ReShade Setup and the
+Feeder components. It is not in the repository and has to be supplied yourself; without it the app
+starts and lists your games but cannot install. `npm run build:linux` needs it too. See
+`scripts/collect-payload.js`.
+
+> None of the Linux path has been tested against a real installed game. File locations and the
+> environment each launcher uses were read out of Heroic's and Lutris' own shipped code, and the
+> behaviour is covered by the test suite, but treat it as untried and keep your backups.
 
 ## Emulators
 
@@ -109,7 +165,7 @@ Compatibility varies by renderer and game. Xenia HUD correction remains experime
 - **Anti-cheat:** red warning and optional confirmation, not a blanket block. Injection can cause crashes or account bans; the app never bypasses anti-cheat.
 - **Requirements:** Feeder needs Visual C++ runtimes (x64, plus x86 for 32-bit games). Some components download on first use.
 - **Compatibility is not guaranteed.** Keep backups; existing mods may conflict. Not every reported game crash is fixed.
-- **Linux/Proton:** experimental community source only; no Linux binaries in this release.
+- **Linux/Proton:** source only and untested against a real game — see [Linux](#linux).
 
 ---
 
