@@ -418,11 +418,18 @@ function folder(root, label = 'My folders', onlyGames = false) {
 
 // One game can be installed twice - a launcher copy and a loose copy. They are
 // different installs, so both are kept; only the exact same folder is merged.
+// Two paths can name one folder. Steam keeps its data under ~/.steam/steam and
+// ~/.local/share/Steam, one a symlink to the other, and both are searched - so
+// resolving the string alone leaves every Steam game in the library twice.
+function folderKey(dir) {
+  try { return fs.realpathSync(dir).toLowerCase(); } catch { return path.resolve(dir).toLowerCase(); }
+}
+
 function dedupe(games) {
   const seen = new Map();
   for (const entry of games) {
     const g = canonicalGame(entry);
-    const key = path.resolve(g.dir).toLowerCase();
+    const key = folderKey(g.dir);
     const existing = seen.get(key);
     // A launcher entry carries a real name and art, so it wins over a folder.
     const dlc = game => /\bdlc\b|phantom liberty/i.test(game.name || '');

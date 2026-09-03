@@ -262,3 +262,25 @@ test('Lutris resolves a downloaded runner, a system one, and leaves Proton alone
   assert.equal(of('ge-runner'), null, 'Proton is launched through umu, not covered here');
   assert.equal(of('no-prefix'), null);
 });
+
+test('one folder reached by two paths is one game, not two', linuxOnly, (t) => {
+  const { dedupe } = require('../src/library');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-dedupe-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  // Steam's two data roots, exactly as they sit in a real home directory.
+  const real = path.join(root, '.local', 'share', 'Steam');
+  fs.mkdirSync(path.join(real, 'steamapps', 'common', 'A Game'), { recursive: true });
+  fs.mkdirSync(path.join(root, '.steam'), { recursive: true });
+  fs.symlinkSync(real, path.join(root, '.steam', 'steam'));
+
+  const viaData = path.join(real, 'steamapps', 'common', 'A Game');
+  const viaLink = path.join(root, '.steam', 'steam', 'steamapps', 'common', 'A Game');
+  assert.notEqual(path.resolve(viaData), path.resolve(viaLink), 'the two paths really are different strings');
+
+  const games = dedupe([
+    { launcher: 'Steam', id: '1', name: 'A Game', dir: viaData, poster: null },
+    { launcher: 'Steam', id: '1', name: 'A Game', dir: viaLink, poster: null }
+  ]);
+  assert.equal(games.length, 1);
+});
