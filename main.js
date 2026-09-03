@@ -818,8 +818,13 @@ ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) =>
   // let the journal roll back the half-done install the same way it would for
   // any other failed setup.
   const proton = process.platform === 'linux' ? bottleFor(dir) : null;
-  if (process.platform === 'linux' && api === 'vulkan') {
-    return { ok: false, code: 'errLinuxVulkanUnsupported', message: 'The Vulkan Feeder route needs a host Vulkan layer and is not supported on Linux yet. Select a DirectX renderer in the game.' };
+  // Vulkan through the Feeder registers ReShade as a Windows implicit layer,
+  // and nothing on Linux reads that: winevulkan hands layer enumeration to the
+  // host loader, which loads .so layers and never a Windows ReShade DLL. The
+  // OptiScaler route reaches Vulkan through a proxy DLL in the game folder
+  // instead, which is a plain file copy and works here.
+  if (process.platform === 'linux' && api === 'vulkan' && route === 'feeder') {
+    return { ok: false, code: 'errLinuxVulkanUnsupported', message: 'The Vulkan Feeder route needs a Windows implicit layer, which Proton does not load. Use the OptiScaler route for Vulkan, or select a DirectX renderer in the game.' };
   }
 
   const send = (e) => event.sender.send('job', e);

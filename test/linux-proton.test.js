@@ -167,3 +167,55 @@ test('an install without a Steam Play prefix still runs, and only refuses where 
   const attempt = await configs.at(-1).setupRunner('ReShade_Setup.exe', [target.path], () => {});
   assert.equal(attempt.code, -1, 'the runner tried to spawn Proton rather than refusing');
 });
+
+test('Vulkan is refused for the Feeder route only, and left open for OptiScaler', linuxOnly, async (t) => {
+  const vm = require('vm');
+  const { createRequire } = require('module');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-vulkan-route-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const game = path.join(root, 'game');
+  fs.mkdirSync(game, { recursive: true });
+  const target = { path: path.join(game, 'Game.exe'), rel: 'Game.exe', bitness: 64, api: 'vulkan', apiLabel: 'Vulkan' };
+
+  const main = path.resolve(__dirname, '../main.js');
+  const realRequire = createRequire(main);
+  const handlers = new Map();
+  const configs = [];
+  const stubs = {
+    electron: { app: { setAppUserModelId() {}, whenReady: () => ({ then() {} }), on() {}, getPath: () => root },
+      BrowserWindow: { fromWebContents: () => ({ isDestroyed: () => false, getContentSize: () => [1280, 860] }) },
+      Menu: { buildFromTemplate: () => ({ popup() {} }) },
+      ipcMain: { handle: (name, fn) => handlers.set(name, fn) },
+      dialog: { showMessageBox: async () => ({ response: 0 }) }, clipboard: { writeText() {} } },
+    './src/library': { ...realRequire('./src/library'), steam: () => [], heroic: () => [], lutris: () => [] },
+    './src/core/scan.js': { scanGame: async () => ({ chosen: target, exeCandidates: [target], hasNativeDlss: true }) },
+    './src/core/compatibility': { assertSafeTarget() {}, hasAntiCheat: () => false },
+    './src/core/install-guards': { assertGameClosed: async () => {}, antiCheatPresent: () => false, gpuInfo: async () => [{ name: 'NVIDIA GeForce RTX 5090', driver: '616.56' }], gpuSupported: () => true },
+    './src/shared/install-routes': { nativeDlssPresent: () => true, routesFor: () => ['feeder', 'optiscaler'], recommendedRoute: () => 'feeder' },
+    './src/core/runtime-components.js': { missingVCRuntime: () => [], ensureLumenite: async () => null },
+    './src/core/optiscaler': { checkConflicts() {}, ensureOptiScaler: async () => root, RELEASE: { version: 'fixture' } },
+    './src/core/backend-manager': {
+      readManifest: () => null,
+      install: async (config) => {
+        configs.push(config);
+        return { version: 1, date: new Date().toISOString(), route: config.route, game: { dir: game, exe: 'Game.exe', api: 'vulkan' }, replaced: [], added: [] };
+      },
+      restore: async () => true
+    }
+  };
+  const context = vm.createContext({ require: (name) => stubs[name] || realRequire(name), __dirname: path.dirname(main), process, Buffer, console });
+  vm.runInContext(fs.readFileSync(main, 'utf8'), context, { filename: main });
+  vm.runInContext('payload = () => ({ source: { feeder: { ok32: true, ok64: true } } }); companionAddons = () => [];', context);
+  const event = { sender: { send() {} } };
+
+  const feeder = await handlers.get('install')(event, game, target.path, 'feeder', 'vulkan');
+  assert.equal(feeder.ok, false);
+  assert.equal(feeder.code, 'errLinuxVulkanUnsupported');
+
+  // OptiScaler puts a proxy DLL in the game folder and never registers a
+  // layer, so nothing about it depends on the Windows registry.
+  const opti = await handlers.get('install')(event, game, target.path, 'optiscaler', 'vulkan');
+  assert.equal(opti.ok, true);
+  assert.equal(configs.at(-1).route, 'optiscaler');
+  assert.equal(configs.at(-1).api, 'vulkan');
+});
