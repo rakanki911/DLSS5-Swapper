@@ -10,7 +10,7 @@ const crypto = require('crypto');
 
 const { scanGame } = require('./src/core/scan.js');
 const { discover, folder, dedupe, isInside, steam, heroic, lutris } = require('./src/library');
-const { contextForGame, createSetupRunner } = require('./src/core/proton');
+const { contextForGame, createSetupRunner, nativeShaderCompiler } = require('./src/core/proton');
 const art = require('./src/steamart');
 const { backupRoot } = require('./src/core/apply.js');
 const { scanSource } = require('./src/core/scan.js');
@@ -836,6 +836,14 @@ ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) =>
   }
 
   const send = (e) => event.sender.send('job', e);
+  // Warn rather than refuse: the install itself is fine, it is what happens on
+  // the next launch that is not. Without Microsoft's d3dcompiler_47 in the
+  // prefix, the add-on's runtime shader compile fails and Neural Rendering
+  // never starts, while everything reports success - so say so here, where
+  // there is still someone reading, rather than leave it to a silent no-op.
+  if (proton && !nativeShaderCompiler(proton.env.WINEPREFIX)) {
+    send({ code: 'shaderCompilerWarning', params: { appid: proton.env.STEAM_COMPAT_APP_ID || '' } });
+  }
   await guards.assertGameClosed(dir, target.path);
   if (fs.existsSync(journal.pendingPath(dir))) return { ok: false, code: 'errBackendRecovery' };
   const old = backends.readManifest(dir);

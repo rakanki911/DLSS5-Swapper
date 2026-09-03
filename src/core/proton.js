@@ -68,6 +68,27 @@ function contextForWineGame(game) {
 
 const contextForGame = (game) => contextForSteamGame(game) || contextForWineGame(game);
 
+// The add-on compiles a shader at runtime through d3dcompiler_47, and Wine's
+// own build is backed by vkd3d's incomplete HLSL compiler: it has no isnan, so
+// the compile fails and Neural Rendering silently never runs. The add-on still
+// loads and the runtime still reports itself initialised, which makes this
+// close to undiagnosable from inside the game - hence the warning.
+//
+// Microsoft's build implements it and is an order of magnitude larger, which is
+// what tells them apart: 370 KB against 4.1 MB on the two prefixes measured.
+const BUILTIN_COMPILER_MAX = 1024 * 1024;
+
+function nativeShaderCompiler(prefix) {
+  if (!prefix) return false;
+  let size = 0;
+  try { size = fs.statSync(path.join(prefix, 'drive_c', 'windows', 'system32', 'd3dcompiler_47.dll')).size; }
+  catch { return false; }
+  if (size <= BUILTIN_COMPILER_MAX) return false;
+  // A native DLL sitting in the prefix is only reached if the prefix prefers it.
+  try { return /"\*?d3dcompiler_47"\s*=\s*"native/i.test(fs.readFileSync(path.join(prefix, 'user.reg'), 'utf8')); }
+  catch { return false; }
+}
+
 function createSetupRunner(context) {
   return (setupExe, args, log) => new Promise((resolve) => {
     log('runningSetup', { setup: path.basename(setupExe), args: args.slice(1).join(' ') });
@@ -95,4 +116,4 @@ function createSetupRunner(context) {
   });
 }
 
-module.exports = { protonCandidates, contextForSteamGame, contextForWineGame, contextForGame, createSetupRunner };
+module.exports = { protonCandidates, contextForSteamGame, contextForWineGame, contextForGame, createSetupRunner, nativeShaderCompiler };

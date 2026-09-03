@@ -230,3 +230,27 @@ test('the Feeder route is refused on Linux, and OptiScaler is left open', linuxO
   const blocked = await handlers.get('install')(event, game, target.path, 'optiscaler', 'vulkan');
   assert.equal(blocked.code, 'errExistingReShade');
 });
+
+test('a prefix without Microsoft\'s shader compiler is recognised as one that cannot run NR', linuxOnly, (t) => {
+  const { nativeShaderCompiler } = require('../src/core/proton');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-compiler-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  const make = (name, size, override) => {
+    const prefix = path.join(root, name);
+    const system32 = path.join(prefix, 'drive_c', 'windows', 'system32');
+    fs.mkdirSync(system32, { recursive: true });
+    fs.writeFileSync(path.join(system32, 'd3dcompiler_47.dll'), Buffer.alloc(size));
+    fs.writeFileSync(path.join(prefix, 'user.reg'), override
+      ? '[Software\\\\Wine\\\\DllOverrides]\n"*d3dcompiler_47"="native"\n'
+      : '[Software\\\\Wine\\\\DllOverrides]\n');
+    return prefix;
+  };
+
+  // Sizes taken from two real prefixes: Wine ships 370 KB, Microsoft 4.1 MB.
+  assert.equal(nativeShaderCompiler(make('builtin', 370547, false)), false, 'Wine\'s own build');
+  assert.equal(nativeShaderCompiler(make('native-no-override', 4346120, false)), false, 'present but not preferred');
+  assert.equal(nativeShaderCompiler(make('ready', 4346120, true)), true);
+  assert.equal(nativeShaderCompiler(path.join(root, 'nope')), false, 'no prefix at all');
+  assert.equal(nativeShaderCompiler(null), false);
+});

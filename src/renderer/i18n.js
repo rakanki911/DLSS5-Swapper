@@ -74,6 +74,7 @@ const S = {
     historySnapshot: 'Backup record', historyRecovered: 'Interrupted operation recovered',
     historyLoadFailed: 'Could not load history. Reopen this page to try again.',
     historySaveWarning: 'History could not be read or saved completely. Available entries are shown; copy them before closing the app and check access to the app data folder.',
+    shaderCompilerWarning: appid => `Neural Rendering will not start in this game until its prefix has Microsoft's d3dcompiler_47: Wine's own build cannot compile the add-on's shader, and the failure is silent. Run: protontricks ${appid || '<appid>'} d3dcompiler_47`,
     gamesTitle: 'Games', addGame: 'Add a game', addFolder: 'Add a folder', rescan: 'Rescan',
     searchGames: 'Search games', searchGamesHint: 'Search by game title…',
     filterDlss: 'DLSS status', filterAddon: 'Add-on', clearFilters: 'Clear filters',
