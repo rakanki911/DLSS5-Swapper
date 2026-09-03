@@ -74,7 +74,7 @@ Windows DLSS payload and is skipped.
 | Launcher | Notes |
 | --- | --- |
 | **Steam Play** | Native, and the Flatpak install. The game's own `compatdata` prefix is used |
-| **Heroic** | Epic, GOG, Amazon and sideloaded games; native and Flatpak |
+| **Heroic** | Epic, GOG, Amazon and sideloaded games; native and Flatpak. A DLC listed as its own install (Cyberpunk 2077's REDmod, found this way) is skipped rather than mistaken for the base game |
 | **Lutris** | Wine games; native and Flatpak |
 
 Full-drive scanning finds nothing here — it enumerates Windows drive letters. Add folders by hand
@@ -112,7 +112,13 @@ in Settings instead.
   earlier version of this file claimed it worked. It does not; that claim was made from the log
   rather than from the screen, and the screen disagrees.
 - **Toggling it off and on** has also crashed the game a few seconds later, once, with
-  `EXCEPTION_ACCESS_VIOLATION reading address 0xffffffffffffffff`.
+  `EXCEPTION_ACCESS_VIOLATION reading address 0xffffffffffffffff`. The same exact address turned
+  up again crashing a second, unrelated game (Cyberpunk 2077, on a completely different Proton
+  build) the moment its Neural Rendering feature was first created rather than toggled — which
+  reads as one bug in the add-on's feature lifecycle under Proton, not an engine quirk or a build
+  quirk. Both crash reports named `stopThreadID`/thread IDs matching the thread the log shows
+  building that feature, and both times CDPR's or the game's own crash reporter came up
+  independently of ReShade, confirming a real crash rather than a caught exception.
 - The OptiScaler GPU gate compares the NVIDIA driver against a Windows version number, and the
   Linux driver does not use the same numbering. That threshold has not been checked against the
   real DLSS 5 requirement.
