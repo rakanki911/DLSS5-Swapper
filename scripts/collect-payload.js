@@ -289,7 +289,19 @@ if (!fs.existsSync(path.join(reshadeExtract, 'ReShade64.dll'))) {
   fs.mkdirSync(reshadeExtract, { recursive: true });
   // ReShade Setup is a self-extracting executable with a ZIP appended. BSD
   // tar handles that layout; extract-zip rejects its non-standard comment.
-  execFileSync('tar', ['-xf', reshade.file, '-C', reshadeExtract], { stdio: 'inherit' });
+  // Windows ships bsdtar as `tar`, which is why this reads as one command
+  // there. On Linux `tar` is GNU tar, which refuses the stub outright - so
+  // find one that is actually libarchive rather than trusting the name.
+  const extractor = ['bsdtar', 'tar'].find((candidate) => {
+    try { return /bsdtar|libarchive/i.test(execFileSync(candidate, ['--version'], { encoding: 'utf8' })); }
+    catch { return false; }
+  });
+  if (!extractor) {
+    console.error('\nNo bsdtar found, and GNU tar cannot read a self-extracting installer.');
+    console.error('Install libarchive (bsdtar) and run again.');
+    process.exit(1);
+  }
+  execFileSync(extractor, ['-xf', reshade.file, '-C', reshadeExtract], { stdio: 'inherit' });
 }
 for (const name of ['ReShade64.dll', 'ReShade64.json', 'ReShade32.dll', 'ReShade32.json']) {
   copyFile(path.join(reshadeExtract, name), path.join(PAYLOAD, 'reshade-vulkan', name));

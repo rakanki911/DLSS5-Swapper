@@ -9,8 +9,8 @@ const { pathToFileURL } = require('url');
 const crypto = require('crypto');
 
 const { scanGame } = require('./src/core/scan.js');
-const { discover, folder, dedupe, isInside, steam } = require('./src/library');
-const { contextForSteamGame, createSetupRunner } = require('./src/core/proton');
+const { discover, folder, dedupe, isInside, steam, heroic, lutris } = require('./src/library');
+const { contextForGame, createSetupRunner, nativeShaderCompiler } = require('./src/core/proton');
 const art = require('./src/steamart');
 const { backupRoot } = require('./src/core/apply.js');
 const { scanSource } = require('./src/core/scan.js');
@@ -763,6 +763,22 @@ ipcMain.handle('details', async (_event, dir) => {
 });
 
 let mutationBusy = false;
+// Steam keeps its data under two roots that are symlinked to one another, so
+// the same game is discoverable under either path and a plain string compare
+// misses half of them. Compare what the paths resolve to on disk instead.
+function bottleFor(dir) {
+  const real = (file) => { try { return fs.realpathSync(file); } catch { return path.resolve(file); } };
+  const target = real(dir);
+  return contextForGame([...steam(), ...heroic(), ...lutris()].find((game) => real(game.dir) === target));
+}
+
+// The install reached ReShade Setup on a game with no prefix to run it in.
+// Throw where the installer already handles a failed setup: it keeps a
+// recoverable checkpoint and the journal rolls the rest back.
+function protonRequired() {
+  throw Object.assign(new Error('This step runs the Windows ReShade Setup and needs the prefix the game is launched with. Start the game once through Steam Play, Heroic or Lutris, then try again.'), { code: 'errProtonRequired' });
+}
+
 async function exclusiveMutation(work) {
   if (mutationBusy) return { ok: false, code: 'errJobBusy' };
   mutationBusy = true;
@@ -793,21 +809,41 @@ ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) =>
   const route = availableRoutes.includes(requestedRoute) ? requestedRoute
     : (availableRoutes.includes(recommendedRoute) ? recommendedRoute : availableRoutes[0]);
 
-  // ReShade Setup is a Windows executable. On Linux, support Windows games
-  // launched with Steam Play by using their existing Proton prefix; native
-  // Linux games do not load the Windows DLSS/ReShade payload.
-  const protonGame = process.platform === 'linux'
-    ? steam().find((game) => path.resolve(game.dir) === path.resolve(dir))
-    : null;
-  const proton = contextForSteamGame(protonGame);
-  if (process.platform === 'linux' && !proton) {
-    return { ok: false, code: 'errProtonRequired', message: 'This installer supports Windows games launched through Steam Proton. Launch the game once with Proton, then try again.' };
+  // ReShade Setup is a Windows executable, and on Linux it runs in the Steam
+  // Play prefix the game already has. Everything else an install does - copying
+  // DLLs, writing configs - is ordinary file IO that needs no prefix, and a
+  // game that already carries an add-on ReShade never reaches the setup at all.
+  // So a missing prefix is only fatal for an install that actually gets there:
+  // hand the installer a runner that refuses instead of refusing up front, and
+  // let the journal roll back the half-done install the same way it would for
+  // any other failed setup.
+  const proton = process.platform === 'linux' ? bottleFor(dir) : null;
+  // Both guards below come from Febsho, who shipped Linux builds and watched
+  // them break games - https://github.com/Febsho/DLSS5-Swapper-Linux. Field
+  // evidence outranks anything reasoned from here, so they are taken as given.
+  //
+  // The Feeder patched launchers rather than games and left titles unable to
+  // start. Linux keeps the routes that only copy files into the game folder.
+  // (Vulkan never reached the Feeder here anyway: it registers ReShade as a
+  // Windows implicit layer, which Proton does not load - see vulkan-layer.js.)
+  if (process.platform === 'linux' && route === 'feeder') {
+    return { ok: false, code: 'errLinuxFeederUnsupported', message: 'DLSS5-Feeder is disabled on Linux because it can leave a Proton game unable to start. Use Native DLSS on a game that already has it, or OptiScaler where the hardware allows.' };
   }
-  if (process.platform === 'linux' && api === 'vulkan') {
-    return { ok: false, code: 'errLinuxVulkanUnsupported', message: 'The Vulkan Feeder route needs a host Vulkan layer and is not supported on Linux yet. Select a DirectX renderer in the game.' };
+  // An existing proxy may belong to another mod or loader, and replacing it
+  // was a cause of Proton startup crashes in otherwise healthy games.
+  if (process.platform === 'linux' && scan.reshade.installed && !scan.reshade.addonSupport) {
+    return { ok: false, code: 'errExistingReShade', message: 'This game already has a non-add-on ReShade installation. It was left untouched to prevent a Proton crash.' };
   }
 
   const send = (e) => event.sender.send('job', e);
+  // Warn rather than refuse: the install itself is fine, it is what happens on
+  // the next launch that is not. Without Microsoft's d3dcompiler_47 in the
+  // prefix, the add-on's runtime shader compile fails and Neural Rendering
+  // never starts, while everything reports success - so say so here, where
+  // there is still someone reading, rather than leave it to a silent no-op.
+  if (proton && !nativeShaderCompiler(proton.env.WINEPREFIX)) {
+    send({ code: 'shaderCompilerWarning', params: { appid: proton.env.STEAM_COMPAT_APP_ID || '' } });
+  }
   await guards.assertGameClosed(dir, target.path);
   if (fs.existsSync(journal.pendingPath(dir))) return { ok: false, code: 'errBackendRecovery' };
   const old = backends.readManifest(dir);
@@ -906,7 +942,7 @@ ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) =>
       optiRoot,
       companions,
       reshadeSetup: p.reshadeSetup,
-      setupRunner: proton ? createSetupRunner(proton) : undefined,
+      setupRunner: process.platform === 'linux' ? (proton ? createSetupRunner(proton) : protonRequired) : undefined,
       vulkanLayerTarget: path.join(app.getPath('userData'), 'reshade-vulkan'),
       installReShade: true,
       addMissingDlss: true,

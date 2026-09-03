@@ -28,7 +28,10 @@ const SKIP_DIRS = new Set([
 const MAX_SCAN_DEPTH = 12;
 
 // Installers, launchers and anti-cheat helpers are never the game itself.
-const NOT_A_GAME = /^(unins|setup|install|vcredist|vc_redist|dxsetup|dxwebsetup|oalinst|uninstall|crashreport|crashhandler|easyanticheat|eac|battleye|be_service|launcher|activation|patch|update|dotnetfx|touchup|rapidcrc|autorun|autoplay|quicksfv|readme|config|benchmark|report|helper|service|cleanup|modorganizer|redlauncher|skse\d*_loader|hlds\b|srcds\b|steamerrorreporter|dgvoodoocpl|reshade_setup)/i;
+// The trailing alternative is deliberately unanchored: a name that *ends* in
+// launcher is one too, which is what the Feeder was patching instead of the
+// game (found by Febsho - https://github.com/Febsho/DLSS5-Swapper-Linux).
+const NOT_A_GAME = /^(unins|setup|install|vcredist|vc_redist|dxsetup|dxwebsetup|oalinst|uninstall|crashreport|crashhandler|easyanticheat|eac|battleye|be_service|launcher|activation|patch|update|dotnetfx|touchup|rapidcrc|autorun|autoplay|quicksfv|readme|config|benchmark|report|helper|service|cleanup|modorganizer|redlauncher|skse\d*_loader|hlds\b|srcds\b|steamerrorreporter|dgvoodoocpl|reshade_setup)|launcher(?:\.exe)?$/i;
 
 const DLSS_FILE = /^(nvngx_dlss[a-z_]*\.dll|nvngx\.dll|_nvngx\.dll)$/i;
 const STREAMLINE_FILE = /^sl\.[a-z_]+\.dll$/i;

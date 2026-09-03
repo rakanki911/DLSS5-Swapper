@@ -139,6 +139,197 @@ function gog() {
   return games;
 }
 
+// ---------- Heroic ----------
+// Heroic keeps one plain-JSON file per store. Only the installed lists are
+// read: the library caches beside them expire and are often missing, and a
+// title is not worth a stale file when the folder name will do.
+const FLATPAK = { heroic: 'com.heroicgameslauncher.hgl', lutris: 'net.lutris.Lutris' };
+
+// A launcher installed from a distro package and the same one from Flatpak
+// keep separate config trees, and people run both.
+function xdgRoots(home, env, ...tail) {
+  const config = env.XDG_CONFIG_HOME || path.join(home, '.config');
+  return [path.join(config, ...tail), path.join(home, '.var', 'app', FLATPAK[tail[0]], 'config', ...tail)]
+    .filter((dir) => fs.existsSync(dir));
+}
+
+// Lutris is deprecating ~/.config/lutris: when that folder is absent it keeps
+// its configuration in the data directory instead, which is where a current
+// install puts the per-game files. Downloaded wine runners always live in the
+// data directory, so both are needed.
+function lutrisRoots(home, env) {
+  const config = env.XDG_CONFIG_HOME || path.join(home, '.config');
+  const data = env.XDG_DATA_HOME || path.join(home, '.local', 'share');
+  const flatpak = path.join(home, '.var', 'app', FLATPAK.lutris);
+  return [[config, data], [path.join(flatpak, 'config'), path.join(flatpak, 'data')]]
+    .map(([configHome, dataHome]) => {
+      const configDir = path.join(configHome, 'lutris');
+      const dataDir = path.join(dataHome, 'lutris');
+      return {
+        games: path.join(fs.existsSync(configDir) ? configDir : dataDir, 'games'),
+        wineDir: path.join(dataDir, 'runners', 'wine')
+      };
+    })
+    .filter((root) => fs.existsSync(root.games));
+}
+
+const firstOf = (object, ...keys) => keys.map((key) => object && object[key]).find((value) => typeof value === 'string' && value);
+const listOf = (data, key) => Array.isArray(data) ? data : (data && Array.isArray(data[key]) ? data[key]
+  : (data && typeof data === 'object' ? Object.values(data) : []));
+
+function readJson(file) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+}
+
+// The stores do not agree on their key names and Heroic has moved them
+// between versions, so take whichever spelling is present and let the folder
+// on disk decide whether the entry is still a real install.
+function heroicGame(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+  const install = entry.install && typeof entry.install === 'object' ? entry.install : entry;
+  // A DLC gets its own installed.json entry pointing at the base game's own
+  // folder - Cyberpunk 2077 lists "Cyberpunk 2077 - REDmod" as a separate,
+  // is_dlc:true entry with the identical install_path and no executable of
+  // its own. Skipping it here matters beyond the duplicate: it is also the
+  // entry dedupe() ends up keeping, since neither its title nor "REDmod"
+  // matches the /\bdlc\b/ pattern dedupe uses to prefer the other side.
+  if (install.is_dlc === true || entry.is_dlc === true) return null;
+  const dir = firstOf(install, 'install_path', 'install_dir', 'path') || firstOf(entry, 'install_path', 'install_dir', 'path');
+  if (!dir || !fs.existsSync(dir)) return null;
+  // A native Linux build cannot load the Windows DLSS payload. The platform is
+  // not always recorded; when it is, an explicit non-Windows one is skipped.
+  const platform = firstOf(install, 'platform') || firstOf(entry, 'platform');
+  if (platform && !/^win/i.test(platform)) return null;
+  const name = firstOf(entry, 'title', 'name') || path.basename(dir);
+  if (NOT_A_GAME.test(name)) return null;
+  return { launcher: 'Heroic', id: firstOf(entry, 'app_name', 'appName', 'id') || null, name, dir, poster: null };
+}
+
+// Heroic writes one settings file per game, keyed inside by the same app name,
+// and falls back to the global defaults for anything the game does not
+// override. Both carry the prefix and the wine build the game is launched with.
+function heroicWine(root, appName, defaults) {
+  const perGame = appName ? readJson(path.join(root, 'GamesConfig', `${appName}.json`)) : null;
+  const settings = { ...defaults, ...((perGame && perGame[appName]) || {}) };
+  const version = settings.wineVersion || {};
+  // A CrossOver bottle is driven by CrossOver's own tooling rather than by
+  // running a binary against a prefix.
+  if (!settings.winePrefix || !version.bin || version.type === 'crossover') return null;
+  return {
+    bin: version.bin,
+    prefix: settings.winePrefix,
+    kind: version.type === 'proton' ? 'proton' : 'wine',
+    steamPath: settings.defaultSteamPath || null
+  };
+}
+
+function heroic(options = {}) {
+  const home = options.home || os.homedir();
+  const games = [];
+  for (const root of options.roots || xdgRoots(home, options.env || process.env, 'heroic')) {
+    const global = readJson(path.join(root, 'config.json'));
+    const defaults = (global && global.defaultSettings) || {};
+    const stores = [
+      [path.join(root, 'legendaryConfig', 'legendary', 'installed.json'), null],
+      [path.join(root, 'nile_config', 'nile', 'installed.json'), 'installed'],
+      [path.join(root, 'gog_store', 'installed.json'), 'installed'],
+      [path.join(root, 'sideload_apps', 'library.json'), 'games']
+    ];
+    for (const [file, key] of stores) {
+      for (const entry of listOf(readJson(file), key)) {
+        const game = heroicGame(entry);
+        if (game) games.push({ ...game, wine: heroicWine(root, game.id, defaults) });
+      }
+    }
+  }
+  return games;
+}
+
+// ---------- Lutris ----------
+// The install directory lives in Lutris' SQLite database, which would need a
+// driver this app does not ship, and its CLI takes seconds to answer. The
+// per-game config beside the database is plain YAML and holds what matters.
+//
+// Lutris writes these with PyYAML's block style: one unindented section per
+// runner, two-space indented scalars under it. Reading exactly that much is
+// enough for the executable and the keys a relative path resolves against;
+// anything nested deeper is not a scalar we want anyway.
+function yamlSection(text, section) {
+  const values = {};
+  let inside = false;
+  for (const line of text.split('\n')) {
+    if (/^\S/.test(line)) { inside = line.startsWith(section + ':'); continue; }
+    if (!inside) continue;
+    const match = line.match(/^ {2}([A-Za-z_][\w-]*): *(.*)$/);
+    if (!match) continue;
+    const raw = match[2].trim();
+    // A key with nothing after it opens a nested block. An empty string is
+    // written as '' and a missing value as null, so neither is lost here.
+    if (!raw) continue;
+    values[match[1]] = raw.startsWith("'") && raw.endsWith("'") && raw.length > 1
+      ? raw.slice(1, -1).replace(/''/g, "'")
+      : (raw.startsWith('"') && raw.endsWith('"') && raw.length > 1 ? raw.slice(1, -1) : raw);
+  }
+  return values;
+}
+
+const expandHome = (file, home) => file.startsWith('~/') ? path.join(home, file.slice(2)) : file;
+
+// The handful of versions Lutris resolves to a system install rather than to
+// a runner it downloaded itself.
+const SYSTEM_WINE = {
+  'winehq-devel': '/opt/wine-devel/bin/wine',
+  'winehq-staging': '/opt/wine-staging/bin/wine',
+  'wine-development': '/usr/lib/wine-development/wine',
+  system: 'wine'
+};
+
+// A downloaded runner sits at <runners>/wine/<version>/bin/wine. A Proton
+// version is launched through umu instead, which is not covered here.
+function lutrisWine(config, wineDir, prefix, home) {
+  if (!prefix || !config.version || /proton/i.test(config.version)) return null;
+  const bin = config.version === 'custom'
+    ? config.custom_wine_path
+    : (SYSTEM_WINE[config.version] || path.join(wineDir, config.version, 'bin', 'wine'));
+  if (!bin) return null;
+  const file = expandHome(bin, home);
+  // A bare name is left for PATH to resolve; a full path has to be there.
+  if (path.isAbsolute(file) && !fs.existsSync(file)) return null;
+  return { bin: file, prefix, kind: 'wine' };
+}
+
+function lutris(options = {}) {
+  const home = options.home || os.homedir();
+  const games = [];
+  for (const root of options.roots || lutrisRoots(home, options.env || process.env)) {
+    let files = [];
+    try { files = fs.readdirSync(root.games).filter((file) => file.endsWith('.yml')); } catch { continue; }
+    for (const file of files) {
+      let text;
+      try { text = fs.readFileSync(path.join(root.games, file), 'utf8'); } catch { continue; }
+      const game = yamlSection(text, 'game');
+      // Native Linux games are listed here too and cannot load the Windows
+      // payload, so the executable has to be a Windows one.
+      if (!game.exe || !/\.exe$/i.test(game.exe)) continue;
+      let exe = expandHome(game.exe, home);
+      if (!path.isAbsolute(exe)) exe = path.resolve(expandHome(game.working_dir || game.prefix || '', home), exe);
+      const dir = path.dirname(exe);
+      if (!fs.existsSync(dir)) continue;
+      // The file is named <slug>-<unix time>, and the slug is the only name
+      // Lutris keeps outside its database.
+      const slug = file.replace(/\.yml$/i, '').replace(/-\d+$/, '');
+      const name = slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()).trim();
+      if (!name || NOT_A_GAME.test(name)) continue;
+      const prefix = game.prefix ? expandHome(game.prefix, home) : null;
+      games.push({
+        launcher: 'Lutris', id: slug, name, dir, poster: null,
+        wine: lutrisWine(yamlSection(text, 'wine'), root.wineDir, prefix, home)
+      });
+    }
+  }
+  return games;
+}
+
 // ---------- loose installs on every drive ----------
 // The launchers above already record their libraries wherever they sit, so a
 // game installed through Steam on E: is found without any of this. What is
@@ -234,11 +425,18 @@ function folder(root, label = 'My folders', onlyGames = false) {
 
 // One game can be installed twice - a launcher copy and a loose copy. They are
 // different installs, so both are kept; only the exact same folder is merged.
+// Two paths can name one folder. Steam keeps its data under ~/.steam/steam and
+// ~/.local/share/Steam, one a symlink to the other, and both are searched - so
+// resolving the string alone leaves every Steam game in the library twice.
+function folderKey(dir) {
+  try { return fs.realpathSync(dir).toLowerCase(); } catch { return path.resolve(dir).toLowerCase(); }
+}
+
 function dedupe(games) {
   const seen = new Map();
   for (const entry of games) {
     const g = canonicalGame(entry);
-    const key = path.resolve(g.dir).toLowerCase();
+    const key = folderKey(g.dir);
     const existing = seen.get(key);
     // A launcher entry carries a real name and art, so it wins over a folder.
     const dlc = game => /\bdlc\b|phantom liberty/i.test(game.name || '');
@@ -279,7 +477,7 @@ function filterExcluded(games, excludedRoots = []) {
 }
 
 function discover(extraFolders = [], scanDrives = false, excludedRoots = [], findAutoRoots = autoRoots) {
-  const found = [...steam(), ...epic(), ...gog()];
+  const found = [...steam(), ...epic(), ...gog(), ...heroic(), ...lutris()];
   const roots = (scanDrives ? findAutoRoots() : [])
     .filter((root) => !excludedRoots.some((excluded) => isInside(root, excluded)));
   for (const dir of roots) found.push(...folder(dir, 'My folders', true));
@@ -290,4 +488,4 @@ function discover(extraFolders = [], scanDrives = false, excludedRoots = [], fin
   return { games: dedupe(filterExcluded(found, excludedRoots)), roots };
 }
 
-module.exports = { discover, folder, dedupe, autoRoots, drives, isInside, filterExcluded, steam, linuxSteamRoots };
+module.exports = { discover, folder, dedupe, autoRoots, drives, isInside, filterExcluded, steam, linuxSteamRoots, heroic, lutris, yamlSection };

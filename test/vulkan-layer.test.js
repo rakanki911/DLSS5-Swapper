@@ -38,3 +38,25 @@ test('Vulkan layer stays registered until the last emulator is restored', async 
   assert.equal(await layer.detach(second, path.join(root, 'Cemu'), runner), true);
   assert.equal(values.size, 0);
 });
+
+test('without a host registry the layer is refused before anything is written', { skip: process.platform === 'win32' ? 'not Windows' : false }, async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-vulkan-host-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const sourceDir = path.join(root, 'source');
+  const targetDir = path.join(root, 'installed');
+  fs.mkdirSync(sourceDir, { recursive: true });
+  for (const bits of [64, 32]) {
+    fs.writeFileSync(path.join(sourceDir, `ReShade${bits}.dll`), `dll${bits}`);
+    fs.writeFileSync(path.join(sourceDir, `ReShade${bits}.json`), JSON.stringify({ layer: { name: 'VK_LAYER_reshade' } }));
+  }
+
+  // Nothing has registered a layer where no registry is reachable.
+  assert.equal(await layer.existing(layer.defaultRunner), null);
+
+  await assert.rejects(
+    layer.register({ sourceDir, targetDir, gameDir: path.join(root, 'RPCS3') }),
+    { code: 'errVulkanLayerUnsupported' }
+  );
+  // The DLLs must not be lying around after a refusal.
+  assert.equal(fs.existsSync(targetDir), false);
+});

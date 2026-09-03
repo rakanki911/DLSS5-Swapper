@@ -12,6 +12,7 @@
   <a href="https://github.com/rakanki911/DLSS5-Swapper/releases/latest"><img src="https://img.shields.io/github/v/release/rakanki911/DLSS5-Swapper?color=8fd400&label=release" alt="Latest release"></a>
   <a href="https://github.com/rakanki911/DLSS5-Swapper/releases"><img src="https://img.shields.io/github/downloads/rakanki911/DLSS5-Swapper/total?color=8fd400&label=downloads&cacheSeconds=300" alt="Total downloads"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%2F%2011-8fd400" alt="Windows 10/11">
+  <img src="https://img.shields.io/badge/Linux-Proton%20%2F%20Wine-8fd400" alt="Linux via Proton or Wine">
   <img src="https://img.shields.io/badge/languages-38-8fd400" alt="38 languages">
 </p>
 
@@ -28,7 +29,7 @@
 ## Features
 
 - **Easy installation:** native DLSS games, or compatible non-DLSS games through DLSS5-Feeder.
-- **Your library:** Steam, Epic, GOG, modern Xbox Game Pass folders, and manually added games/emulators.
+- **Your library:** Steam, Epic, GOG, modern Xbox Game Pass folders, and manually added games/emulators. On Linux: Steam Play, Heroic and Lutris.
 - **Search and filters:** combine title, graphics API, DLSS status/version and add-ons; click counters to filter.
 - **Flexible layout:** group by store or show everything in one list, with game artwork and light/dark themes.
 - **Controlled scanning:** full-drive scanning is **off by default**. Added folders still scan normally; enable all-drive discovery or remove scan folders in Settings.
@@ -51,17 +52,117 @@
 
 | Category | Support |
 | --- | --- |
-| **System** | Windows 10/11 x64; compatible 32-bit and 64-bit games |
+| **System** | Windows 10/11 x64; compatible 32-bit and 64-bit games. Linux: Windows games run through Proton or Wine — see [Linux](#linux) |
 | **ReShade / Feeder GPUs** | RTX 20 / 30 / 40 / 50; older-series support is reported by the bundled modified runtime's author |
 | **OptiScaler GPUs** | RTX 50 only, NVIDIA driver **616.56+**, 64-bit games with native DLSS enabled |
 | **DirectX 12** | Native DLSS, Feeder, or eligible OptiScaler games |
 | **DirectX 11** | Feeder for 32/64-bit games; eligible OptiScaler games |
 | **DirectX 9 / 8** | DX9: 32/64-bit; DX8: 32-bit, through dgVoodoo2 → DX11 → Feeder |
-| **Vulkan / OpenGL** | ReShade/Feeder; eligible Vulkan games can also use OptiScaler |
+| **Vulkan / OpenGL** | ReShade/Feeder; eligible Vulkan games can also use OptiScaler. On Linux, Vulkan is OptiScaler only |
 | **DirectX 10** | Not directly supported by Feeder; choose DX11 when available |
 
 OptiScaler's DX11/Vulkan path uses a DX12 bridge with FSR output by default.
 For Vulkan backend changes, **restore originals first**. OptiScaler is not the emulator/non-DLSS route.
+
+## Linux
+
+Windows games launched through Proton or Wine. A Linux-native build of a game cannot load the
+Windows DLSS payload and is skipped.
+
+**What is found**
+
+| Launcher | Notes |
+| --- | --- |
+| **Steam Play** | Native, and the Flatpak install. The game's own `compatdata` prefix is used |
+| **Heroic** | Epic, GOG, Amazon and sideloaded games; native and Flatpak. A DLC listed as its own install (Cyberpunk 2077's REDmod, found this way) is skipped rather than mistaken for the base game |
+| **Lutris** | Wine games; native and Flatpak |
+
+Full-drive scanning finds nothing here — it enumerates Windows drive letters. Add folders by hand
+in Settings instead.
+
+**What works**
+
+- Swapping the DLSS runtime on a game that already has DLSS, and the OptiScaler route including
+  its Vulkan path — as an install. Whether Neural Rendering then renders correctly is a separate
+  question, answered below.
+- ReShade Setup, run inside the prefix the game already uses — the Steam Play prefix, or the Wine
+  prefix Heroic or Lutris made for it. Installs that never reach the setup do not need a prefix at
+  all.
+- The "close the game first" check, which reads `/proc` rather than asking PowerShell.
+
+**What does not**
+
+- **The Feeder route**, which is refused outright. It patched launchers rather than games and left
+  Proton titles unable to start — found by [Febsho](https://github.com/Febsho/DLSS5-Swapper-Linux),
+  who shipped Linux builds and watched them break. Vulkan never reached it here anyway: the Feeder
+  registers ReShade as a Windows implicit layer, and Wine hands layer enumeration to the host
+  Vulkan loader, which loads `.so` layers and never a Windows ReShade DLL. Use Native DLSS, or
+  OptiScaler for Vulkan.
+- **A game that already has a non-add-on ReShade.** The existing proxy may belong to another mod or
+  loader, and replacing it crashed otherwise healthy games. Same source.
+- **Lutris games on a Proton runner**, which is launched through umu, and **Heroic CrossOver
+  bottles**. Both are found and can still take a plain DLL swap; only the ReShade Setup step is
+  unavailable.
+- **Emulators**, in practice. The Linux builds people actually run are native, and the Windows
+  builds that would work under Wine go through the Feeder, which is refused above.
+- **Neural Rendering itself, visually.** It initialises, creates its feature, and costs real frame
+  time — the same menu runs at 129 fps with it off and 54 with it on — but what it draws is black.
+  The scene disappears. The log tells the flattering half of this story: `feature 18 created` on
+  every toggle, and `inline feature 18 evaluation succeeded` on a fresh start, which is why an
+  earlier version of this file claimed it worked. It does not; that claim was made from the log
+  rather than from the screen, and the screen disagrees.
+- **Toggling it off and on** has also crashed the game a few seconds later, once, with
+  `EXCEPTION_ACCESS_VIOLATION reading address 0xffffffffffffffff`. The same exact address turned
+  up again crashing a second, unrelated game (Cyberpunk 2077, on a completely different Proton
+  build) the moment its Neural Rendering feature was first created rather than toggled — which
+  reads as one bug in the add-on's feature lifecycle under Proton, not an engine quirk or a build
+  quirk. Both crash reports named `stopThreadID`/thread IDs matching the thread the log shows
+  building that feature, and both times CDPR's or the game's own crash reporter came up
+  independently of ReShade, confirming a real crash rather than a caught exception.
+- The OptiScaler GPU gate compares the NVIDIA driver against a Windows version number, and the
+  Linux driver does not use the same numbering. That threshold has not been checked against the
+  real DLSS 5 requirement.
+
+**One thing Proton needs first**
+
+The add-on compiles a shader at runtime, and Wine's `d3dcompiler_47` — 370 KB, backed by vkd3d's
+incomplete HLSL compiler — does not implement `isnan`, so that compile fails and Neural Rendering
+never runs. Microsoft's own 4 MB DLL does. Install it into the game's prefix once:
+
+```bash
+protontricks <appid> d3dcompiler_47
+```
+
+Without it the log fills with `proxy encode compilation failed ... Function "isnan" is not
+defined`; with it, that error is gone entirely. It is still needed even though Neural Rendering
+does not render correctly afterwards — without it, nothing happens at all.
+
+**Running it**
+
+There are no Linux binaries. Run from source (tested on Node 24):
+
+```bash
+npm install && npm start
+```
+
+Installing anything also needs the `payload/` folder — the DLSS 5 runtime, ReShade Setup and the
+Feeder components. It is not in the repository and has to be supplied yourself; without it the app
+starts and lists your games but cannot install. `npm run build:linux` needs it too. See
+`scripts/collect-payload.js`.
+
+> Tried against a real Steam Play game, twice over: once on a copy of its files with stand-in DLLs,
+> and once for real with an actual DLSS 5 payload, where the game launched and the add-on loaded —
+> though Neural Rendering renders black, so what is verified is the install, not the result.
+> On the copy, an install and a restore ran end to end: the library
+> finds the game, the process guard reads `/proc`, the installer replaces the game's `nvngx_dlss.dll`
+> against its backup and adds the runtime, add-on and hook beside the executable, ReShade Setup
+> executes inside the game's own Proton prefix and leaves an add-on-capable `dxgi.dll` (6.8.0), and
+> restore puts all eleven files back byte for byte and removes everything it added. What that cannot
+> show is whether NVIDIA's own runtime then works: the stand-ins are valid PE files and nothing more.
+> Heroic has been tried the same way: the reader finds an Epic game, resolves its prefix and wine
+> build out of Heroic's own config, and ReShade Setup runs inside that prefix too — which Heroic had
+> set to Proton rather than plain Wine, so that branch is exercised as well. Lutris is still untried
+> against an install, and the OptiScaler route needs an RTX 50. Keep your backups.
 
 ## Emulators
 
@@ -109,7 +210,7 @@ Compatibility varies by renderer and game. Xenia HUD correction remains experime
 - **Anti-cheat:** red warning and optional confirmation, not a blanket block. Injection can cause crashes or account bans; the app never bypasses anti-cheat.
 - **Requirements:** Feeder needs Visual C++ runtimes (x64, plus x86 for 32-bit games). Some components download on first use.
 - **Compatibility is not guaranteed.** Keep backups; existing mods may conflict. Not every reported game crash is fixed.
-- **Linux/Proton:** experimental community source only; no Linux binaries in this release.
+- **Linux/Proton:** source only, and tried with stand-in DLLs rather than the real DLSS runtime — see [Linux](#linux).
 
 ---
 

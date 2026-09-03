@@ -4,11 +4,23 @@
 // therefore registered as an implicit layer for the current Windows user.
 // This follows the same HKCU layout used by ReShade and DLSS5-Autopilot and
 // keeps a reference list so restoring one emulator cannot break another.
+//
+// This mechanism has no Linux counterpart, and writing the key inside a
+// Proton prefix would not give it one: winevulkan forwards layer enumeration
+// to the host loader, which loads Linux .so layers and never a Windows
+// ReShade DLL, and wine does not read the prefix's ImplicitLayers key at all.
+// Vulkan on Linux is reached through the OptiScaler route instead, which
+// installs a proxy DLL into the game folder and never comes through here.
 const fs = require('fs');
 const path = require('path');
 const { execFile } = require('child_process');
 
 const KEY = 'HKCU\\Software\\Khronos\\Vulkan\\ImplicitLayers';
+
+// defaultRunner is the host registry, and only Windows has one. A caller that
+// supplies its own runner supplies its own registry along with it, so the
+// check is on which runner is in use rather than on the platform alone.
+const hostRegistry = (runner) => runner !== defaultRunner || process.platform === 'win32';
 
 function defaultRunner(file, args) {
   return new Promise((resolve) => {
@@ -37,6 +49,8 @@ function samePath(a, b) {
 }
 
 async function existing(runner) {
+  // Nowhere to have registered one, so nothing is registered.
+  if (!hostRegistry(runner)) return null;
   const result = await runner('reg.exe', ['query', KEY]);
   if (result.code !== 0) return null;
   for (const line of String(result.stdout || '').split(/\r?\n/)) {
@@ -49,6 +63,9 @@ async function existing(runner) {
 
 async function register(options) {
   const { sourceDir, targetDir, gameDir, bitness = 64, runner = defaultRunner } = options;
+  // Fail before copying anything. Left to run, this would lay the DLLs down
+  // and then fail on a reg.exe that is not there, with nothing to report.
+  if (!hostRegistry(runner)) throw Object.assign(new Error('errVulkanLayerUnsupported'), { code: 'errVulkanLayerUnsupported' });
   const current = await existing(runner);
   const our64 = path.join(targetDir, 'ReShade64.json');
   const ours = current && samePath(current, our64);
