@@ -39,11 +39,11 @@ test('install/restore IPC records all backends, not failures/cancels, and valida
       } }, clipboard: { writeText: text => { copied = text; } } },
     './src/core/scan.js': { scanGame: async () => {
       if (scanFails) throw new Error('Executable scan is unavailable');
-      return { chosen: target, exeCandidates: [target], hasNativeDlss: true };
+      return { chosen: target, exeCandidates: [target], hasNativeDlss: true, reshade: { installed: false, file: null, kind: null, version: null, addonSupport: false } };
     } },
     './src/core/compatibility': { assertSafeTarget() {}, hasAntiCheat: () => protectedTarget },
     './src/core/install-guards': { assertGameClosed: async () => {}, antiCheatPresent: () => false, gpuInfo: async () => [{}], gpuSupported: () => true },
-    './src/shared/install-routes': { nativeDlssPresent: () => true, routesFor: () => ['native', 'feeder', 'optiscaler'], recommendedRoute: () => 'native' },
+    './src/shared/install-routes': { nativeDlssPresent: () => true, routesFor: () => ['native', second, 'optiscaler'], recommendedRoute: () => 'native' },
     './src/core/runtime-components.js': { missingVCRuntime: () => [], ensureLumenite: async () => null },
     './src/core/optiscaler': { checkConflicts() {}, ensureOptiScaler: async () => root, RELEASE: { version: 'fixture' } },
     './src/core/backend-manager': {
@@ -65,7 +65,11 @@ test('install/restore IPC records all backends, not failures/cancels, and valida
   vm.runInContext(fs.readFileSync(main, 'utf8'), context, { filename: main });
   vm.runInContext(`payload = () => ({ source: { feeder: { ok32: true, ok64: true } } }); companionAddons = () => [];`, context);
   const event = { sender: { send() {} } };
-  for (const route of ['native', 'native', 'feeder', 'optiscaler']) {
+  // The Feeder route is refused on Linux. This test is about what reaches the
+  // history, not about any one route, so it exercises whichever second route
+  // the running platform offers.
+  const second = process.platform === 'linux' ? 'optiscaler' : 'feeder';
+  for (const route of ['native', 'native', second, 'optiscaler']) {
     assert.equal((await handlers.get('install')(event, game, target.path, route, 'dxgi')).ok, true);
   }
   assert.equal(handlers.get('history')().rows.length, 4, 'no renderer.touch call needed');
@@ -76,14 +80,14 @@ test('install/restore IPC records all backends, not failures/cancels, and valida
   assert.equal(handlers.get('history')().rows.length, 4);
   protectedTarget = true;
   const callsBeforeWarning = installedConfigs.length;
-  for (const route of ['native', 'feeder', 'optiscaler']) {
+  for (const route of ['native', second, 'optiscaler']) {
     assert.equal((await handlers.get('install')(event, game, target.path, route, 'dxgi')).cancelled, true);
   }
   assert.equal(installedConfigs.length, callsBeforeWarning, 'cancel never reaches the installer');
   assert.equal(handlers.get('history')().rows.length, 4);
   assert.equal(riskDialogs.length, 3);
   antiCheatResponse = 1; cancel = false;
-  for (const route of ['native', 'feeder', 'optiscaler']) {
+  for (const route of ['native', second, 'optiscaler']) {
     assert.equal((await handlers.get('install')(event, game, target.path, route, 'dxgi')).ok, true);
     assert.equal(installedConfigs.at(-1).antiCheatAcknowledged, true);
   }

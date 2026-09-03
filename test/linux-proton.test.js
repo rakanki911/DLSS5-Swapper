@@ -129,7 +129,7 @@ test('an install without a Steam Play prefix still runs, and only refuses where 
       ipcMain: { handle: (name, fn) => handlers.set(name, fn) },
       dialog: { showMessageBox: async () => ({ response: 0 }) }, clipboard: { writeText() {} } },
     './src/library': { ...realRequire('./src/library'), steam: () => steamGames },
-    './src/core/scan.js': { scanGame: async () => ({ chosen: target, exeCandidates: [target], hasNativeDlss: true }) },
+    './src/core/scan.js': { scanGame: async () => ({ chosen: target, exeCandidates: [target], hasNativeDlss: true, reshade: { installed: false, file: null, kind: null, version: null, addonSupport: false } }) },
     './src/core/compatibility': { assertSafeTarget() {}, hasAntiCheat: () => false },
     './src/core/install-guards': { assertGameClosed: async () => {}, antiCheatPresent: () => false, gpuInfo: async () => [{}], gpuSupported: () => true },
     './src/shared/install-routes': { nativeDlssPresent: () => true, routesFor: () => ['native'], recommendedRoute: () => 'native' },
@@ -168,7 +168,7 @@ test('an install without a Steam Play prefix still runs, and only refuses where 
   assert.equal(attempt.code, -1, 'the runner tried to spawn Proton rather than refusing');
 });
 
-test('Vulkan is refused for the Feeder route only, and left open for OptiScaler', linuxOnly, async (t) => {
+test('the Feeder route is refused on Linux, and OptiScaler is left open', linuxOnly, async (t) => {
   const vm = require('vm');
   const { createRequire } = require('module');
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-vulkan-route-'));
@@ -181,6 +181,7 @@ test('Vulkan is refused for the Feeder route only, and left open for OptiScaler'
   const realRequire = createRequire(main);
   const handlers = new Map();
   const configs = [];
+  let reshade = { installed: false, file: null, kind: null, version: null, addonSupport: false };
   const stubs = {
     electron: { app: { setAppUserModelId() {}, whenReady: () => ({ then() {} }), on() {}, getPath: () => root },
       BrowserWindow: { fromWebContents: () => ({ isDestroyed: () => false, getContentSize: () => [1280, 860] }) },
@@ -188,7 +189,7 @@ test('Vulkan is refused for the Feeder route only, and left open for OptiScaler'
       ipcMain: { handle: (name, fn) => handlers.set(name, fn) },
       dialog: { showMessageBox: async () => ({ response: 0 }) }, clipboard: { writeText() {} } },
     './src/library': { ...realRequire('./src/library'), steam: () => [], heroic: () => [], lutris: () => [] },
-    './src/core/scan.js': { scanGame: async () => ({ chosen: target, exeCandidates: [target], hasNativeDlss: true }) },
+    './src/core/scan.js': { scanGame: async () => ({ chosen: target, exeCandidates: [target], hasNativeDlss: true, reshade }) },
     './src/core/compatibility': { assertSafeTarget() {}, hasAntiCheat: () => false },
     './src/core/install-guards': { assertGameClosed: async () => {}, antiCheatPresent: () => false, gpuInfo: async () => [{ name: 'NVIDIA GeForce RTX 5090', driver: '616.56' }], gpuSupported: () => true },
     './src/shared/install-routes': { nativeDlssPresent: () => true, routesFor: () => ['feeder', 'optiscaler'], recommendedRoute: () => 'feeder' },
@@ -208,9 +209,13 @@ test('Vulkan is refused for the Feeder route only, and left open for OptiScaler'
   vm.runInContext('payload = () => ({ source: { feeder: { ok32: true, ok64: true } } }); companionAddons = () => [];', context);
   const event = { sender: { send() {} } };
 
-  const feeder = await handlers.get('install')(event, game, target.path, 'feeder', 'vulkan');
-  assert.equal(feeder.ok, false);
-  assert.equal(feeder.code, 'errLinuxVulkanUnsupported');
+  // The Feeder is refused whatever the renderer: it can leave a Proton game
+  // unable to start, which is not something an API check would catch.
+  for (const api of ['vulkan', 'dxgi']) {
+    const feeder = await handlers.get('install')(event, game, target.path, 'feeder', api);
+    assert.equal(feeder.ok, false);
+    assert.equal(feeder.code, 'errLinuxFeederUnsupported');
+  }
 
   // OptiScaler puts a proxy DLL in the game folder and never registers a
   // layer, so nothing about it depends on the Windows registry.
@@ -218,4 +223,10 @@ test('Vulkan is refused for the Feeder route only, and left open for OptiScaler'
   assert.equal(opti.ok, true);
   assert.equal(configs.at(-1).route, 'optiscaler');
   assert.equal(configs.at(-1).api, 'vulkan');
+
+  // A proxy that is already there may belong to another mod; replacing it
+  // crashed otherwise healthy games.
+  reshade = { installed: true, file: 'dxgi.dll', kind: 'proxy', version: '6.0.0', addonSupport: false };
+  const blocked = await handlers.get('install')(event, game, target.path, 'optiscaler', 'vulkan');
+  assert.equal(blocked.code, 'errExistingReShade');
 });

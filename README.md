@@ -82,7 +82,8 @@ in Settings instead.
 
 **What works**
 
-- Swapping the DLSS runtime, and the OptiScaler route including its Vulkan path.
+- Swapping the DLSS runtime on a game that already has DLSS, and the OptiScaler route including
+  its Vulkan path.
 - ReShade Setup, run inside the prefix the game already uses — the Steam Play prefix, or the Wine
   prefix Heroic or Lutris made for it. Installs that never reach the setup do not need a prefix at
   all.
@@ -90,14 +91,19 @@ in Settings instead.
 
 **What does not**
 
-- **Vulkan through the Feeder.** It registers ReShade as a Windows implicit layer, and nothing on
-  Linux loads that: Wine hands layer enumeration to the host Vulkan loader, which loads `.so`
-  layers and never a Windows ReShade DLL. Use the OptiScaler route for Vulkan.
+- **The Feeder route**, which is refused outright. It patched launchers rather than games and left
+  Proton titles unable to start — found by [Febsho](https://github.com/Febsho/DLSS5-Swapper-Linux),
+  who shipped Linux builds and watched them break. Vulkan never reached it here anyway: the Feeder
+  registers ReShade as a Windows implicit layer, and Wine hands layer enumeration to the host
+  Vulkan loader, which loads `.so` layers and never a Windows ReShade DLL. Use Native DLSS, or
+  OptiScaler for Vulkan.
+- **A game that already has a non-add-on ReShade.** The existing proxy may belong to another mod or
+  loader, and replacing it crashed otherwise healthy games. Same source.
 - **Lutris games on a Proton runner**, which is launched through umu, and **Heroic CrossOver
   bottles**. Both are found and can still take a plain DLL swap; only the ReShade Setup step is
   unavailable.
 - **Emulators**, in practice. The Linux builds people actually run are native, and the Windows
-  builds that would work under Wine reach DLSS through Vulkan, which is the route above.
+  builds that would work under Wine go through the Feeder, which is refused above.
 - The OptiScaler GPU gate compares the NVIDIA driver against a Windows version number, and the
   Linux driver does not use the same numbering. That threshold has not been checked against the
   real DLSS 5 requirement.

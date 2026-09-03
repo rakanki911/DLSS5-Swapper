@@ -818,13 +818,21 @@ ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) =>
   // let the journal roll back the half-done install the same way it would for
   // any other failed setup.
   const proton = process.platform === 'linux' ? bottleFor(dir) : null;
-  // Vulkan through the Feeder registers ReShade as a Windows implicit layer,
-  // and nothing on Linux reads that: winevulkan hands layer enumeration to the
-  // host loader, which loads .so layers and never a Windows ReShade DLL. The
-  // OptiScaler route reaches Vulkan through a proxy DLL in the game folder
-  // instead, which is a plain file copy and works here.
-  if (process.platform === 'linux' && api === 'vulkan' && route === 'feeder') {
-    return { ok: false, code: 'errLinuxVulkanUnsupported', message: 'The Vulkan Feeder route needs a Windows implicit layer, which Proton does not load. Use the OptiScaler route for Vulkan, or select a DirectX renderer in the game.' };
+  // Both guards below come from Febsho, who shipped Linux builds and watched
+  // them break games - https://github.com/Febsho/DLSS5-Swapper-Linux. Field
+  // evidence outranks anything reasoned from here, so they are taken as given.
+  //
+  // The Feeder patched launchers rather than games and left titles unable to
+  // start. Linux keeps the routes that only copy files into the game folder.
+  // (Vulkan never reached the Feeder here anyway: it registers ReShade as a
+  // Windows implicit layer, which Proton does not load - see vulkan-layer.js.)
+  if (process.platform === 'linux' && route === 'feeder') {
+    return { ok: false, code: 'errLinuxFeederUnsupported', message: 'DLSS5-Feeder is disabled on Linux because it can leave a Proton game unable to start. Use Native DLSS on a game that already has it, or OptiScaler where the hardware allows.' };
+  }
+  // An existing proxy may belong to another mod or loader, and replacing it
+  // was a cause of Proton startup crashes in otherwise healthy games.
+  if (process.platform === 'linux' && scan.reshade.installed && !scan.reshade.addonSupport) {
+    return { ok: false, code: 'errExistingReShade', message: 'This game already has a non-add-on ReShade installation. It was left untouched to prevent a Proton crash.' };
   }
 
   const send = (e) => event.sender.send('job', e);

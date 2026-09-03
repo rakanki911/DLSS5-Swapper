@@ -194,3 +194,19 @@ test('Assassins Creed Black Flag selects the 32-bit single-player executable', a
   assert.equal(scan.chosen.api, 'dxgi');
   assert.equal(scan.chosen.apiLabel, 'DirectX 11');
 });
+
+// A name that ends in "launcher" is one too. The Feeder patching these instead
+// of the game is what left Proton titles unable to start.
+// Found by Febsho — https://github.com/Febsho/DLSS5-Swapper-Linux
+test('launcher-suffixed executables are never selected as game targets', async (t) => {
+  const gameDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-launcher-'));
+  t.after(() => fs.rmSync(gameDir, { recursive: true, force: true }));
+  const launcher = path.join(gameDir, 'Game', 'Launcher', 'MassEffectLauncher.exe');
+  const game = path.join(gameDir, 'Game', 'ME1', 'Binaries', 'Win64', 'MassEffect1.exe');
+  minimalPe(launcher, { bitness: 64, marker: 'D3D12CreateDevice' });
+  minimalPe(game, { bitness: 64, marker: 'D3D12CreateDevice' });
+
+  const scan = await scanGame(gameDir);
+  assert.equal(scan.exeCandidates.some((item) => item.path === launcher), false);
+  assert.equal(scan.chosen.path, game);
+});
