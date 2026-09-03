@@ -83,8 +83,8 @@ in Settings instead.
 **What works**
 
 - Swapping the DLSS runtime on a game that already has DLSS, and the OptiScaler route including
-  its Vulkan path. Neural Rendering has been seen running this way: `inline feature 18 evaluation
-  succeeded ... 2560x1440 [native]`, frame after frame, in a real Proton game.
+  its Vulkan path — as an install. Whether Neural Rendering then renders correctly is a separate
+  question, answered below.
 - ReShade Setup, run inside the prefix the game already uses — the Steam Play prefix, or the Wine
   prefix Heroic or Lutris made for it. Installs that never reach the setup do not need a prefix at
   all.
@@ -105,9 +105,14 @@ in Settings instead.
   unavailable.
 - **Emulators**, in practice. The Linux builds people actually run are native, and the Windows
   builds that would work under Wine go through the Feeder, which is refused above.
-- **Toggling Neural Rendering off and on in the add-on's overlay**, which crashes the game a few
-  seconds later: `EXCEPTION_ACCESS_VIOLATION reading address 0xffffffffffffffff`. Neural Rendering
-  itself is stable; it is the teardown that is not. Leave it on — it is on by default.
+- **Neural Rendering itself, visually.** It initialises, creates its feature, and costs real frame
+  time — the same menu runs at 129 fps with it off and 54 with it on — but what it draws is black.
+  The scene disappears. The log tells the flattering half of this story: `feature 18 created` on
+  every toggle, and `inline feature 18 evaluation succeeded` on a fresh start, which is why an
+  earlier version of this file claimed it worked. It does not; that claim was made from the log
+  rather than from the screen, and the screen disagrees.
+- **Toggling it off and on** has also crashed the game a few seconds later, once, with
+  `EXCEPTION_ACCESS_VIOLATION reading address 0xffffffffffffffff`.
 - The OptiScaler GPU gate compares the NVIDIA driver against a Windows version number, and the
   Linux driver does not use the same numbering. That threshold has not been checked against the
   real DLSS 5 requirement.
@@ -123,7 +128,8 @@ protontricks <appid> d3dcompiler_47
 ```
 
 Without it the log fills with `proxy encode compilation failed ... Function "isnan" is not
-defined`; with it, that error is gone entirely.
+defined`; with it, that error is gone entirely. It is still needed even though Neural Rendering
+does not render correctly afterwards — without it, nothing happens at all.
 
 **Running it**
 
@@ -139,7 +145,8 @@ starts and lists your games but cannot install. `npm run build:linux` needs it t
 `scripts/collect-payload.js`.
 
 > Tried against a real Steam Play game, twice over: once on a copy of its files with stand-in DLLs,
-> and once for real with an actual DLSS 5 payload, where the game launched and Neural Rendering ran.
+> and once for real with an actual DLSS 5 payload, where the game launched and the add-on loaded —
+> though Neural Rendering renders black, so what is verified is the install, not the result.
 > On the copy, an install and a restore ran end to end: the library
 > finds the game, the process guard reads `/proc`, the installer replaces the game's `nvngx_dlss.dll`
 > against its backup and adds the runtime, add-on and hook beside the executable, ReShade Setup
