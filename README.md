@@ -128,8 +128,10 @@ starts and lists your games but cannot install. `npm run build:linux` needs it t
 > executes inside the game's own Proton prefix and leaves an add-on-capable `dxgi.dll` (6.8.0), and
 > restore puts all eleven files back byte for byte and removes everything it added. What that cannot
 > show is whether NVIDIA's own runtime then works: the stand-ins are valid PE files and nothing more.
-> Heroic and Lutris are still untried against an install, and the OptiScaler route needs an RTX 50.
-> Keep your backups.
+> Heroic has been tried the same way: the reader finds an Epic game, resolves its prefix and wine
+> build out of Heroic's own config, and ReShade Setup runs inside that prefix too — which Heroic had
+> set to Proton rather than plain Wine, so that branch is exercised as well. Lutris is still untried
+> against an install, and the OptiScaler route needs an RTX 50. Keep your backups.
 
 ## Emulators
 

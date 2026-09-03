@@ -44,6 +44,11 @@ function contextForSteamGame(game) {
 // Steam Play one. Plain wine only needs to be pointed at it. Heroic can also
 // be configured to use Proton, and points the compatibility path at the
 // prefix folder it configured, with wine's own prefix one level inside.
+//
+// That inner `pfx` is not a second folder: Heroic drops a `pfx -> .` symlink
+// inside the prefix so a compatdata-shaped path resolves back onto it. Joining
+// `pfx` is therefore right for both shapes, and is not the redundant-looking
+// mistake it reads as. Checked against a real Heroic Proton prefix.
 function contextForWineGame(game) {
   if (process.platform !== 'linux' || !game || !game.wine) return null;
   const { bin, prefix, kind, steamPath } = game.wine;
