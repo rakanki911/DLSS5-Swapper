@@ -70,6 +70,14 @@ function createSetupRunner(context) {
       cwd: path.dirname(args[0]),
       env: { ...process.env, ...context.env }
     });
+    // Proton's `run` verb sends the program's own output to its log file, so
+    // what arrives here is Proton's diagnostics and not the setup's: a failed
+    // ReShade Setup reports an empty reason. `runinprefix` does preserve it -
+    // measured against a real prefix, 7 lines of reg.exe output against none -
+    // but it also skips the prefix file update and the game/Steam drive
+    // mappings that `run` sets up first, which the setup may well need. Not
+    // worth trading a working install for a better error message without a
+    // real ReShade Setup to test it against.
     let output = '';
     child.stdout.on('data', (data) => { output += data.toString(); });
     child.stderr.on('data', (data) => { output += data.toString(); });
