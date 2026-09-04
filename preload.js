@@ -47,5 +47,21 @@ contextBridge.exposeInMainWorld('lab', {
   addonRemove: (file) => ipcRenderer.invoke('addon-remove', file),
   restoreGame: (dir) => ipcRenderer.invoke('restore', dir),
   onJob: (handler) => ipcRenderer.on('job', (_e, event) => handler(event)),
-  pathForFile: (file) => { try { return webUtils.getPathForFile(file); } catch { return null; } }
+  pathForFile: (file) => { try { return webUtils.getPathForFile(file); } catch { return null; } },
+  checkForUpdates: () => ipcRenderer.invoke('updater-check'),
+  startUpdateDownload: () => ipcRenderer.invoke('updater-download'),
+  installUpdate: () => ipcRenderer.invoke('updater-install'),
+  cancelUpdateDownload: () => ipcRenderer.invoke('updater-cancel'),
+  getUpdateStatus: () => ipcRenderer.invoke('updater-status'),
+  setAutoCheckUpdates: (enabled) => ipcRenderer.invoke('set-auto-check-updates', enabled),
+  onUpdaterEvent: (handler) => {
+    const fn = (_e, data) => handler(data);
+    ipcRenderer.on('updater-event', fn);
+    return () => ipcRenderer.removeListener('updater-event', fn);
+  },
+  onUpdaterProgress: (handler) => {
+    const fn = (_e, data) => handler(data);
+    ipcRenderer.on('updater-progress', fn);
+    return () => ipcRenderer.removeListener('updater-progress', fn);
+  }
 });

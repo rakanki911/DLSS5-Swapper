@@ -49,7 +49,13 @@
       <div class="status-card">
         <div class="status-line"><i class="live"></i><b id="statusText" data-i18n="ready">Ready</b></div>
         <p class="status-sub">DLSS 5 Swapper</p>
-        <p class="status-sub" id="statusVersion"></p>
+        <div class="status-ver-row">
+          <p class="status-sub" id="statusVersion"></p>
+          <button id="statusUpdateBadge" class="update-badge hidden" type="button" aria-label="Update available">
+            <span class="update-badge-dot"></span>
+            <span id="statusUpdateText">Update</span>
+          </button>
+        </div>
         <div class="bar"><i id="statusBar" style="width:22%"></i></div>
       </div>
     </aside>
@@ -183,11 +189,70 @@
           <div class="about-links">
             <a class="glass-btn" href="https://github.com/rakanki911/DLSS5-Swapper" data-project="github">GitHub ↗</a>
             <a class="glass-btn" href="https://github.com/rakanki911/DLSS5-Swapper/releases/latest" data-project="releases"><span data-i18n="latestReleases">Latest releases</span> ↗</a>
+            <button class="glass-btn" id="aboutCheckUpdate" type="button"><span data-i18n="checkForUpdates">Check for updates</span></button>
           </div>
+          <p class="hint hidden" id="aboutUpdateHint" role="status"></p>
           <p class="hint hidden" id="projectLinkError" role="status" data-i18n="errProjectLink"></p>
           <p class="dim" data-i18n="aboutBy">Built by Rakan Alkhaldi</p>
         </div>
       </section>
+    </div>
+  </div>
+
+  <!-- update dialog -->
+  <div class="overlay hidden" id="dlgUpdateOverlay">
+    <div class="dialog update-dialog">
+      <div class="update-dialog-head">
+        <div class="update-badge-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2v11m0 0l4-4m-4 4L8 9M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+        </div>
+        <div>
+          <h3 id="updateDialogTitle" data-i18n="updateAvailable">Update available</h3>
+          <p class="hint" id="updateDialogSubtitle"></p>
+        </div>
+      </div>
+
+      <div class="update-version-row">
+        <span class="badge" id="updateCurrentVer">v2.2.1</span>
+        <span class="update-arrow">➔</span>
+        <span class="badge dx12" id="updateNewVer">v2.3.0</span>
+        <span class="update-size" id="updateSizeLabel"></span>
+      </div>
+
+      <label class="dlg-label" data-i18n="updateChangelog">Release Notes</label>
+      <div class="update-notes" id="updateNotes"></div>
+
+      <!-- download progress bar -->
+      <div class="update-progress-wrap hidden" id="updateProgressWrap">
+        <div class="update-progress-labels">
+          <span id="updateProgressStatus" data-i18n="updateDownloading">Downloading update…</span>
+          <span id="updateProgressStats">0%</span>
+        </div>
+        <div class="bar update-bar"><i id="updateProgressBar" style="width: 0%"></i></div>
+        <div class="update-progress-sub" id="updateProgressSub"></div>
+      </div>
+
+      <p class="hint hidden update-error-msg" id="updateDialogError" role="status"></p>
+
+      <div class="dlg-actions update-actions">
+        <a class="ghost sm" id="updateViewGithub" target="_blank" rel="noopener">GitHub ↗</a>
+        <button class="ghost sm" id="updateBtnCancel" data-i18n="updateDismiss">Later</button>
+        <button class="glass-btn sm" id="updateBtnDownload" data-i18n="updateDownloadBtn">Download and Install</button>
+        <button class="glass-btn sm hidden" id="updateBtnRestart" data-i18n="updateRestartBtn">Restart and Update</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- floating update toast -->
+  <div class="update-toast hidden" id="updateToast">
+    <div class="toast-dot"></div>
+    <div class="toast-body">
+      <b data-i18n="updateToastTitle">New update available!</b>
+      <span id="updateToastText"></span>
+    </div>
+    <div class="toast-actions">
+      <button class="glass-btn xs" id="toastViewBtn" data-i18n="viewUpdate">View</button>
+      <button class="ghost xs" id="toastDismissBtn" aria-label="Dismiss">✕</button>
     </div>
   </div>
 
