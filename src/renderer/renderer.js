@@ -278,6 +278,146 @@ $('gameQuickFilters').onclick = (event) => {
   renderGames();
 };
 
+// ---------------- in-app updater ----------------
+
+let currentUpdateInfo = null;
+
+function showUpdateDialog(info) {
+  currentUpdateInfo = info;
+  $('updateCurrentVer').textContent = `v${state.version || ''}`;
+  $('updateNewVer').textContent = `v${info.version}`;
+  $('updateDialogSubtitle').textContent = info.releaseName || `Version ${info.version}`;
+
+  const sizeMb = info.asset?.size ? Math.round(info.asset.size / (1024 * 1024)) : null;
+  $('updateSizeLabel').textContent = sizeMb ? t('updateSize', sizeMb) : '';
+  $('updateNotes').textContent = info.notes || 'No release notes provided.';
+
+  const githubLink = $('updateViewGithub');
+  if (githubLink) {
+    githubLink.href = info.releaseUrl || 'https://github.com/rakanki911/DLSS5-Swapper/releases/latest';
+  }
+
+  $('updateProgressWrap').classList.add('hidden');
+  $('updateProgressBar').style.width = '0%';
+  $('updateProgressStats').textContent = '0%';
+  $('updateProgressSub').textContent = '';
+  $('updateDialogError').classList.add('hidden');
+  $('updateDialogError').textContent = '';
+
+  $('updateBtnDownload').classList.remove('hidden');
+  $('updateBtnDownload').disabled = false;
+  $('updateBtnDownload').textContent = t('updateDownloadBtn');
+  $('updateBtnRestart').classList.add('hidden');
+  $('updateBtnCancel').textContent = t('updateDismiss');
+
+  $('dlgUpdateOverlay').classList.remove('hidden');
+}
+
+function closeUpdateDialog() {
+  $('dlgUpdateOverlay').classList.add('hidden');
+}
+
+function showUpdateToast(info) {
+  const toast = $('updateToast');
+  if (!toast) return;
+  $('updateToastText').textContent = t('updateToastBody', `v${info.version}`);
+  toast.classList.remove('hidden');
+}
+
+function hideUpdateToast() {
+  const toast = $('updateToast');
+  if (toast) toast.classList.add('hidden');
+}
+
+async function checkAndHandleUpdates(source = 'manual', uiTarget = null) {
+  let statusElem = null;
+  if (uiTarget === 'about') statusElem = $('aboutUpdateHint');
+  if (uiTarget === 'settings') statusElem = $('settingUpdateStatus');
+
+  if (statusElem) {
+    statusElem.classList.remove('hidden');
+    statusElem.textContent = t('checkingUpdates');
+  }
+
+  try {
+    const res = await window.lab.checkForUpdates();
+    if (res.available) {
+      currentUpdateInfo = res;
+      const badge = $('statusUpdateBadge');
+      if (badge) {
+        badge.classList.remove('hidden');
+        $('statusUpdateText').textContent = t('updateBadge', `v${res.version}`);
+      }
+
+      if (statusElem) {
+        statusElem.textContent = `${t('updateAvailable')} (v${res.version})`;
+      }
+
+      if (source === 'manual') {
+        showUpdateDialog(res);
+      } else {
+        showUpdateToast(res);
+      }
+    } else {
+      if (statusElem) {
+        statusElem.textContent = t('updateNotAvailable');
+      }
+    }
+    return res;
+  } catch (error) {
+    if (statusElem) {
+      statusElem.textContent = `${t('updateError')} (${error.message})`;
+    }
+    return { ok: false, error: error.message };
+  }
+}
+
+async function startUpdateDownload() {
+  const btn = $('updateBtnDownload');
+  btn.disabled = true;
+  $('updateProgressWrap').classList.remove('hidden');
+  $('updateDialogError').classList.add('hidden');
+  $('updateBtnCancel').textContent = t('cancelDownload');
+
+  try {
+    const res = await window.lab.startUpdateDownload();
+    if (res.ok) {
+      $('updateProgressStatus').textContent = t('updateDownloaded');
+      $('updateBtnDownload').classList.add('hidden');
+      $('updateBtnRestart').classList.remove('hidden');
+      $('updateBtnCancel').textContent = t('updateDismiss');
+    } else if (!res.cancelled) {
+      $('updateDialogError').textContent = res.error || t('updateError');
+      $('updateDialogError').classList.remove('hidden');
+      btn.disabled = false;
+    }
+  } catch (err) {
+    $('updateDialogError').textContent = err.message || t('updateError');
+    $('updateDialogError').classList.remove('hidden');
+    btn.disabled = false;
+  }
+}
+
+async function applyUpdateAndRestart() {
+  const btn = $('updateBtnRestart');
+  btn.disabled = true;
+  btn.textContent = t('installing');
+  try {
+    const res = await window.lab.installUpdate();
+    if (res.mode === 'dev') {
+      $('updateDialogError').textContent = res.message;
+      $('updateDialogError').classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = t('updateRestartBtn');
+    }
+  } catch (err) {
+    $('updateDialogError').textContent = err.message || t('updateError');
+    $('updateDialogError').classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = t('updateRestartBtn');
+  }
+}
+
 // ---------------- history / settings ----------------
 
 let historyRenderId = 0;
@@ -453,7 +593,16 @@ async function renderSettings() {
     <div class="set-row"><div><div class="k">${t('setLibrary')}</div><div class="v">${esc(info.stateFile)}</div></div>
       <button class="ghost sm" id="setReset">${t('setReset')}</button></div>
     <div class="set-row"><div><div class="k">${t('setPosters')}</div><div class="v">${esc(info.posterDir)}</div></div>
-      <span class="d">${t('setSaved', info.posterCount)}</span></div>`;
+      <span class="d">${t('setSaved', info.posterCount)}</span></div>
+    <div class="set-row"><div><div class="k">${t('setAutoCheckUpdates')}</div>
+      <div class="v" id="setAutoCheckUpdatesHint">${t('setAutoCheckUpdatesHint')}</div></div>
+      <button class="setting-switch" id="setAutoCheckUpdates" type="button" role="switch"
+        aria-checked="${info.autoCheckUpdates !== false}" aria-label="${t('setAutoCheckUpdates')}" aria-describedby="setAutoCheckUpdatesHint">
+        <span class="knob"></span>
+      </button></div>
+    <div class="set-row"><div><div class="k">${t('checkForUpdates')}</div>
+      <div class="v" id="settingUpdateStatus">${t('ready')}</div></div>
+      <button class="ghost sm" id="settingCheckUpdate">${t('checkForUpdates')}</button></div>`;
   $('setGroupGames').onclick = async () => {
     const toggle = $('setGroupGames');
     const enabled = toggle.getAttribute('aria-checked') !== 'true';
@@ -476,6 +625,27 @@ async function renderSettings() {
     await window.lab.setAutoScanDrives(enabled);
     await load();
     await renderSettings();
+  };
+  $('setAutoCheckUpdates').onclick = async () => {
+    const toggle = $('setAutoCheckUpdates');
+    const enabled = toggle.getAttribute('aria-checked') !== 'true';
+    toggle.setAttribute('aria-checked', String(enabled));
+    toggle.disabled = true;
+    try {
+      await window.lab.setAutoCheckUpdates(enabled);
+    } finally {
+      toggle.disabled = false;
+    }
+  };
+  $('settingCheckUpdate').onclick = async () => {
+    const btn = $('settingCheckUpdate');
+    btn.disabled = true;
+    $('settingUpdateStatus').textContent = t('checkingUpdates');
+    try {
+      await checkAndHandleUpdates('manual', 'settings');
+    } finally {
+      btn.disabled = false;
+    }
   };
   $('setAddFolder').onclick = async () => { if (await window.lab.addFolder()) load(); };
   for (const b of $('settings').querySelectorAll('[data-unroot]')) {
@@ -1121,10 +1291,67 @@ $('recents').onclick = (e) => {
 $('overlay').onclick = (e) => { if (e.target === $('overlay')) closeSheet(); };
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (!$('dlgOverlay').classList.contains('hidden')) closeDialog();
+  if (!$('dlgUpdateOverlay').classList.contains('hidden')) closeUpdateDialog();
+  else if (!$('dlgOverlay').classList.contains('hidden')) closeDialog();
   else closeSheet();
 });
 window.lab.onJob((e) => jobLog(`${e.code === 'historySaveWarning' ? t(e.code) : e.code} ${JSON.stringify(e.params)}`));
+
+// Update UI bindings
+$('statusUpdateBadge').onclick = () => {
+  if (currentUpdateInfo) showUpdateDialog(currentUpdateInfo);
+  else checkAndHandleUpdates('manual');
+};
+$('aboutCheckUpdate').onclick = () => checkAndHandleUpdates('manual', 'about');
+$('updateBtnCancel').onclick = async () => {
+  if (!$('updateBtnDownload').classList.contains('hidden') && $('updateBtnDownload').disabled) {
+    try { await window.lab.cancelUpdateDownload(); } catch {}
+  }
+  closeUpdateDialog();
+};
+$('updateBtnDownload').onclick = startUpdateDownload;
+$('updateBtnRestart').onclick = applyUpdateAndRestart;
+$('toastViewBtn').onclick = () => {
+  hideUpdateToast();
+  if (currentUpdateInfo) showUpdateDialog(currentUpdateInfo);
+  else checkAndHandleUpdates('manual');
+};
+$('toastDismissBtn').onclick = hideUpdateToast;
+$('dlgUpdateOverlay').onclick = (e) => { if (e.target === $('dlgUpdateOverlay')) closeUpdateDialog(); };
+
+if (window.lab.onUpdaterEvent) {
+  window.lab.onUpdaterEvent((event) => {
+    if (event.status === 'available' && event.info) {
+      currentUpdateInfo = event.info;
+      const badge = $('statusUpdateBadge');
+      if (badge) {
+        badge.classList.remove('hidden');
+        $('statusUpdateText').textContent = t('updateBadge', `v${event.info.version}`);
+      }
+      showUpdateToast(event.info);
+    } else if (event.status === 'downloaded') {
+      $('updateProgressStatus').textContent = t('updateDownloaded');
+      $('updateBtnDownload').classList.add('hidden');
+      $('updateBtnRestart').classList.remove('hidden');
+      $('updateBtnCancel').textContent = t('updateDismiss');
+    } else if (event.status === 'error' && event.error) {
+      $('updateDialogError').textContent = event.error;
+      $('updateDialogError').classList.remove('hidden');
+      $('updateBtnDownload').disabled = false;
+    }
+  });
+}
+
+if (window.lab.onUpdaterProgress) {
+  window.lab.onUpdaterProgress((p) => {
+    $('updateProgressBar').style.width = (p.percent || 0) + '%';
+    $('updateProgressStats').textContent = (p.percent || 0) + '%';
+    const mbTransferred = ((p.transferred || 0) / (1024 * 1024)).toFixed(1);
+    const mbTotal = ((p.total || 0) / (1024 * 1024)).toFixed(1);
+    const mbSpeed = ((p.speed || 0) / (1024 * 1024)).toFixed(1);
+    $('updateProgressSub').textContent = `${mbTransferred} MB / ${mbTotal} MB · ${mbSpeed} MB/s`;
+  });
+}
 
 const zone = $('dropZone');
 ['dragenter', 'dragover'].forEach((n) => zone.addEventListener(n, (e) => { e.preventDefault(); zone.classList.add('over'); }));
@@ -1141,6 +1368,7 @@ document.addEventListener('drop', (e) => e.preventDefault());
 (async () => {
   const boot = await window.lab.boot();
   state.theme = boot.theme || 'light';
+  state.version = boot.version;
   state.groupGamesByStore = boot.groupGamesByStore !== false;
   document.documentElement.dataset.theme = state.theme;
   applyLang(boot.lang || 'en');
