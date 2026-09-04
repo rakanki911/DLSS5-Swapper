@@ -146,8 +146,16 @@ async function copyOver(src, dest) {
 
 function runSetup(setupExe, args, log) {
   return new Promise((resolve) => {
-    log('runningSetup', { setup: path.basename(setupExe), args: args.slice(1).join(' ') });
-    const child = spawn(setupExe, args, { windowsHide: true });
+    // Only ever spawn an installer that actually exists on disk as a real
+    // file; this stops a tampered/attacker-controlled path or argument list
+    // from being handed to child_process.
+    const resolvedExe = path.resolve(setupExe);
+    if (!Array.isArray(args) || !fs.existsSync(resolvedExe) || !fs.statSync(resolvedExe).isFile()) {
+      resolve({ code: -1, output: 'Refusing to run invalid installer path.' });
+      return;
+    }
+    log('runningSetup', { setup: path.basename(resolvedExe), args: args.slice(1).join(' ') });
+    const child = spawn(resolvedExe, args, { windowsHide: true, shell: false });
     let output = '';
     child.stdout.on('data', (d) => { output += d.toString(); });
     child.stderr.on('data', (d) => { output += d.toString(); });
