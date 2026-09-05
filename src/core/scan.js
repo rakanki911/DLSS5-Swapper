@@ -259,7 +259,8 @@ function detectEngineApi(file) {
     'left4dead2.exe': ['bin/shaderapidx9.dll', 'bin/engine.dll'],
     'killingfloor.exe': ['D3D9Drv.dll', 'D3DDrv.dll', 'OpenGLDrv.dll'],
     'farcry5.exe': ['FC_m64.dll'],
-    'watch_dogs.exe': ['Disrupt_b64.dll']
+    'watch_dogs.exe': ['Disrupt_b64.dll'],
+    'kingdomcome.exe': ['WHGame.dll']
   }[path.basename(file).toLowerCase()];
   if (!modules) return null;
   const bitness = pe.getBitness(file);

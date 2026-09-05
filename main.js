@@ -189,7 +189,7 @@ const posterDir = () => path.join(app.getPath('userData'), 'posters');
 const keyFor = (dir) => crypto.createHash('sha1').update(path.resolve(dir).toLowerCase()).digest('hex').slice(0, 16);
 // Bump when scan metadata or detection changes so an old wrong result is not
 // kept forever merely because the folder was scanned by an earlier release.
-const SCAN_RULES = 6;
+const SCAN_RULES = 7;
 
 function loadState() {
   try {

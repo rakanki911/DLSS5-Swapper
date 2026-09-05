@@ -24,7 +24,8 @@ test('small Source, GoldSrc, UE2 and Ubisoft dispatchers use actual engine-modul
     ['hl.exe', 'hw.dll', 32, 'wglCreateContext', 'opengl'],
     ['KillingFloor.exe', 'System/D3D9Drv.dll', 32, 'Direct3DCreate9', 'd3d9'],
     ['FarCry5.exe', 'bin/FC_m64.dll', 64, 'D3D11CreateDevice', 'dxgi'],
-    ['Watch_Dogs.exe', 'bin/Disrupt_b64.dll', 64, 'D3D11CreateDevice', 'dxgi']
+    ['Watch_Dogs.exe', 'bin/Disrupt_b64.dll', 64, 'D3D11CreateDevice', 'dxgi'],
+    ['KingdomCome.exe', 'WHGame.dll', 64, 'D3D12CreateDevice', 'dxgi']
   ]) {
     const dir = path.join(root, name);
     const nested = /Killing|FarCry|Watch/.test(name) ? path.dirname(module) : '';
