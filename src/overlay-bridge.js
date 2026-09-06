@@ -16,6 +16,9 @@ module.exports = async function startOverlayBridge({ BrowserWindow, userData }) 
   const profile = path.basename(userData);
   const pipeName = `\\\\.\\pipe\\${profile}-overlay-${token}`;
   let latest = null, sequence = 0, client = null, closed = false, ready = false;
+  // CSS height of the panel, and the height every transmitted frame carries, so
+  // the add-on's pointer coordinates map 1:1 onto the offscreen window.
+  let panelHeight = 0;
   let server = null;
   let runtimeStatus = null, commandTime = 0, commandCount = 0;
   const win = new BrowserWindow({ show: false, width: protocol.WIDTH, height: 900, transparent: true, frame: false,
@@ -30,6 +33,7 @@ module.exports = async function startOverlayBridge({ BrowserWindow, userData }) 
   ipcMain.on('lab-overlay-control', control);
   const resize = (event, height) => {
     if (closed || event.sender !== win.webContents || !Number.isInteger(height) || height < 200 || height > protocol.MAX_HEIGHT) return;
+    panelHeight = height;
     win.setContentSize(protocol.WIDTH, height);
     win.webContents.enableDeviceEmulation({ screenPosition: 'desktop', screenSize: { width: protocol.WIDTH, height }, deviceScaleFactor: 1, viewSize: { width: protocol.WIDTH, height }, viewPosition: { x: 0, y: 0 }, scale: 1 });
     win.webContents.invalidate();
@@ -44,11 +48,61 @@ module.exports = async function startOverlayBridge({ BrowserWindow, userData }) 
     client.sequence = latest.readUInt32LE(8);
     client.write(latest);
   }
+  // Chromium renders the offscreen panel at the display's device pixel ratio.
+  // enableDeviceEmulation fixes the CSS layout but NOT the surface it hands back,
+  // so on a scaled desktop (125%, 150%, ...) every frame arrives wider than the
+  // fixed transport width and used to be discarded in silence: the add-on then
+  // connected and waited forever on its "shared panel design" message. Resample
+  // back to the transport size instead, and keep the panel's CSS height as the
+  // target so pointer coordinates still map 1:1.
+  function box(src, sw, sh, dw, dh) {
+    if (src.length !== sw * sh * 4) return null;
+    const out = Buffer.allocUnsafe(dw * dh * 4), xr = sw / dw, yr = sh / dh;
+    for (let y = 0; y < dh; ++y) {
+      const y0 = Math.floor(y * yr), y1 = Math.min(sh, Math.max(y0 + 1, Math.ceil((y + 1) * yr)));
+      for (let x = 0; x < dw; ++x) {
+        const x0 = Math.floor(x * xr), x1 = Math.min(sw, Math.max(x0 + 1, Math.ceil((x + 1) * xr)));
+        let b = 0, g = 0, r = 0, a = 0, n = 0;
+        for (let sy = y0; sy < y1; ++sy) {
+          let i = (sy * sw + x0) * 4;
+          for (let sx = x0; sx < x1; ++sx, i += 4) { b += src[i]; g += src[i + 1]; r += src[i + 2]; a += src[i + 3]; ++n; }
+        }
+        // Averaging premultiplied BGRA is correct; protocol.frame un-multiplies.
+        const o = (y * dw + x) * 4;
+        out[o] = (b / n + 0.5) | 0; out[o + 1] = (g / n + 0.5) | 0;
+        out[o + 2] = (r / n + 0.5) | 0; out[o + 3] = (a / n + 0.5) | 0;
+      }
+    }
+    return out;
+  }
+  let paintWarned = false;
+  const refuse = message => { if (!paintWarned) { paintWarned = true; console.error('Lab overlay: dropping panel frames. ' + message); } };
+  function surfaceBitmap(image) {
+    const { width, height } = image.getSize();
+    if (!width || !height) return null;                       // transient empty frame
+    const target = panelHeight || Math.round(height * protocol.WIDTH / width);
+    if (target < 1 || target > protocol.MAX_HEIGHT) { refuse(`Panel height ${target} is outside the transport range.`); return null; }
+    if (width === protocol.WIDTH && height === target) {
+      const bitmap = image.toBitmap();
+      if (bitmap.length === width * height * 4) return { bitmap, height: target };
+    }
+    // Chromium's own resampler first; it is not obliged to honour the request.
+    const scaled = image.resize({ width: protocol.WIDTH, height: target, quality: 'good' });
+    const size = scaled.getSize(), bitmap = scaled.toBitmap();
+    if (size.width === protocol.WIDTH && size.height === target && bitmap.length === protocol.WIDTH * target * 4)
+      return { bitmap, height: target };
+    const boxed = box(image.toBitmap(), width, height, protocol.WIDTH, target);
+    if (boxed) return { bitmap: boxed, height: target };
+    refuse(`Offscreen surface ${width}x${height} could not be resampled to ${protocol.WIDTH}x${target}.`);
+    return null;
+  }
   win.webContents.on('paint', (_event, _dirty, image) => {
     if (!ready || closed) return;
-    const { width, height } = image.getSize();
-    if (width !== protocol.WIDTH || height > protocol.MAX_HEIGHT) return;
-    latest = protocol.frame(image.toBitmap(), width, height, ++sequence);
+    const surface = surfaceBitmap(image);
+    if (!surface) return;
+    try { latest = protocol.frame(surface.bitmap, protocol.WIDTH, surface.height, ++sequence); }
+    catch (error) { return refuse(error.message); }
+    paintWarned = false;
     sendLatest();
   });
   function close() {
@@ -68,6 +122,7 @@ module.exports = async function startOverlayBridge({ BrowserWindow, userData }) 
   preferences.events.on('change',preferenceChanged);
   const height = Math.ceil(await win.webContents.executeJavaScript(`document.querySelector('#panel').getBoundingClientRect().height`));
   if (height < 1 || height > protocol.MAX_HEIGHT) { win.destroy(); throw Error('Overlay panel height exceeds its bounded surface'); }
+  panelHeight = height;
   win.setContentSize(protocol.WIDTH, height);
   // Fixed CSS pixels regardless of desktop DPI. No scaling/reflow in the native UI.
   win.webContents.enableDeviceEmulation({ screenPosition: 'desktop', screenSize: { width: protocol.WIDTH, height }, deviceScaleFactor: 1, viewSize: { width: protocol.WIDTH, height }, viewPosition: { x: 0, y: 0 }, scale: 1 });
