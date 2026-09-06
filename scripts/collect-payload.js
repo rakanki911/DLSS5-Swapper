@@ -59,7 +59,7 @@ async function pinned(component) {
   const dest = path.join(CACHE, name);
   if (fs.existsSync(dest) && sha256(dest) === expected) return dest;
   console.log(`  downloading ${name}`);
-  const response = await fetch(url, { headers: { 'User-Agent': 'DLSS5-Swapper-build' } });
+  const response = await fetch(url, { redirect: 'error', headers: { 'User-Agent': 'DLSS5-Swapper-build' } });
   if (!response.ok) throw new Error(`Download failed (${response.status}): ${url}`);
   fs.writeFileSync(dest, Buffer.from(await response.arrayBuffer()));
   const actual = sha256(dest);
