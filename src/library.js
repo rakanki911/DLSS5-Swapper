@@ -40,6 +40,19 @@ function regKeys(key) {
   }
 }
 
+// Every value of one name below a key, however deep. reg.exe costs a process
+// per call, so a tree that is several keys deep is read in one recursive query
+// rather than walked a level at a time.
+function regSearch(key, value) {
+  try {
+    const out = registryRunner(['query', key, '/s', '/v', value]);
+    return [...out.matchAll(new RegExp('^\\s+' + value + '\\s+REG_\\w+\\s+(.+)$', 'gim'))]
+      .map((m) => m[1].trim());
+  } catch {
+    return [];
+  }
+}
+
 // Valve's KeyValues format is regular enough to read with one pattern.
 const kv = (text, key) => (text.match(new RegExp(`"${key}"\\s+"([^"]+)"`, 'i')) || [])[1];
 
@@ -269,6 +282,148 @@ function folder(root, label = 'My folders', onlyGames = false) {
     .map((e) => ({ launcher: label, id: null, name: e.name, dir: path.join(root, e.name), poster: null }));
 }
 
+// ---------- Xbox app / Microsoft Store ----------
+// The Xbox app records its library in two places, and both are read because
+// each covers a case the other misses. Every drive it installs to carries a
+// `.GamingRoot` marker naming the games folder on that drive, usually
+// `XboxGames`, whose children are the games. Gaming Services also records each
+// package under PackageRepository\Root, pointing into `WindowsApps` - a
+// junction back into the same install, which finds a game whose drive marker
+// has gone missing.
+
+// "RGBX", a version, then the folder as UTF-16 with a terminating null.
+function gamingRootFolder(drive) {
+  let buf;
+  try { buf = fs.readFileSync(path.join(drive, '.GamingRoot')); } catch { return null; }
+  if (buf.length < 10 || buf.toString('latin1', 0, 4) !== 'RGBX') return null;
+  const decoded = buf.toString('utf16le', 8);
+  const end = decoded.indexOf('\0');
+  const relative = (end === -1 ? decoded : decoded.slice(0, end)).trim();
+  if (!relative) return null;
+  const dir = path.resolve(drive, relative);
+  return fs.existsSync(dir) ? dir : null;
+}
+
+// A game holds `Content`; its siblings - `GameSave` above all - do not.
+function isXboxGameFolder(dir) {
+  const content = path.join(dir, 'Content');
+  let stat;
+  try { stat = fs.statSync(content); } catch { return false; }
+  return stat.isDirectory() &&
+    (fs.existsSync(path.join(content, 'MicrosoftGame.config')) || holdsGame(content, 1));
+}
+
+const CONFIGS = (dir) => [path.join(dir, 'Content', 'MicrosoftGame.config'),
+  path.join(dir, 'MicrosoftGame.config')];
+
+function readConfig(dir, pattern) {
+  for (const config of CONFIGS(dir)) {
+    let text;
+    try { text = fs.readFileSync(config, 'utf8'); } catch { continue; }
+    const found = (text.match(pattern) || [])[1];
+    if (found) return found.trim();
+  }
+  return null;
+}
+
+// The folder has had the characters Windows forbids stripped out of it -
+// "Magic- Olden Era" - while the config keeps the title the store shows. A
+// name deferred to the package's resource table cannot be read from here.
+function xboxDisplayName(dir) {
+  const name = readConfig(dir, /DefaultDisplayName\s*=\s*"([^"]+)"/i);
+  return name && !/^ms-resource:/i.test(name) ? name : null;
+}
+
+// Mintrocket.DaveTheDiver_1.0.145.0_x64__mnyz31d5jqk06 -> Dave The Diver.
+const PACKAGE_FOLDER = /^[^_]+_\d[\d.]*_[^_]*__[^_]+$/;
+function nameFromPackage(folder) {
+  const identity = folder.split('_')[0].split('.').pop() || folder;
+  return identity.replace(/([a-z0-9])([A-Z])/g, '$1 $2').trim();
+}
+
+// "Mintrocket.DaveTheDiver" - the name both routes agree on. Comparing paths
+// cannot tell they reached the same game, because the junction that joins
+// those paths is not always resolvable.
+function xboxIdentity(dir) {
+  const identity = readConfig(dir, /<Identity\b[^>]*\bName\s*=\s*"([^"]+)"/i);
+  if (identity) return identity;
+  const folder = path.basename(dir);
+  return PACKAGE_FOLDER.test(folder) ? folder.split('_')[0] : null;
+}
+
+// One recursive read: every package sits at the bottom of the repository.
+function xboxPackageRoots() {
+  const roots = [];
+  for (const raw of regSearch('HKLM\\SOFTWARE\\Microsoft\\GamingServices\\PackageRepository\\Root', 'Root')) {
+    // Written as an extended-length path, which nothing else here expects.
+    const dir = raw.replace(/^\\\\\?\\/, '').replace(/[\\/]+$/, '');
+    if (dir && fs.existsSync(dir)) roots.push(dir);
+  }
+  return roots;
+}
+
+// Out of `WindowsApps` and back to the flat-file install, which is the copy
+// that can be written to. A package that is not a junction stays where it is.
+function xboxGameDir(packageRoot) {
+  let real = packageRoot;
+  // Only the native call resolves the path in one go. The JavaScript one
+  // walks it with lstat, and lstat on `WindowsApps` itself is EPERM for
+  // anyone but an administrator, so on Node 20 it fails outright.
+  for (const resolve of [(p) => fs.realpathSync.native(p), (p) => fs.realpathSync(p)]) {
+    try { real = resolve(packageRoot); break; } catch { /* try the next one */ }
+  }
+  if (path.basename(real).toLowerCase() === 'content') {
+    const parent = path.dirname(real);
+    if (isXboxGameFolder(parent)) return parent;
+  }
+  return real;
+}
+
+function xbox(options = {}) {
+  const found = new Map();
+  const byIdentity = new Map();
+
+  const add = (dir, id) => {
+    const resolved = path.resolve(dir);
+    const key = resolved.toLowerCase();
+    const identity = (xboxIdentity(resolved) || '').toLowerCase();
+    const already = found.get(key) || (identity ? byIdentity.get(identity) : null);
+    if (already) {
+      // Reached twice; only the registry route knows the package name.
+      if (id && !already.id) already.id = id;
+      return;
+    }
+    const folderName = path.basename(resolved);
+    const name = xboxDisplayName(resolved) ||
+      (PACKAGE_FOLDER.test(folderName) ? nameFromPackage(folderName) : folderName);
+    if (NOT_A_GAME.test(name)) return;
+    const game = { launcher: 'Xbox', id: id || null, name, dir: resolved, poster: null };
+    found.set(key, game);
+    if (identity) byIdentity.set(identity, game);
+  };
+
+  // The sweep goes first: it lands on the flat-file install, the copy that can
+  // be written to. Its drive list is Windows-only, and asking for it anywhere
+  // else would pay for the PowerShell fallback inside drives().
+  const roots = options.drives || (process.platform === 'win32' ? drives() : []);
+  for (const drive of roots) {
+    const root = gamingRootFolder(drive);
+    if (!root) continue;
+    let entries = [];
+    try { entries = fs.readdirSync(root, { withFileTypes: true }); } catch { continue; }
+    for (const entry of entries) {
+      if (!entry.isDirectory() || NOT_A_GAME_DIR.test(entry.name)) continue;
+      const dir = path.join(root, entry.name);
+      if (isXboxGameFolder(dir)) add(dir);
+    }
+  }
+
+  for (const packageRoot of xboxPackageRoots()) {
+    add(xboxGameDir(packageRoot), path.basename(packageRoot));
+  }
+  return [...found.values()];
+}
+
 // One game can be installed twice - a launcher copy and a loose copy. They are
 // different installs, so both are kept; only the exact same folder is merged.
 function dedupe(games) {
@@ -316,7 +471,7 @@ function filterExcluded(games, excludedRoots = []) {
 }
 
 function discover(extraFolders = [], scanDrives = false, excludedRoots = [], findAutoRoots = autoRoots) {
-  const found = [...steam(), ...epic(), ...gog(), ...ubisoft()];
+  const found = [...steam(), ...epic(), ...gog(), ...ubisoft(), ...xbox()];
   const roots = (scanDrives ? findAutoRoots() : [])
     .filter((root) => !excludedRoots.some((excluded) => isInside(root, excluded)));
   for (const dir of roots) found.push(...folder(dir, 'My folders', true));
@@ -327,4 +482,7 @@ function discover(extraFolders = [], scanDrives = false, excludedRoots = [], fin
   return { games: dedupe(filterExcluded(found, excludedRoots)), roots };
 }
 
-module.exports = { discover, folder, dedupe, autoRoots, drives, isInside, filterExcluded, steam, linuxSteamRoots, gog, ubisoft, setRegistryRunner };
+module.exports = {
+  discover, folder, dedupe, autoRoots, drives, isInside, filterExcluded,
+  steam, linuxSteamRoots, gog, ubisoft, xbox, gamingRootFolder, setRegistryRunner
+};
