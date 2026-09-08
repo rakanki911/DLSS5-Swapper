@@ -814,6 +814,7 @@ async function openSheet(dir, keepLog = false) {
   // fact tile would only repeat it.
   const pick = chosenExe(d, dir);
   const inGameDlss = (d.currentDlss && d.currentDlss.version) || null;
+  const neuralModel = d.files.find((f) => /^nvngx_dlssnr\.dll$/i.test(f.name)) || null;
   const showExeFact = d.exes.length < 2;
 
   $('sheet').innerHTML = `
@@ -844,7 +845,13 @@ async function openSheet(dir, keepLog = false) {
         ${spec(t('installedBackend'), esc(d.installedRoute === 'optiscaler' ? 'OptiScaler DLSS-NR' : d.installedRoute ? 'ReShade' : t('none')), d.installedRoute ? 'on' : 'off')}
         ${spec('DLSS', pick && selectedRoute(d, pick, dir) === 'optiscaler' ? esc(inGameDlss || t('none')) : dlssValue(inGameDlss, d.newDlss, upToDate))}
         ${d.optiscaler ? spec('OptiScaler', esc(d.optiscaler.installed ? d.optiscaler.version : t('notInstalled')), d.optiscaler.installed ? 'on' : 'off') : ''}
-        ${spec(t('fAddon'), esc(d.addon ? t('installed') : t('notPresent')), d.addon ? 'on' : 'off')}
+        ${pick && selectedRoute(d, pick, dir) === 'optiscaler'
+          // The RenoDX add-on belongs to the ReShade routes; OptiScaler never
+          // installs it, so "DLSS 5 add-on: not present" read as a failure
+          // right after a successful install. What that route does need is
+          // the neural model beside the executable.
+          ? spec(t('fNeural'), esc(neuralModel ? (neuralModel.version || t('installed')) : t('notPresent')), neuralModel ? 'on' : 'off')
+          : spec(t('fAddon'), esc(d.addon ? t('installed') : t('notPresent')), d.addon ? 'on' : 'off')}
         ${spec(t('fReShade'), esc(d.reshade.installed
             ? d.reshade.version + (d.reshade.addonSupport ? ' + ' + t('addonShort') : '')
             : t('notInstalled')), d.reshade.installed ? 'on' : 'off')}
@@ -953,6 +960,11 @@ async function runJob(kind, dir) {
 
   if (res.ok) {
     jobLog(kind === 'install' ? `done - ${res.replaced} replaced, ${res.added} added` : 'done - originals restored');
+    // The line above is a tally for a bug report. This one is for the person
+    // watching: the button goes back to "Install", the log ends on a count,
+    // and nothing said in their language that it worked and what to do next.
+    const route = pick ? selectedRoute(sheetDetails, pick, dir) : null;
+    jobLog(kind === 'install' ? t('installDone', route === 'optiscaler' ? 'OptiScaler DLSS-NR' : 'DLSS 5') : t('restoreDone'));
     log(`${kind === 'install' ? 'Installed' : 'Restored'}: ${dir}`);
     if ($('view-history').classList.contains('active')) await renderHistory();
     // Recent Games tracks what was actually swapped, not what was browsed.
