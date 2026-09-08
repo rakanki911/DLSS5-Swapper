@@ -64,8 +64,17 @@ module.exports = function registerOverlayIpc({ app, ipcMain, dialog, shell, wind
     const confirm = await dialog.showMessageBox(window(), { type: 'question', message: 'Is the test game closed?', detail: 'Remove only the unchanged overlay this app copied. Keep ReShade, DLSS, presets, and every original file.', buttons: ['Cancel', 'Remove test overlay'], defaultId: 0, cancelId: 0 });
     if (confirm.response === 1) library().uninstall(id);
   });
+  // From source, the add-on's own folder. Installed, that path is inside
+  // app.asar - Explorer cannot open it and said so in a dialog - and the
+  // sources are not shipped at all, so open the folder holding the built
+  // add-on instead, and fall back to the sources on GitHub when even that
+  // is gone.
   handle('source', async () => {
-    const error = await shell.openPath(path.join(appRoot, 'overlay'));
+    const fs = require('node:fs');
+    const folders = app.isPackaged ? [path.dirname(builtin())] : [path.join(appRoot, 'overlay'), path.dirname(builtin())];
+    const folder = folders.find(dir => fs.existsSync(dir));
+    if (!folder) { await shell.openExternal(`${require('./core/project-links').links.github}/tree/main/overlay`); return; }
+    const error = await shell.openPath(folder);
     if (error) throw Error(error);
   });
 };
