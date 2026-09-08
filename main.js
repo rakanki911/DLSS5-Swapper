@@ -27,6 +27,7 @@ const installRoutes = require('./src/shared/install-routes');
 const renderingApi = require('./src/shared/rendering-api');
 const { projectUrl } = require('./src/core/project-links');
 const optiscaler = require('./src/core/optiscaler');
+const { missingPayload } = require('./src/core/payload-guidance');
 const backends = require('./src/core/backend-manager');
 const journal = require('./src/core/file-journal');
 const guards = require('./src/core/install-guards');
@@ -1349,7 +1350,11 @@ async function exclusiveMutation(work) {
 
 ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) => exclusiveMutation(async () => {
   const p = payload();
-  if (!p) return { ok: false, message: 'No payload found - run "npm run payload" in app/' };
+  if (!p) return { ok: false, ...missingPayload({
+    packaged: app.isPackaged,
+    resourcesPath: process.resourcesPath || __dirname,
+    appRoot: __dirname
+  }) };
   const scan = await scanGame(dir);
   if (!scan.chosen) return { ok: false, message: 'No game executable found' };
 
