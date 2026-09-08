@@ -263,6 +263,9 @@ app.whenReady().then(async () => {
   await sheetReady();
   assert.equal(await run(`window.lab.testInstallCalls()[0].route`), 'optiscaler');
   assert.equal(await run(`sheetDetails.installedRoute`), 'optiscaler');
+  // A whole install takes the button away; a second click cannot add anything.
+  assert.equal(await run(`$('doInstall').disabled`), true);
+  assert.match(await run(`$('doInstall').textContent`), /OptiScaler DLSS-NR is installed/);
   await select('backendChoice', 'reshade');
   await sheetReady();
   assert.equal(await run(`$('routeChoice').value`), 'native');
@@ -286,7 +289,15 @@ app.whenReady().then(async () => {
   }
   await run(`window.lab.testInstallIssue(null); applyLang('en'); openSheet(state.games[0].dir, true)`);
   await sheetReady();
-  assert.equal(await run(`$('doInstall').disabled`), false);
+  // The issue no longer governs the button. What does is the native install
+  // already in the game, which is whole - so it stays disabled and says so.
+  assert.equal(await run(`Boolean(document.querySelector('#sheet [role="alert"]'))`), false);
+  assert.equal(await run(`$('doInstall').textContent`), 'DLSS 5 is installed');
+  assert.equal(await run(`$('doInstall').disabled`), true);
+  assert.equal(await run(`$('doRestore').disabled`), false);
+  // With the add-on gone the install is not whole any more, and the button
+  // comes back so it can be redone. Everything below runs in that state.
+  await run(`window.lab.testInstallWhole(false)`);
   for (const [lang, theme] of [['en', 'light'], ['ar', 'dark']]) {
     await run(`window.lab.testAntiCheatWarning(true); applyLang('${lang}'); document.documentElement.dataset.theme = '${theme}'; openSheet(state.games[0].dir, true)`);
     await sheetReady();

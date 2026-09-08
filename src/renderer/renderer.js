@@ -670,9 +670,26 @@ function selectedRoute(d, pick, dir) {
   return routes[0];
 }
 
+// Whether the route on screen is already in this game, for this executable,
+// and whether what is there is whole. A whole install takes the button away:
+// there is nothing a second click could add, and people were clicking twice
+// to make sure. A broken one - the hook overwritten, ReShade or the add-on
+// gone - keeps it, so the install can be redone over the damage.
+function installedHere(d, pick, dir) {
+  const route = pick && selectedRoute(d, pick, dir);
+  if (!route || route !== d.installedRoute) return null;
+  if (d.installedExe && pick.rel.toLowerCase() !== String(d.installedExe).toLowerCase()) return null;
+  const whole = route === 'optiscaler'
+    ? Boolean(d.optiscaler && d.optiscaler.installed)
+    : Boolean(d.reshade && d.reshade.installed && d.addon);
+  return { route, whole };
+}
+
 function installLabel(d, pick, dir) {
   const route = pick && selectedRoute(d, pick, dir);
   if (d.installedRoute && route !== d.installedRoute) return t('applyBackend');
+  const here = installedHere(d, pick, dir);
+  if (here && here.whole) return t('alreadyInstalled', route === 'optiscaler' ? 'OptiScaler DLSS-NR' : 'DLSS 5');
   return route === 'optiscaler' ? t('installOpti') : t('install');
 }
 
@@ -814,6 +831,7 @@ async function openSheet(dir, keepLog = false) {
   // fact tile would only repeat it.
   const pick = chosenExe(d, dir);
   const inGameDlss = (d.currentDlss && d.currentDlss.version) || null;
+  const neuralModel = d.files.find((f) => /^nvngx_dlssnr\.dll$/i.test(f.name)) || null;
   const showExeFact = d.exes.length < 2;
 
   $('sheet').innerHTML = `
@@ -844,7 +862,13 @@ async function openSheet(dir, keepLog = false) {
         ${spec(t('installedBackend'), esc(d.installedRoute === 'optiscaler' ? 'OptiScaler DLSS-NR' : d.installedRoute ? 'ReShade' : t('none')), d.installedRoute ? 'on' : 'off')}
         ${spec('DLSS', pick && selectedRoute(d, pick, dir) === 'optiscaler' ? esc(inGameDlss || t('none')) : dlssValue(inGameDlss, d.newDlss, upToDate))}
         ${d.optiscaler ? spec('OptiScaler', esc(d.optiscaler.installed ? d.optiscaler.version : t('notInstalled')), d.optiscaler.installed ? 'on' : 'off') : ''}
-        ${spec(t('fAddon'), esc(d.addon ? t('installed') : t('notPresent')), d.addon ? 'on' : 'off')}
+        ${pick && selectedRoute(d, pick, dir) === 'optiscaler'
+          // The RenoDX add-on belongs to the ReShade routes; OptiScaler never
+          // installs it, so "DLSS 5 add-on: not present" read as a failure
+          // right after a successful install. What that route does need is
+          // the neural model beside the executable.
+          ? spec(t('fNeural'), esc(neuralModel ? (neuralModel.version || t('installed')) : t('notPresent')), neuralModel ? 'on' : 'off')
+          : spec(t('fAddon'), esc(d.addon ? t('installed') : t('notPresent')), d.addon ? 'on' : 'off')}
         ${spec(t('fReShade'), esc(d.reshade.installed
             ? d.reshade.version + (d.reshade.addonSupport ? ' + ' + t('addonShort') : '')
             : t('notInstalled')), d.reshade.installed ? 'on' : 'off')}
@@ -854,7 +878,7 @@ async function openSheet(dir, keepLog = false) {
         `<div class="filerow"><span class="f">${esc(f.rel)}</span><span class="v">${esc(f.version || '—')}</span></div>`).join('')}</div>` : ''}
 
       <div class="sheet-actions">
-        <button class="btn-install" id="doInstall"${d.ok && pick && !pick.installIssue && routesFor(pick).length ? '' : ' disabled'}>${installLabel(d, pick, dir)}</button>
+        <button class="btn-install" id="doInstall"${d.ok && pick && !pick.installIssue && routesFor(pick).length && !installedHere(d, pick, dir)?.whole ? '' : ' disabled'}>${installLabel(d, pick, dir)}</button>
         <button class="btn-restore" id="doRestore"${d.hasBackup ? '' : ' disabled'}>${t('restore')}</button>
       </div>
       <div class="job-toolbar"><button class="ghost sm accent" id="shareResult">${t('menuCommunity')}</button><button class="ghost sm" id="copyJob"${jobLines.length ? '' : ' disabled'}>${t('copyLog')}</button><button class="ghost sm" id="saveDiag">${t('saveDiagnostics')}</button></div>
@@ -953,6 +977,11 @@ async function runJob(kind, dir) {
 
   if (res.ok) {
     jobLog(kind === 'install' ? `done - ${res.replaced} replaced, ${res.added} added` : 'done - originals restored');
+    // The line above is a tally for a bug report. This one is for the person
+    // watching: the button goes back to "Install", the log ends on a count,
+    // and nothing said in their language that it worked and what to do next.
+    const route = pick ? selectedRoute(sheetDetails, pick, dir) : null;
+    jobLog(kind === 'install' ? t('installDone', route === 'optiscaler' ? 'OptiScaler DLSS-NR' : 'DLSS 5') : t('restoreDone'));
     log(`${kind === 'install' ? 'Installed' : 'Restored'}: ${dir}`);
     if ($('view-history').classList.contains('active')) await renderHistory();
     // Recent Games tracks what was actually swapped, not what was browsed.

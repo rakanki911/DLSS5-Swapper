@@ -406,7 +406,1228 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
 .community-privacy > b { display: block; margin-bottom: 9px; }
 #communityPrivacyData { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
 #communityPrivacyData div { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; border-bottom: 1px solid var(--line); padding: 4px 0; }
-#communityPrivacyData span { color: var(--muted); } /* Why any of this is worth doing, next to the buttons that do it. */
+#communityPrivacyData span { color: var(--muted); }
+.community-error, .community-profile-status { color: #d74b55; min-height: 18px; }
+.community-submit-row { display: flex; justify-content: flex-end; gap: 9px; margin-top: 12px; }
+.community-profile { display: grid; grid-template-columns: minmax(220px,1fr) minmax(300px,1.2fr); gap: 24px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.community-profile-copy label { display: grid; gap: 6px; margin-top: 13px; color: var(--muted); font-size: 12px; }
+.community-profile-picker > span { color: var(--muted); font-size: 12px; }
+.community-profile-picker > div { display: grid; grid-template-columns: repeat(8,36px); gap: 6px; margin: 8px 0 12px; }
+.community-profile-picker [data-community-icon] { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 9px; background: var(--glass); cursor: pointer; }
+.community-profile-picker [data-community-icon].selected { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+@media (max-width: 980px) { .community-filters { grid-template-columns: 1fr 1fr; } .community-route-counts { grid-template-columns: 1fr; } }
+@media (max-width: 680px) { .community-report-grid, .community-profile, #communityPrivacyData { grid-template-columns: 1fr; } .community-verdicts { grid-template-columns: 1fr; } }
+
+.status-card {
+  margin-top: auto;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--panel-2);
+  border: 1px solid var(--stroke);
+}
+.status-line { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.live { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px rgba(108, 193, 10, .7); }
+.status-sub { font-size: 11.5px; color: var(--dim); margin-top: 4px; }
+.bar { height: 4px; border-radius: 4px; background: var(--line); margin-top: 12px; overflow: hidden; }
+/* Only there when a newer release exists; it is a link, never a nag. */
+.status-update {
+  display: block; margin: 6px 0 2px; font-size: 11.5px; font-weight: 600;
+  color: var(--accent); text-decoration: none;
+}
+.status-update:hover { text-decoration: underline; }
+/* A check that could not run is worth saying, but quietly: it is not news. */
+.status-update.muted { color: var(--muted); font-weight: 500; pointer-events: none; }
+.bar i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .3s ease; }
+
+/* ---------------- main ---------------- */
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+
+.toolbar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 4px 6px 16px; flex: none; }
+.round, .pill {
+  border: 1px solid var(--stroke);
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s ease, transform .1s ease;
+  font: inherit;
+}
+.round { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; }
+.round svg { width: 19px; height: 19px; }
+.pill { height: 42px; border-radius: 21px; padding: 0 16px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text); }
+.pill svg { width: 15px; height: 15px; }
+.round:hover, .pill:hover { color: var(--accent); }
+.round:active, .pill:active { transform: translateY(1px); }
+
+.view { display: none; overflow-y: auto; padding: 2px 6px 30px; }
+.view.active { display: block; }
+
+.glass {
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.pad { padding: 22px; }
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 26px 4px 12px;
+}
+.section-head h3 { font-size: 15.5px; font-weight: 650; }
+.section-head .count { color: var(--dim); font-weight: 400; font-size: 13px; margin-inline-start: 6px; }
+.row { display: flex; gap: 8px; }
+
+.link {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font: inherit; font-size: 13px;
+}
+.link svg { width: 14px; height: 14px; }
+.link:hover { color: var(--accent); }
+
+.glass-btn {
+  padding: 12px 26px;
+  border-radius: 13px;
+  border: 1px solid var(--stroke);
+  background: var(--panel-2);
+  color: var(--accent);
+  font: inherit;
+  font-weight: 650;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(20, 32, 45, .08);
+  transition: transform .1s ease, box-shadow .16s ease;
+}
+.glass-btn:hover { box-shadow: 0 10px 24px rgba(108, 193, 10, .18); }
+.glass-btn:active { transform: translateY(1px); }
+.glass-btn.sm, .ghost.sm { padding: 8px 16px; font-size: 13px; border-radius: 11px; }
+.ghost {
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+.ghost:hover { background: var(--glass); color: var(--text); }
+
+/* ---------------- dropzone ---------------- */
+.dropzone { padding: 44px 20px 40px; text-align: center; transition: border-color .18s ease, background .18s ease; }
+.dropzone.over { border-color: var(--accent); background: var(--panel-2); }
+.dz-circle {
+  width: 108px; height: 108px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--panel-2);
+  border: 1px solid var(--stroke);
+  box-shadow: 0 8px 22px rgba(20, 32, 45, .08);
+}
+.dz-circle svg { width: 44px; height: 44px; stroke: var(--accent); stroke-width: 1.6; }
+.dropzone h2 { font-size: 21px; font-weight: 650; }
+.or { color: var(--dim); font-size: 13px; margin: 10px 0 16px; }
+
+/* ---------------- recent game ---------------- */
+.recent { display: flex; gap: 18px; padding: 18px; align-items: center; }
+.recent .art {
+  width: 108px;
+  aspect-ratio: 2 / 3;
+  flex: none;
+  border-radius: 13px;
+  overflow: hidden;
+  background: var(--bg-2);
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--dim);
+  box-shadow: 0 8px 20px rgba(20, 32, 45, .14);
+}
+.recent .art img { width: 100%; height: 100%; object-fit: cover; }
+.recent .body { flex: 1; min-width: 0; }
+.recent h4 { font-size: 19px; font-weight: 650; }
+.recent .path { font-size: 12px; color: var(--dim); margin: 3px 0 14px; word-break: break-all; }
+
+.tiles { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
+.tile {
+  flex: 1 1 150px;
+  min-width: 140px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  border: 1px solid var(--stroke);
+  display: flex;
+  gap: 11px;
+  align-items: center;
+}
+.tile > svg { width: 20px; height: 20px; flex: none; color: var(--muted); }
+.tile .k { font-size: 10.5px; color: var(--dim); }
+.tile .v { font-size: 13.5px; font-weight: 650; margin-top: 2px; }
+.tile .v.on { color: var(--accent); }
+.tile .s { font-size: 11px; color: var(--dim); margin-top: 1px; }
+.more {
+  width: 46px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--stroke);
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 17px;
+}
+.more:hover { color: var(--accent); }
+
+/* ---------------- log ---------------- */
+.log { padding: 16px 18px; max-height: 190px; overflow-y: auto; }
+.log-row { display: flex; align-items: baseline; gap: 10px; font-size: 12.5px; padding: 4px 0; }
+.log-row i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+.log-row .t { color: var(--dim); font-family: Consolas, monospace; font-size: 11.5px; }
+.log-row .m { color: var(--muted); }
+.log .empty { color: var(--dim); font-size: 13px; }
+
+/* ---------------- games grid ---------------- */
+.games-heading { flex-wrap: wrap; }
+.games-heading h3, .games-heading .row { flex-wrap: wrap; }
+.game-filters { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.game-filters label { display: grid; gap: 6px; flex: 1 1 150px; min-width: 0; font-size: 12px; color: var(--muted); }
+.game-filters .game-search { flex: 2 1 220px; }
+.game-filters input, .game-filters select {
+  width: 100%; min-width: 0; height: 40px; padding: 8px 12px;
+  border-radius: 11px; border: 1px solid var(--stroke); background: var(--panel);
+  color: var(--text); font: inherit; font-size: 13px;
+}
+.game-filters input:focus-visible, .game-filters select:focus-visible,
+.filter-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.game-filters .ghost { min-height: 40px; }
+.game-filters .ghost:disabled { opacity: .45; cursor: default; }
+.game-quick-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.filter-chip { border: 1px solid var(--stroke); border-radius: 999px; background: var(--glass); color: var(--muted); font: inherit; font-size: 12px; padding: 6px 11px; cursor: pointer; }
+.filter-chip:hover { color: var(--text); border-color: var(--accent); }
+.filter-chip[aria-pressed="true"] { background: var(--accent-soft); color: var(--text); border-color: var(--accent); }
+.games-empty { padding: 34px 20px; text-align: center; }
+.games-empty h4 { margin-bottom: 8px; }
+.games-empty p { font-size: 13px; color: var(--muted); }
+.group { margin-bottom: 26px; }
+.group-head { display: flex; align-items: baseline; gap: 10px; margin: 0 4px 12px; }
+.group-head h4 { font-size: 14px; font-weight: 650; }
+.group-head .count { font-size: 12px; color: var(--dim); }
+.group-head .ready { font-size: 12px; color: var(--accent); margin-inline-start: auto; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 14px; }
+
+.card {
+  position: relative;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(20, 32, 45, .07);
+  transition: transform .16s cubic-bezier(.2,.8,.3,1), box-shadow .16s ease, border-color .16s ease;
+}
+.card:hover { transform: translateY(-3px); box-shadow: 0 16px 32px rgba(20, 32, 45, .14); }
+.card.dx12 { border-color: rgba(108, 193, 10, .5); }
+.card.unsupported { opacity: .55; }
+
+.poster { position: relative; aspect-ratio: 2 / 3; background: var(--bg-2); display: grid; place-items: center; overflow: hidden; }
+.poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.poster.wide img { object-fit: contain; position: relative; z-index: 1; }
+.poster.wide::before {
+  content: ""; position: absolute; inset: -20%;
+  background: var(--bgimg) center / cover;
+  filter: blur(24px) saturate(1.2); opacity: .55;
+}
+.placeholder { font-size: 34px; font-weight: 700; color: var(--dim); opacity: .35; }
+
+.badge {
+  position: absolute; top: 8px; inset-inline-end: 8px; z-index: 2;
+  font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 8px;
+  background: var(--panel); border: 1px solid var(--stroke); color: var(--text);
+}
+.badge.dx12 { background: var(--accent); color: #0b1405; border-color: transparent; }
+
+/* This strip sits on artwork, so it needs both size and a dark enough footing
+   to be read at a glance - 10px over a bright poster was not legible. */
+.status {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  padding: 22px 10px 8px;
+  background: linear-gradient(180deg, transparent, rgba(6, 10, 14, .55) 45%, rgba(6, 10, 14, .9));
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .6);
+}
+.dot-s {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(255, 255, 255, .45); flex: none;
+}
+.dot-s.on { background: var(--accent); }
+
+.name { padding: 9px 10px 10px; font-size: 12.5px; font-weight: 600; line-height: 1.35; min-height: 44px; }
+
+.tools { position: absolute; top: 8px; inset-inline-start: 8px; z-index: 3; display: flex; gap: 4px; opacity: 0; transition: opacity .15s ease; }
+.card:hover .tools { opacity: 1; }
+.tool {
+  width: 25px; height: 25px; padding: 0; border-radius: 8px;
+  background: var(--panel); border: 1px solid var(--stroke); color: var(--text);
+  display: grid; place-items: center; font-size: 11px; cursor: pointer;
+}
+.tool:hover { background: var(--accent); color: #0b1405; border-color: transparent; }
+
+/* ---------------- history / settings ---------------- */
+.hist-row { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.hist-row:last-child { border-bottom: none; }
+.hist-row .n { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; }
+.hist-row .d { font-size: 12px; color: var(--dim); }
+.hist-row .c { font-size: 12px; color: var(--muted); }
+
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.set-row:last-child { border-bottom: none; }
+.set-row .k { font-size: 13.5px; font-weight: 600; }
+.set-row .v { font-size: 12px; color: var(--dim); margin-top: 3px; word-break: break-all; }
+/* The label side has to take the free space, or the paths inside it stay
+   text-width and their buttons trail each one at a different offset. */
+.set-row > div:first-child { flex: 1; min-width: 0; }
+.setting-switch {
+  flex: none; position: relative; width: 48px; height: 27px; padding: 0;
+  border-radius: 999px; cursor: pointer; background: var(--glass);
+  border: 1px solid var(--stroke);
+  transition: background .18s ease, border-color .18s ease, opacity .18s ease;
+}
+.setting-switch .knob {
+  position: absolute; top: 50%; inset-inline-start: 3px;
+  width: 19px; height: 19px; border-radius: 50%;
+  background: var(--dim); transform: translateY(-50%);
+  transition: inset-inline-start .18s cubic-bezier(.2, .8, .3, 1), background .18s ease;
+}
+.setting-switch[aria-checked="true"] { background: var(--accent-soft); border-color: rgba(108, 193, 10, .5); }
+.setting-switch[aria-checked="true"] .knob {
+  inset-inline-start: 24px; background: var(--accent);
+  box-shadow: 0 0 10px rgba(108, 193, 10, .5);
+}
+.setting-switch:hover { border-color: var(--dim); }
+.setting-switch:disabled { cursor: wait; opacity: .6; }
+.about p { font-size: 13.5px; line-height: 1.9; }
+.about .dim { color: var(--dim); }
+.about-links { display: flex; flex-wrap: wrap; gap: 12px; margin: 18px 0; }
+.about-links a { text-decoration: none; }
+.about-links a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* ---------------- game sheet ---------------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 30px;
+  background: rgba(8, 13, 18, .72);
+  backdrop-filter: blur(9px);
+  animation: fade .16s ease both;
+}
+@keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+
+.sheet {
+  width: min(720px, 100%);
+  max-height: 100%;
+  overflow: hidden auto;
+  border-radius: 22px;
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  box-shadow: 0 30px 70px rgba(12, 20, 30, .5);
+  animation: rise .22s cubic-bezier(.2,.85,.3,1) both;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
+
+/* The artwork banner, with the cover overlapping its lower edge. */
+/* 720 wide by 215 is a 3.35:1 strip, and Steam's library_hero is 3.1:1, so
+   almost nothing is cropped. Change one and the banners start losing their
+   edges again. */
+.hero { position: relative; height: 215px; background: var(--bg-2); }
+.hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* No artwork means no banner to crop, and a tall grey slab reads as a loading
+   failure. A slim tinted band is honest and takes far less room. */
+.hero.empty {
+  height: 112px;
+  background: linear-gradient(135deg, rgba(108, 193, 10, .18), var(--bg-2) 72%);
+}
+.hero::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,.10), var(--panel) 96%);
+}
+.hero .close {
+  position: absolute; top: 12px; inset-inline-end: 12px; z-index: 3;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(12, 18, 24, .55); border: 1px solid rgba(255,255,255,.18);
+  color: #fff; cursor: pointer; display: grid; place-items: center; backdrop-filter: blur(10px);
+}
+.hero .close:hover { background: rgba(12, 18, 24, .8); }
+
+.sheet-body { padding: 0 24px 22px; }
+.head { display: flex; gap: 18px; margin-top: -62px; position: relative; z-index: 2; }
+.head .cover {
+  width: 116px; aspect-ratio: 2/3; flex: none;
+  border-radius: 12px; overflow: hidden;
+  background: var(--bg-2);
+  border: 1px solid var(--stroke);
+  box-shadow: 0 14px 30px rgba(12, 20, 30, .3);
+  display: grid; place-items: center; font-size: 28px; font-weight: 700; color: var(--dim);
+}
+.head .cover img { width: 100%; height: 100%; object-fit: cover; }
+.head .who { flex: 1; min-width: 0; padding-top: 66px; }
+.head h3 { font-size: 21px; font-weight: 700; line-height: 1.2; }
+.head .meta { font-size: 12px; color: var(--dim); margin-top: 5px; }
+.head .path { font-size: 11.5px; color: var(--dim); margin-top: 4px; word-break: break-all; }
+
+.summary { font-size: 13px; line-height: 1.75; color: var(--muted); margin: 16px 0 4px; }
+
+/* One panel, one row per fact. Values sit on the trailing edge so the numbers
+   line up in a column the eye can scan, in either writing direction. */
+.specs {
+  margin-top: 18px;
+  border-radius: 14px;
+  border: 1px solid var(--stroke);
+  background: var(--panel-2);
+  overflow: hidden;
+}
+.spec {
+  display: flex; align-items: baseline; gap: 16px;
+  padding: 11px 15px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.spec:last-child { border-bottom: none; }
+.spec .k { flex: none; font-size: 12px; color: var(--dim); }
+.spec .v {
+  margin-inline-start: auto; min-width: 0;
+  font-weight: 650; text-align: end; overflow-wrap: anywhere;
+}
+.spec .v.on, .spec .v .on { color: var(--accent); }
+.spec .v.off { color: var(--dim); }
+.spec .was { font-weight: 500; color: var(--dim); }
+/* The arrow points from the old version to the new one, so it has to turn
+   around with the text direction. */
+.spec .arrow { display: inline-block; margin: 0 8px; color: var(--dim); }
+[dir="rtl"] .spec .arrow { transform: scaleX(-1); }
+
+.filelist { margin-top: 16px; max-height: 150px; overflow-y: auto; border-radius: 12px; border: 1px solid var(--stroke); }
+.filerow { display: flex; justify-content: space-between; gap: 10px; padding: 8px 13px; font-size: 11.5px; border-bottom: 1px solid var(--line); }
+.filerow:last-child { border-bottom: none; }
+.filerow .f { color: var(--muted); font-family: Consolas, monospace; word-break: break-all; }
+.filerow .v { color: var(--dim); white-space: nowrap; }
+
+.sheet-actions { display: flex; gap: 10px; align-items: center; margin-top: 20px; }
+.btn-install {
+  flex: 1;
+  padding: 14px 22px; border-radius: 13px; border: none;
+  background: linear-gradient(160deg, var(--accent), var(--accent-2));
+  color: #0b1405; font: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 8px 22px rgba(108, 193, 10, .28);
+  transition: transform .1s ease, box-shadow .16s ease;
+}
+.btn-install:hover:not(:disabled) { box-shadow: 0 12px 28px rgba(108, 193, 10, .4); }
+.btn-install:active { transform: translateY(1px); }
+.btn-install:disabled { opacity: .55; cursor: default; }
+.btn-restore {
+  padding: 14px 20px; border-radius: 13px;
+  border: 1px solid rgba(226, 90, 90, .4); background: transparent;
+  color: #d94b4b; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.btn-restore:hover:not(:disabled) { background: rgba(226, 90, 90, .1); }
+.btn-restore:disabled { opacity: .4; cursor: default; }
+
+.job {
+  margin-top: 14px; padding: 12px 14px; border-radius: 12px;
+  background: var(--panel-2); border: 1px solid var(--stroke);
+  font-size: 11.5px; font-family: Consolas, monospace; color: var(--muted);
+  max-height: 130px; overflow-y: auto; white-space: pre-wrap;
+}
+
+/* ---------------- text containment ----------------
+   Long paths and file names were pushing out of their boxes; every cell that
+   can receive a path needs an explicit minimum of zero and a break rule. */
+.tile, .spec, .filerow, .hist-row, .set-row { min-width: 0; }
+.tile > div, .head .who { min-width: 0; }
+.tile .v { overflow-wrap: anywhere; line-height: 1.35; }
+.filerow .f, .set-row .v, .hist-row .d { overflow-wrap: anywhere; }
+.filerow { align-items: flex-start; }
+.recent .path, .head .path { overflow-wrap: anywhere; }
+.head h3 { overflow-wrap: anywhere; }
+
+.name { overflow-wrap: anywhere; }
+
+/* ---------------- recent games row ---------------- */
+.recents {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scrollbar-width: thin;
+}
+.recents .empty { color: var(--dim); font-size: 13.5px; padding: 18px 4px; }
+
+.rcard {
+  position: relative;
+  width: 168px;
+  flex: none;
+  aspect-ratio: 2 / 3;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--bg-2);
+  border: 1px solid var(--stroke);
+  box-shadow: 0 10px 24px rgba(20, 32, 45, .12);
+  transition: transform .16s cubic-bezier(.2,.8,.3,1), box-shadow .16s ease;
+}
+.rcard:hover { transform: translateY(-4px); box-shadow: 0 18px 34px rgba(20, 32, 45, .2); }
+.rcard img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rcard .initials { position: absolute; inset: 0; display: grid; place-items: center; font-size: 34px; font-weight: 700; color: var(--dim); opacity: .4; }
+
+/* The name sits on the art, so it needs its own dark ground. */
+.rcard .meta {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 40px 13px 12px;
+  background: linear-gradient(180deg, transparent, rgba(6, 10, 14, .55) 42%, rgba(6, 10, 14, .93));
+  color: #fff;
+}
+.rcard .title {
+  font-size: 13.5px;
+  font-weight: 650;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.rcard .when { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 9px; }
+.rcard .ago { font-size: 11.5px; color: rgba(255, 255, 255, .62); }
+.rcard .pip { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, .32); flex: none; }
+.rcard .pip.on { background: var(--accent); box-shadow: 0 0 9px rgba(108, 193, 10, .8); }
+.hist-row .undone {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--dim);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 8px;
+  margin-inline-start: 6px;
+}
+
+/* ---------------- language menu ---------------- */
+.lang-wrap { position: relative; }
+.lang-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-end: 0;
+  z-index: 80;
+  width: 208px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  box-shadow: 0 20px 44px rgba(12, 20, 30, .26);
+  animation: rise .16s ease both;
+}
+.lang-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+  text-align: start;
+}
+.lang-item:hover { background: var(--glass); }
+.lang-item.active { background: rgba(108, 193, 10, .14); color: var(--accent); font-weight: 650; }
+.lang-item .code {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  color: var(--dim);
+  margin-inline-start: auto;
+}
+.lang-item.active .code { color: var(--accent); }
+
+
+/* The search box stays put while the list below it scrolls. */
+.lang-search {
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text);
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+  background: var(--panel-2);
+  outline: none;
+}
+.lang-search:focus { border-color: var(--accent); }
+.lang-search::placeholder { color: var(--dim); }
+.lang-list {
+  max-height: 292px;
+  overflow-y: auto;
+}
+.lang-none {
+  padding: 10px;
+  text-align: center;
+  color: var(--dim);
+}
+
+/* ---------------- executable picker ---------------- */
+/* Shown only when a folder holds more than one candidate binary. */
+.exe-field { margin-top: 18px; }
+.exe-field .k { font-size: 10.5px; color: var(--dim); margin: 0 2px 6px; }
+.exe-wrap { position: relative; }
+.exe-select {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 12px 14px; border-radius: 12px;
+  background: var(--panel-2); border: 1px solid var(--stroke);
+  color: var(--text); font: inherit; font-size: 13.5px; font-weight: 650;
+  cursor: pointer; text-align: start;
+}
+.exe-select:hover { border-color: var(--accent); }
+.exe-select.open { border-color: var(--accent); }
+.exe-value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exe-select .chev { width: 17px; height: 17px; flex: none; color: var(--dim); transition: transform .16s ease; }
+.exe-select.open .chev { transform: rotate(180deg); }
+
+.exe-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 60;
+  max-height: 236px; overflow-y: auto; padding: 6px;
+  border-radius: 12px; background: var(--panel); border: 1px solid var(--stroke);
+  box-shadow: 0 18px 40px rgba(12, 20, 30, .3);
+  animation: rise .16s ease both;
+}
+.exe-option {
+  display: flex; align-items: baseline; gap: 9px; width: 100%;
+  padding: 9px 10px; border: none; border-radius: 9px;
+  background: transparent; color: var(--text); font: inherit; font-size: 12.5px;
+  cursor: pointer; text-align: start;
+}
+.exe-option:hover { background: var(--glass); }
+.exe-option.selected { color: var(--accent); font-weight: 650; }
+.exe-option .tick { width: 11px; flex: none; font-size: 11px; }
+.exe-option .exe-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exe-option .exe-meta { display: flex; gap: 9px; flex: none; font-size: 10.5px; color: var(--dim); }
+
+.install-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.install-options label { display: grid; gap: 6px; font-size: 10.5px; color: var(--dim); }
+.install-options .api-field { grid-column: 1 / -1; }
+.install-options select {
+  width: 100%; padding: 11px 12px; border-radius: 11px;
+  border: 1px solid var(--stroke); background: var(--panel-2); color: var(--text);
+  font: inherit; font-size: 13px; font-weight: 650; outline: none;
+}
+.install-options select:focus { border-color: var(--accent); }
+.emu-note {
+  display: grid; gap: 4px; margin-top: 10px; padding: 11px 13px;
+  border: 1px solid rgba(108, 193, 10, .28); border-radius: 11px;
+  background: var(--accent-soft); color: var(--dim); font-size: 11.5px; line-height: 1.45;
+}
+.emu-note b { color: var(--text); font-size: 12.5px; }
+.emu-note.compatibility-warning {
+  color: var(--text);
+  background: rgba(227, 157, 43, .12);
+  border-color: rgba(227, 157, 43, .55);
+  line-height: 1.7;
+}
+.emu-note.anti-cheat-warning {
+  color: #a51d27;
+  background: rgba(220, 38, 38, .09);
+  border-color: rgba(220, 38, 38, .65);
+  line-height: 1.7;
+}
+.emu-note.anti-cheat-warning b { color: inherit; }
+:root[data-theme="dark"] .emu-note.anti-cheat-warning {
+  color: #ff9da5;
+  background: rgba(220, 38, 38, .12);
+  border-color: #e85b64;
+}
+@media (max-width: 620px) { .install-options { grid-template-columns: 1fr; } }
+
+/* ---------------- dark theme: depth ----------------
+   The light theme separates surfaces with a grey border on white. On black a
+   border alone is nearly invisible, so the dark theme leans on two things
+   instead: a bright hairline along the top edge, and a shallow gradient that
+   makes the surface catch light at the top and fall away below. Applied only
+   where a real panel sits on the page - not to the small chrome, which would
+   turn the interface into a field of glinting edges. */
+:root[data-theme="dark"] .sidebar,
+:root[data-theme="dark"] .glass,
+:root[data-theme="dark"] .sheet {
+  background-image: linear-gradient(180deg, var(--sheen), transparent 140px);
+  box-shadow: inset 0 1px 0 var(--edge), var(--shadow);
+}
+:root[data-theme="dark"] .specs,
+:root[data-theme="dark"] .lang-menu,
+:root[data-theme="dark"] .exe-menu,
+:root[data-theme="dark"] .exe-select,
+:root[data-theme="dark"] .status-card,
+:root[data-theme="dark"] .job {
+  box-shadow: inset 0 1px 0 var(--edge);
+}
+:root[data-theme="dark"] .lang-menu,
+:root[data-theme="dark"] .exe-menu {
+  box-shadow: inset 0 1px 0 var(--edge), var(--shadow);
+}
+
+/* Cards keep their own lift on hover, so the highlight is folded into both
+   states rather than overriding one of them. */
+:root[data-theme="dark"] .card {
+  box-shadow: inset 0 1px 0 var(--edge), 0 10px 26px rgba(0, 0, 0, .5);
+}
+:root[data-theme="dark"] .card:hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .13), 0 20px 42px rgba(0, 0, 0, .62);
+}
+
+/* The one place the accent is allowed to glow: the primary action. */
+:root[data-theme="dark"] .btn-install {
+  box-shadow: 0 0 0 1px rgba(108, 193, 10, .35), 0 10px 30px rgba(108, 193, 10, .3);
+}
+:root[data-theme="dark"] .btn-install:hover:not(:disabled) {
+  box-shadow: 0 0 0 1px rgba(108, 193, 10, .5), 0 14px 40px rgba(108, 193, 10, .45);
+}
+
+/* Selected rows are tinted rather than filled, so the accent stays rare. */
+:root[data-theme="dark"] .nav-item.active {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .022));
+  box-shadow: inset 0 1px 0 var(--edge);
+}
+.lang-item.active { background: var(--accent-soft); }
+
+/* The scrim already darkens the page; on black it can be lighter and let the
+   sheet's own shadow do the separating. */
+:root[data-theme="dark"] .overlay { background: rgba(2, 4, 6, .74); }
+:root[data-theme="dark"] .sheet { box-shadow: inset 0 1px 0 var(--edge), 0 40px 90px rgba(0, 0, 0, .75); }
+
+/* Twenty-five of thirty-one cards are DirectX 12, so a solid lime block on
+   each one turns the grid into a field of shouting. Tinted chip, accent text:
+   still scannable at a glance, but the posters get to be the loud thing. The
+   card border carried the same signal at full strength, so it steps back too. */
+:root[data-theme="dark"] .badge.dx12 {
+  /* The badge floats over artwork, so the tint has to sit on an opaque chip -
+     a translucent one disappeared into every bright poster. */
+  background: linear-gradient(var(--accent-soft), var(--accent-soft)), var(--panel);
+  color: var(--accent);
+  border-color: rgba(108, 193, 10, .32);
+}
+:root[data-theme="dark"] .card.dx12 { border-color: rgba(108, 193, 10, .26); }
+:root[data-theme="dark"] .card.dx12:hover { border-color: rgba(108, 193, 10, .55); }
+
+/* ---------------- add-on builds ---------------- */
+.hint { font-size: 12.5px; color: var(--dim); margin: 0 2px 14px; line-height: 1.6; }
+
+.addon {
+  display: flex; align-items: flex-start; gap: 13px;
+  padding: 13px 15px; margin-bottom: 9px;
+  border-radius: 14px;
+  background: var(--panel); border: 1px solid var(--stroke);
+  box-shadow: inset 0 1px 0 var(--edge);
+}
+/* The active build is the one thing on this screen worth finding at a glance. */
+.addon.on { border-color: rgba(108, 193, 10, .45); }
+.addon .mark { width: 18px; flex: none; color: var(--accent); padding-top: 1px; }
+.addon .body { flex: 1; min-width: 0; }
+.addon .t { font-size: 13.5px; font-weight: 650; }
+.addon .d { font-size: 11.5px; color: var(--dim); margin-top: 3px; overflow-wrap: anywhere; }
+.addon .toggle {
+  flex: none; position: relative; margin-top: -1px;
+  width: 46px; height: 26px; padding: 0;
+  border-radius: 999px; cursor: pointer;
+  background: var(--glass); border: 1px solid var(--stroke);
+  transition: background .18s ease, border-color .18s ease;
+}
+.addon .toggle .knob {
+  position: absolute; top: 50%; inset-inline-start: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--dim); transform: translateY(-50%);
+  transition: inset-inline-start .18s cubic-bezier(.2, .8, .3, 1), background .18s ease;
+}
+.addon .toggle[aria-checked="true"] {
+  background: var(--accent-soft); border-color: rgba(108, 193, 10, .45);
+}
+.addon .toggle[aria-checked="true"] .knob {
+  inset-inline-start: 23px; background: var(--accent);
+  box-shadow: 0 0 10px rgba(108, 193, 10, .5);
+}
+.addon .toggle:hover { border-color: var(--dim); }
+.addon .toggle[aria-checked="true"]:hover { border-color: rgba(108, 193, 10, .7); }
+.addon .t { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.addon .tag {
+  font-size: 10px; font-weight: 700; letter-spacing: .3px;
+  padding: 3px 8px; border-radius: 7px;
+  background: var(--glass); color: var(--dim);
+}
+/* The author's own caveat, so it should read as a caution and not as a feature. */
+.addon .tag.warn { background: rgba(226, 160, 60, .14); color: #d9973c; }
+
+/* The upstream release notes for a build. */
+.addon .notes { list-style: none; margin: 9px 0 1px; display: grid; gap: 4px; }
+.addon .notes li {
+  position: relative; padding-inline-start: 15px;
+  font-size: 12px; color: var(--muted);
+}
+.addon .notes li::before {
+  content: ""; position: absolute; inset-inline-start: 2px; top: 7px;
+  width: 4px; height: 4px; border-radius: 50%; background: var(--accent); opacity: .7;
+}
+
+/* ---------------- add-on dialog ---------------- */
+.dialog {
+  width: min(430px, 100%);
+  padding: 24px;
+  border-radius: 20px;
+  background: var(--panel); border: 1px solid var(--stroke);
+  box-shadow: inset 0 1px 0 var(--edge), 0 34px 80px rgba(0, 0, 0, .7);
+  animation: rise .2s cubic-bezier(.2, .85, .3, 1) both;
+}
+.dialog h3 { font-size: 17px; font-weight: 650; }
+.dlg-file {
+  margin: 8px 0 20px; padding: 10px 12px;
+  border-radius: 10px; background: var(--panel-2); border: 1px solid var(--stroke);
+  font-size: 11.5px; color: var(--dim); overflow-wrap: anywhere;
+}
+.dlg-label { display: block; font-size: 11.5px; color: var(--dim); margin: 0 2px 6px; }
+.dlg-input {
+  display: block; width: 100%; margin-bottom: 16px;
+  padding: 10px 12px; border-radius: 11px;
+  font: inherit; font-size: 13.5px; color: var(--text);
+  background: var(--panel-2); border: 1px solid var(--stroke);
+  outline: none; resize: vertical;
+}
+.dlg-input:focus { border-color: var(--accent); }
+.dlg-hint { font-size: 11px; color: var(--dim); margin: -10px 2px 20px; }
+.dlg-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* Deleting is destructive, so the button says so before it is pressed rather
+   than only once the pointer is on it. */
+.drop {
+  flex: none; padding: 0;
+  display: grid; place-items: center;
+  border-radius: 9px; cursor: pointer;
+  background: rgba(226, 90, 90, .09);
+  border: 1px solid rgba(226, 90, 90, .32);
+  color: #e05a5a;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.drop:hover { background: rgba(226, 90, 90, .2); border-color: rgba(226, 90, 90, .6); color: #ff6a6a; }
+.drop:disabled { opacity: .45; cursor: default; }
+.addon .drop { margin-top: -1px; width: 30px; height: 26px; }
+
+/* Each scanned folder gets its own row so it can be dropped again. */
+.paths { display: grid; gap: 5px; margin-top: 4px; }
+.path-row {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 12px; color: var(--dim);
+}
+/* The paths differ in length, so the buttons are pushed to the edge instead of
+   trailing each one and forming a staircase. */
+.path-row span { flex: 1; min-width: 0; word-break: break-all; }
+.path-row .drop { width: 26px; height: 24px; }
+
+/* ---------------- frameless window ----------------
+   The window has no system frame, so the toolbar strip is what the person
+   grabs to move it, and the two controls sit at its trailing edge. */
+/* Only these two strips move the window. Marking the whole shell draggable put
+   the window's drag region over everything - including the dialogs, which sit
+   on top of it - and Windows swallowed every click and keystroke before the
+   page ever saw them. */
+.toolbar, .brand { -webkit-app-region: drag; }
+.toolbar button, .toolbar .lang-wrap { -webkit-app-region: no-drag; }
+/* The shell keeps 14px of bare window above the panels, and that is exactly
+   where a hand lands when it reaches for the top edge to move the window. It
+   was the one strip up there that did nothing. This is that gutter and only
+   that gutter; the dialogs below still opt out in document order. */
+.window-grip {
+  position: fixed; top: 0; left: 0; right: 0; height: 14px; z-index: 1;
+  -webkit-app-region: drag;
+}
+/* Anything floating above the page has to opt out too. The toolbar's drag strip
+   sits underneath the sheet's close button at the default window size, and
+   Windows hit-tests the drag region before the page sees the click - maximising
+   moved the sheet clear of the strip, which is why it worked there and not
+   here. */
+.overlay, .overlay *, .lang-menu, .exe-menu { -webkit-app-region: no-drag; }
+/* A dialog can sit over the toolbar, and the toolbar is the window's drag
+   handle: without this the close button is inside it and cannot be clicked. */
+.community-dialog, .community-dialog * { -webkit-app-region: no-drag; }
+
+.win {
+  width: 34px; height: 34px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 10px; cursor: pointer;
+  background: transparent; border: 1px solid transparent; color: var(--muted);
+  transition: background .14s ease, color .14s ease;
+}
+.win svg { width: 16px; height: 16px; }
+.win:hover { background: var(--glass); color: var(--text); }
+/* Closing is the one control worth colouring, and only under the pointer. */
+.win.close:hover { background: #d93b3b; color: #fff; }
+
+/* ---------------- native feel ----------------
+   A web page lets every label be swept into a blue selection and every image
+   dragged out of the window. Neither belongs in a desktop app, so both are
+   off except for input fields and diagnostic text that users need to copy. */
+* {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+input, textarea {
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+/* Without this the pointer turns into a text caret over every label. */
+body { cursor: default; }
+
+.card:focus-visible, .rcard:focus-visible {
+  outline: 3px solid var(--accent); outline-offset: 3px;
+}
+.card:focus-within .tools { opacity: 1; }
+
+#history, #history *, #log, #log *, .job, .job * {
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+.job-toolbar { display: flex; justify-content: flex-end; margin: 14px 0 6px; }
+.job-toolbar + .job { margin-top: 0; }
+.copy-feedback {
+  position: fixed; bottom: 24px; inset-inline-end: 24px; z-index: 10000;
+  max-width: min(440px, calc(100vw - 48px)); padding: 12px 18px;
+  border: 1px solid var(--line); border-radius: 14px;
+  background: var(--glass); color: var(--text); backdrop-filter: blur(24px);
+  box-shadow: 0 8px 28px #0003; font-size: 13px;
+}
+@media (max-width: 900px) {
+  .hist-row { flex-wrap: wrap; }
+  .hist-row .n { flex-basis: 100%; }
+}
+
+/* Support block on the About page. Both images are local files: the page
+   allows no remote images, and this must work offline. */
+.support { margin: 22px 0 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+.support-line { font-size: 13px; color: var(--muted); line-height: 1.8; margin-bottom: 14px; }
+.support-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.support-button { display: inline-flex; border-radius: 10px; }
+.support-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.support-qr { border-radius: 10px; background: #fff; padding: 6px; }
+
+/* ---------------- community: motion ---------------- */
+
+/* Cards arrive rather than appear, each a little after the one before it, so a
+   refreshed page reads as one movement instead of a flash. */
+@keyframes community-rise { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+.community-grid > * { animation: community-rise .34s cubic-bezier(.22,.9,.3,1) both }
+.community-grid > *:nth-child(1) { animation-delay: .01s } .community-grid > *:nth-child(2) { animation-delay: .04s }
+.community-grid > *:nth-child(3) { animation-delay: .07s } .community-grid > *:nth-child(4) { animation-delay: .10s }
+.community-grid > *:nth-child(5) { animation-delay: .13s } .community-grid > *:nth-child(6) { animation-delay: .16s }
+.community-grid > *:nth-child(7) { animation-delay: .19s } .community-grid > *:nth-child(8) { animation-delay: .22s }
+.community-grid > *:nth-child(n+9) { animation-delay: .25s }
+
+.community-card { transition: transform .18s cubic-bezier(.22,.9,.3,1), border-color .18s ease, box-shadow .18s ease }
+.community-card:active { transform: translateY(0) scale(.995) }
+
+/* A live count that just changed is worth one beat of attention, not a flash. */
+@keyframes community-bump { 50% { transform: scale(1.18) } }
+.community-counts .changed { animation: community-bump .42s cubic-bezier(.3,1.4,.4,1); display: inline-block }
+
+/* Green means people got it working, so it breathes; the others sit still. */
+@keyframes community-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(105,189,12,.5) } 50% { box-shadow: 0 0 0 5px rgba(105,189,12,0) } }
+.community-dot.working { animation: community-pulse 2.6s ease-out infinite }
+
+/* Waiting for the first answer should look like the thing that is coming. */
+@keyframes community-shimmer { to { background-position: 200% 0 } }
+.community-skeleton {
+  height: 148px; border-radius: 14px; border: 1px solid var(--line);
+  background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--text) 7%, transparent) 40%, transparent 60%)
+              var(--panel, transparent);
+  background-size: 200% 100%; animation: community-shimmer 1.25s linear infinite;
+}
+
+/* Nobody asked for motion sickness. */
+@media (prefers-reduced-motion: reduce) {
+  .community-grid > *, .community-counts .changed, .community-dot.working, .community-skeleton { animation: none }
+  .community-card, .avatar { transition: none }
+}
+
+/* The card arrives the way the grid behind it does. */
+@keyframes community-dialog-in { from { opacity: 0; transform: translateY(12px) scale(.985) } to { opacity: 1; transform: none } }
+.community-dialog[open] { animation: community-dialog-in .22s cubic-bezier(.22,.9,.3,1) both }
+.community-dialog::backdrop { animation: community-fade .22s ease both }
+@keyframes community-fade { from { opacity: 0 } to { opacity: 1 } }
+@media (prefers-reduced-motion: reduce) {
+  .community-dialog[open], .community-dialog::backdrop { animation: none }
+}
+
+/* A reaction you have pressed reads as pressed, and pressing it again takes it back. */
+.community-reactions button { transition: transform .14s cubic-bezier(.3,1.3,.4,1), border-color .14s ease, background .14s ease, color .14s ease }
+.community-reactions button:hover { transform: translateY(-1px) }
+.community-reactions button:active { transform: scale(.94) }
+.community-reactions button.on {
+  border-color: var(--accent); color: var(--text);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+@media (prefers-reduced-motion: reduce) { .community-reactions button { transition: none } }
+
+/* The little celebration when you add a reaction. It lives inside the card it
+   belongs to, takes no clicks, and clears itself up. */
+.community-burst { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; border-radius: inherit; }
+.community-burst span {
+  position: absolute; bottom: -6%; font-size: var(--size); line-height: 1;
+  will-change: transform, opacity; opacity: 0;
+  animation: community-rise-away var(--life) cubic-bezier(.18,.66,.32,1) var(--delay) forwards;
+}
+@keyframes community-rise-away {
+  0%   { transform: translate3d(0,0,0) scale(.35) rotate(0deg); opacity: 0 }
+  14%  { opacity: 1 }
+  70%  { opacity: 1 }
+  100% { transform: translate3d(var(--dx), var(--dy), 0) scale(var(--scale)) rotate(var(--spin)); opacity: 0 }
+}
+
+/* ---------------- a thread under one result ---------------- */
+/* It replaces the list rather than opening a second window: one thing on
+   screen, one way back. */
+.community-thread { display: grid; gap: 16px; padding: 18px 22px 22px;
+  animation: community-rise .26s cubic-bezier(.22,.9,.3,1) both; }
+.community-back {
+  justify-self: start; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  padding: 8px 14px 8px 10px; border-radius: 999px; font-size: 13px;
+  border: 1px solid var(--line); background: var(--glass); color: var(--text);
+  transition: transform .16s cubic-bezier(.3,1.2,.4,1), border-color .16s ease;
+}
+.community-back:hover { transform: translateX(-2px); border-color: var(--accent); }
+.community-back svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+[dir="rtl"] .community-back svg { transform: scaleX(-1); }
+[dir="rtl"] .community-back:hover { transform: translateX(2px); }
+
+/* The subject of the thread, said once and small. A full comment card here
+   buried the conversation under a repeat of what was just clicked. */
+.community-thread-root { display: grid; gap: 8px; }
+.community-thread-label {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--dim);
+}
+.community-quote {
+  position: relative; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start;
+  padding: 14px 16px; border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--glass));
+  border: 1px solid var(--line);
+}
+/* One accent bar down the leading edge: this is the thing being answered. */
+.community-quote::before {
+  content: ''; position: absolute; inset-block: 11px; inset-inline-start: 0; width: 3px;
+  border-radius: 0 3px 3px 0; background: var(--accent); opacity: .85;
+}
+[dir="rtl"] .community-quote::before { border-radius: 3px 0 0 3px; }
+.community-quote header .community-dot { flex: none; }
+.community-quote header { display: flex; align-items: center; gap: 8px; }
+.community-quote header b { font-size: 14px; }
+.community-quote header small { color: var(--muted); font-size: 12px; font-weight: 500; }
+.community-quote p { margin: 5px 0 0; font-size: 14px; line-height: 1.45; }
+.community-about { display: block; margin-top: 7px; color: var(--muted); font-size: 12px; }
+
+.community-replies { display: grid; gap: 10px; }
+.community-reply {
+  display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start;
+  border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: var(--glass);
+  animation: community-rise .3s cubic-bezier(.22,.9,.3,1) both;
+}
+.community-reply header, .community-quote header { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.community-reply header b { font-size: 14px; }
+.community-reply header small { color: var(--muted); font-size: 12px; font-weight: 500; }
+.community-reply p { margin: 6px 0 0; font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.community-avatar-tile.small { width: 40px; height: 40px; border-radius: 12px; font-size: 19px; }
+
+/* One box, the same width as everything above it, with the button inside it
+   rather than hanging off the corner. */
+.community-composer {
+  position: relative; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--glass); transition: border-color .16s ease, box-shadow .16s ease;
+}
+.community-composer:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent); }
+.community-composer textarea {
+  display: block; width: 100%; resize: vertical; min-height: 62px; max-height: 220px;
+  font: inherit; font-size: 14px; line-height: 1.5; color: var(--text);
+  background: transparent; border: 0; outline: none;
+  padding: 14px 108px 14px 16px;
+}
+[dir="rtl"] .community-composer textarea { padding: 14px 16px 14px 108px; }
+.community-composer button {
+  position: absolute; inset-inline-end: 9px; bottom: 9px;
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  border: 0; border-radius: 10px; padding: 9px 14px; font-size: 13px; font-weight: 650;
+  background: var(--accent); color: #08120a;
+  transition: transform .16s cubic-bezier(.3,1.2,.4,1), filter .16s ease;
+}
+.community-composer button:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.community-composer button:disabled { opacity: .55; cursor: default; transform: none; }
+.community-composer button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+[dir="rtl"] .community-composer button svg { transform: scaleX(-1); }
+
+/* The way in, on every result. */
+.community-open-thread {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer; margin-inline-start: auto;
+  border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px;
+  background: transparent; color: var(--muted); font-size: 13px;
+  transition: color .16s ease, border-color .16s ease, background .16s ease;
+}
+.community-open-thread:hover { color: var(--text); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.community-open-thread svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.community-open-thread span { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .community-thread, .community-reply { animation: none }
+  .community-back { transition: none }
+}
+
+/* A route chip is a filter now, so it has to look pressable and look pressed. */
+.community-route-count { cursor: pointer; font: inherit; text-align: start; }
+.community-route-count.on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, rgba(12,18,26,.55));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.community-route-count.on .community-route-go { stroke: var(--accent); transform: rotate(90deg); }
+[dir="rtl"] .community-route-count.on .community-route-go { transform: rotate(90deg) scaleX(-1); }
+.community-route-go { transition: transform .18s cubic-bezier(.3,1.2,.4,1), stroke .18s ease; }
+
+/* What is being shown, and the way back to everything. */
+.community-route-filter {
+  display: flex; align-items: center; gap: 12px; margin: 0 22px; padding: 11px 15px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--glass);
+  color: var(--muted); font-size: 13px;
+}
+.community-route-filter span { font-weight: 650; color: var(--text); }
+.community-route-filter button {
+  margin-inline-start: auto; cursor: pointer; font: inherit; font-size: 12.5px;
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 13px;
+  background: transparent; color: var(--muted);
+  transition: color .16s ease, border-color .16s ease;
+}
+.community-route-filter button:hover { color: var(--text); border-color: var(--accent); }
+
+/* The way into the community from a game that is already open. It is the one
+   new thing in this row, so it carries the accent; the rest stay quiet. */
+.job-toolbar .ghost.accent {
+  color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  margin-inline-end: auto;
+}
+.job-toolbar .ghost.accent:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); border-color: var(--accent); }
+
+/* ---------------- the report dialog ---------------- */
+/* One glyph per label and per row: the eye finds the line it wants without
+   reading any of them. */
+.c-icon { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* What the app knows about the machine, said once under the title. */
+.community-head-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.community-chip {
+  display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: rgba(255,255,255,.92);
+  background: rgba(12,18,26,.55); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(10px);
+}
+.community-chip .c-icon { width: 14px; height: 14px; }
+
+.community-report-body {
+  display: grid; gap: 16px; padding: 18px 22px 18px;
+  background:
+    radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--accent) 5%, transparent) 0%, transparent 62%),
+    var(--panel);
+  border-radius: 0 0 18px 18px;
+}
+.community-report-body > * { animation: community-rise .3s cubic-bezier(.22,.9,.3,1) both; }
+.community-report-body > *:nth-child(1) { animation-delay: .02s }
+.community-report-body > *:nth-child(2) { animation-delay: .06s }
+.community-report-body > *:nth-child(3) { animation-delay: .10s }
+.community-report-body > *:nth-child(4) { animation-delay: .14s }
+.community-report-body > *:nth-child(n+5) { animation-delay: .18s }
+
+.community-report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.community-report-body label > span, .community-verdicts legend {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 7px; padding: 0;
+  color: var(--text); font-size: 13px; font-weight: 650;
+}
+.community-report-body label > span .c-icon, .community-verdicts legend .c-icon { width: 16px; height: 16px; color: rgba(255,255,255,.78); }
+
+.community-report-body select, .community-report-body textarea {
+  width: 100%; font: inherit; font-size: 13.5px; color: var(--text);
+  background: var(--glass); border: 1px solid var(--line); border-radius: 11px; padding: 11px 13px;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.community-report-body textarea { min-height: 74px; resize: vertical; line-height: 1.5; }
+.community-report-body select:focus, .community-report-body textarea:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent);
+}
+.community-comment { position: relative; display: block; }
+.community-count { display: block; justify-self: end; margin-top: 5px; text-align: end; color: var(--dim); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.community-count.near { color: var(--accent); }
+
+/* Three answers, each saying what it means. */
+.community-verdicts { border: 0; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.community-verdicts legend { grid-column: 1/-1; margin: 0 0 7px; }
+.community-verdicts button {
+  position: relative; display: grid; justify-items: center; gap: 6px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 13px; padding: 13px 10px 11px;
+  background: var(--glass); color: var(--text); font: inherit;
+  transition: transform .18s cubic-bezier(.3,1.2,.4,1), border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.community-verdicts button::before {
+  content: ''; width: 14px; height: 14px; border-radius: 50%; background: currentColor;
+  margin-bottom: 5px; transition: box-shadow .22s cubic-bezier(.3,1.3,.4,1);
+}
+.community-verdicts button b { font-size: 14px; font-weight: 680; color: var(--text); }
+.community-verdicts button small { font-size: 11.5px; color: var(--muted); }
+.community-verdicts button:hover { transform: translateY(-2px); border-color: currentColor; }
+.community-verdicts button[data-verdict="green"] { color: #69bd0c }
+.community-verdicts button[data-verdict="yellow"] { color: #e2a900 }
+.community-verdicts button[data-verdict="red"] { color: #e54d58 }
+.community-verdicts button.selected {
+  border-color: currentColor; background: color-mix(in srgb, currentColor 13%, transparent);
+  box-shadow: 0 0 0 1px currentColor, 0 12px 34px color-mix(in srgb, currentColor 30%, transparent);
+}
+.community-verdicts button.selected::before { box-shadow: 0 0 0 5px color-mix(in srgb, currentColor 20%, transparent); }
+/* The tick that marks the answer chosen. */
+.community-verdicts button::after {
+  content: ''; position: absolute; top: 9px; inset-inline-end: 9px; width: 19px; height: 19px;
+  border-radius: 50%; background: currentColor; opacity: 0; transform: scale(.6);
+  transition: opacity .18s ease, transform .22s cubic-bezier(.3,1.4,.4,1);
+  -webkit-mask: no-repeat center/13px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 13 4 4L19 7'/%3E%3C/svg%3E"), linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+}
+.community-verdicts button.selected::after { opacity: 1; transform: none; }
+
+/* Exactly what leaves the machine, in two columns with a glyph a line. */
+.community-privacy {
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius: 14px; padding: 14px 15px;
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+.community-privacy > b { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; font-size: 13.5px; font-weight: 650; }
+.community-privacy > b .c-icon {
+  width: 16px; height: 16px; box-sizing: content-box; padding: 6px; border-radius: 9px;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+#communityPrivacyData { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 12px; }
+#communityPrivacyData > div {
+  display: flex; align-items: center; gap: 10px; font-size: 12.5px;
+  padding: 9px 12px; border-radius: 10px; background: var(--glass);
+  border: 1px solid rgba(255,255,255,.06);
+}
+#communityPrivacyData > div .c-icon { width: 14px; height: 14px; color: var(--muted); }
+#communityPrivacyData > div > span { color: var(--muted); }
+#communityPrivacyData > div > b { margin-inline-start: auto; font-weight: 680; text-align: end; overflow-wrap: anywhere; }
+/* Why any of this is worth doing, next to the buttons that do it. */
 .community-submit-row { display: flex; align-items: center; gap: 10px; padding-top: 0; }
 .community-why {
   display: flex; align-items: center; gap: 8px; margin-inline-end: auto; color: var(--muted); font-size: 12px;
