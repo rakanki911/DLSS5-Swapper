@@ -1334,6 +1334,11 @@ ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) =>
       gameOverlay.replaceOutdated(overlayLibrary(), path.dirname(target.path));
       if (gameOverlay.routes(target).includes(route)) {
         overlayPlan = gameOverlay.prepare({ library: overlayLibrary(), target, route });
+      } else {
+        // The switch was on and nothing said why the overlay never showed
+        // up: the OptiScaler route was quietly passed over here, and people
+        // went looking for it in the game.
+        send({ code: 'overlaySkipped', params: { error: gameOverlay.unsupported(target, route) } });
       }
     } catch (error) {
       // DLSS is the job; the overlay rides along. A missing or conflicting

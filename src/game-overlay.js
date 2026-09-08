@@ -4,8 +4,15 @@ const {readNative}=require('./overlays');
 // Refuse unsupported routes BEFORE the game installer changes files. OptiScaler
 // and the x86 helper architecture are deliberately not advertised as supported.
 function routes(target){return target?.bitness===64&&target.api==='dxgi'&&target.apiLabel!=='DirectX 10'?['native','feeder']:[];}
+// Why this game and route get no overlay, in words the install log can print.
+// The add-on is loaded by ReShade, which the OptiScaler route does not
+// install - so on that route the overlay is out no matter what the game is.
+function unsupported(target,route){
+  if(route==='optiscaler')return 'The in-game overlay is loaded by ReShade, which the OptiScaler DLSS-NR route does not install. It is available on the Native DLSS and DLSS5-Feeder routes for 64-bit DX11/DX12 games.';
+  return 'The in-game overlay currently supports 64-bit DX11/DX12 only.';
+}
 function prepare({library,target,route}){
-  if(!routes(target).includes(route))throw Error('The in-game overlay currently supports 64-bit DX11/DX12 only.');
+  if(!routes(target).includes(route))throw Error(unsupported(target,route));
   const entry=library.resolve('builtin');
   if(!entry.ready)throw Error(`The overlay add-on is missing from this app: ${entry.file}. Antivirus software removes it; restore it and add an exclusion, or reinstall DLSS 5 Swapper.`);
   readNative(entry.file);
@@ -55,4 +62,4 @@ function completeFeederConfig(text){
   }
   return result;
 }
-module.exports={routes,prepare,attach,replaceOutdated,cleanupMissing,completeFeederConfig};
+module.exports={routes,unsupported,prepare,attach,replaceOutdated,cleanupMissing,completeFeederConfig};
