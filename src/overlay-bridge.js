@@ -56,6 +56,7 @@ module.exports = async function startOverlayBridge({ BrowserWindow, userData, id
   // those frames used to be dropped by the size check, so nothing ever
   // reached the game and the add-on waited for a design that never arrived -
   // on any scaled display, which is most of them.
+  let clientVisible = false;
   win.webContents.on('paint', (_event, _dirty, image) => {
     if (!ready || closed) return;
     const painted = image.getSize();
@@ -72,6 +73,9 @@ module.exports = async function startOverlayBridge({ BrowserWindow, userData, id
     if (bitmap.length !== width * height * 4) return;
     latest = protocol.frame(bitmap, width, height, ++sequence);
     sendLatest();
+    if (!clientVisible && win.webContents.isPainting?.()) {
+      win.webContents.stopPainting?.();
+    }
   });
   function close() {
     if (closed) return; closed = true;
@@ -114,10 +118,12 @@ module.exports = async function startOverlayBridge({ BrowserWindow, userData, id
     socket.on('error', () => {});
     socket.on('close', () => {
       if (client !== socket) return;
-      client = null; runtimeStatus = null;
+      client = null; runtimeStatus = null; clientVisible = false;
       if (!win.isDestroyed()) {
         win.webContents.sendInputEvent({ type: 'mouseUp', x: -1, y: -1, button: 'left', clickCount: 1 });
         win.webContents.send('lab-overlay-status', null);
+        win.webContents.send('lab-overlay-visibility', false);
+        if (win.webContents.isPainting?.()) win.webContents.stopPainting?.();
       }
     });
     socket.on('data', data => {
@@ -149,7 +155,21 @@ module.exports = async function startOverlayBridge({ BrowserWindow, userData, id
           }
           if (e.action === 2) mouseDown = true;
           if (e.action === 3 || e.action === 6) mouseDown = false;
-          if (e.action === 6) { win.webContents.sendInputEvent({ type: 'mouseUp', x: -1, y: -1, button: 'left', clickCount: 1 }); continue; }
+          if (e.action === 6) {
+            win.webContents.sendInputEvent({ type: 'mouseUp', x: -1, y: -1, button: 'left', clickCount: 1 });
+            if (e.value === 0) {
+              clientVisible = false;
+              if (win.webContents.isPainting?.()) win.webContents.stopPainting?.();
+              win.webContents.send('lab-overlay-visibility', false);
+            } else if (e.value === 1) {
+              clientVisible = true;
+              win.webContents.send('lab-overlay-visibility', true);
+              if (!win.webContents.isPainting?.()) win.webContents.startPainting?.();
+              win.webContents.invalidate();
+              sendLatest();
+            }
+            continue;
+          }
           if (e.action <= 3) win.webContents.sendInputEvent({ type: ['', 'mouseMove', 'mouseDown', 'mouseUp'][e.action], x: e.x, y: e.y, button: 'left', modifiers: mouseDown ? ['leftButtonDown'] : [], clickCount: e.action === 1 ? 0 : 1 });
           if (e.action === 4) win.webContents.sendInputEvent({ type: 'mouseWheel', x: e.x, y: e.y, deltaY: e.value, deltaX: 0 });
           if (e.action === 5) {

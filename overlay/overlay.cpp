@@ -50,7 +50,7 @@ class connection {
     HANDLE pipe = INVALID_HANDLE_VALUE;
     OVERLAPPED read_op = {}, write_op = {};
     bool reading = false, writing = false;
-    std::array<unsigned char, 65536> read_buffer;
+    std::array<unsigned char, 524288> read_buffer;
     std::vector<unsigned char> incoming;
     std::deque<std::vector<unsigned char>> outgoing;
     std::vector<unsigned char> write_buffer;
@@ -188,10 +188,10 @@ struct surface {
     connection bridge;
     reshade::api::resource texture = {};
     reshade::api::resource_view view = {};
-    uint32_t uploaded = 0;
+    uint32_t uploaded = 0, texture_height = 0;
     bool dragging = false, focused = false, hovered = false;
     int last_x = -9999, last_y = -9999;
-    bool open = false, moving = false;
+    bool open = false, was_open = false, moving = false;
     lab_live::controls live;
     nr_live::controls nr;
     ULONGLONG telemetry_at = 0;
@@ -222,7 +222,7 @@ void release_texture(reshade::api::effect_runtime *runtime, surface &s) {
     runtime->get_command_queue()->wait_idle();
     auto device = runtime->get_device();
     if (s.view.handle) device->destroy_resource_view(s.view);
-    device->destroy_resource(s.texture); s.texture = {}; s.view = {}; s.uploaded = 0;
+    device->destroy_resource(s.texture); s.texture = {}; s.view = {}; s.uploaded = 0; s.texture_height = 0;
 }
 void destroy(reshade::api::effect_runtime *runtime) {
     auto it = surfaces.find(runtime);
@@ -265,14 +265,19 @@ void draw(reshade::api::effect_runtime *runtime) {
         return;
     }
     if (s.uploaded != bridge.sequence) {
-        release_texture(runtime, s);
         using namespace reshade::api;
-        const resource_desc desc(panel_width, bridge.height, 1, 1, format::r8g8b8a8_unorm, 1, memory_heap::default_, resource_usage::shader_resource);
-        subresource_data data = { bridge.pixels.data(), panel_width * 4, panel_width * bridge.height * 4 };
         auto device = runtime->get_device();
-        if (!device->create_resource(desc, &data, resource_usage::shader_resource, &s.texture) ||
-            !device->create_resource_view(s.texture, resource_usage::shader_resource, resource_view_desc(format::r8g8b8a8_unorm), &s.view)) {
-            release_texture(runtime, s); ImGui::TextUnformatted("The renderer could not create the panel surface."); return;
+        subresource_data data = { bridge.pixels.data(), panel_width * 4, panel_width * bridge.height * 4 };
+        if (s.texture.handle && s.texture_height == bridge.height) {
+            device->update_texture_region(data, s.texture, 0, nullptr);
+        } else {
+            release_texture(runtime, s);
+            const resource_desc desc(panel_width, bridge.height, 1, 1, format::b8g8r8a8_unorm, 1, memory_heap::default_, resource_usage::shader_resource);
+            if (!device->create_resource(desc, &data, resource_usage::shader_resource, &s.texture) ||
+                !device->create_resource_view(s.texture, resource_usage::shader_resource, resource_view_desc(format::b8g8r8a8_unorm), &s.view)) {
+                release_texture(runtime, s); ImGui::TextUnformatted("The renderer could not create the panel surface."); return;
+            }
+            s.texture_height = bridge.height;
         }
         s.uploaded = bridge.sequence;
     }
@@ -374,9 +379,16 @@ void compact_draw(reshade::api::effect_runtime *runtime) {
     s.open = true; s.position = ImVec2(0, 0);
 #endif
     if (s.open && runtime->is_key_pressed(VK_ESCAPE)) { s.open = false; runtime->block_input_next_frame(); }
+    if (s.open != s.was_open) {
+        s.was_open = s.open;
+        if (s.bridge.connected()) {
+            s.bridge.send(6, 0, 0, s.open ? 1 : 0);
+        }
+    }
     if (!s.open) {
-        if (s.bridge.connected()) { s.bridge.send(6, 0, 0); s.bridge.poll(); s.bridge.disconnect(); }
-        release_texture(runtime, s); s.dragging = s.moving = s.focused = false; s.last_status.clear(); return;
+        if (s.bridge.connected()) { s.bridge.poll(); }
+        s.dragging = s.moving = s.focused = false;
+        return;
     }
     auto &io = ImGui::GetIO();
 #ifndef LAB_OVERLAY_SMOKE

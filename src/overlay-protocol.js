@@ -12,15 +12,13 @@ function helloReply(version = HELLO_VALUE) {
 function frame(bitmap, width, height, sequence) {
   if (width !== WIDTH || !Number.isInteger(height) || height < 1 || height > MAX_HEIGHT || bitmap.length !== width * height * 4) throw Error('Invalid overlay frame');
   const result = Buffer.allocUnsafe(24 + bitmap.length);
-  [FRAME_MAGIC, 1, sequence >>> 0, width, height, bitmap.length].forEach((n, i) => result.writeUInt32LE(n, i * 4));
-  // Chromium gives premultiplied BGRA; ReShade blends straight-alpha RGBA.
-  for (let i = 0; i < bitmap.length; i += 4) {
-    const a = bitmap[i + 3], scale = a ? 255 / a : 0;
-    result[i + 24] = Math.min(255, Math.round(bitmap[i + 2] * scale));
-    result[i + 25] = Math.min(255, Math.round(bitmap[i + 1] * scale));
-    result[i + 26] = Math.min(255, Math.round(bitmap[i] * scale));
-    result[i + 27] = a;
-  }
+  result.writeUInt32LE(FRAME_MAGIC, 0);
+  result.writeUInt32LE(1, 4);
+  result.writeUInt32LE(sequence >>> 0, 8);
+  result.writeUInt32LE(width, 12);
+  result.writeUInt32LE(height, 16);
+  result.writeUInt32LE(bitmap.length, 20);
+  bitmap.copy(result, 24);
   return result;
 }
 function input(packet) {

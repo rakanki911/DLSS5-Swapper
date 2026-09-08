@@ -7,3 +7,6 @@ window.overlayRuntime.onPreferences(value=>{
  root.dataset.overlayHotkey=[value.hotkey.mods&1?'Ctrl':'',value.hotkey.mods&2?'Alt':'',value.hotkey.mods&4?'Shift':'',name].filter(Boolean).join(' + ');
  const footer=root.querySelector('.ol-live-hotkey');if(footer)footer.textContent=`${root.dataset.overlayHotkey}: show/hide · Drag header: move · Esc: close · Home: original tools`;
 });
+window.overlayRuntime?.onVisibility?.(visible => {
+  document.body.classList.toggle('panel-dormant', !visible);
+});

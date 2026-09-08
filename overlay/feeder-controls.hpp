@@ -3,6 +3,7 @@
 // not confirmation of GPU execution. RenoDX NR remains a separate connection.
 #pragma once
 #include <fstream>
+#include <mutex>
 namespace feed_live {
 struct field { const char *key, *name; uint32_t kind; float min,max,step,value=0; bool available=false; };
 inline std::array<field,8> schema() { return {{
@@ -44,14 +45,93 @@ struct controls {
     bool present=false,valid=false;HMODULE checked=nullptr;
     std::wstring path;std::string reason="Feeder is not loaded";
     ULONGLONG poll_at=0;std::mutex mutex;
+    bool cfg_loaded=false;
+    std::string cached_text;
+
+    HANDLE write_event=nullptr;
+    HANDLE worker_thread=nullptr;
+    bool worker_stop=false;
+    std::wstring pending_path;
+    std::string pending_content;
+    std::mutex write_mutex;
+
+    static DWORD WINAPI worker_proc(LPVOID param) {
+        auto *self = static_cast<controls*>(param);
+        while (true) {
+            WaitForSingleObject(self->write_event, INFINITE);
+            if (self->worker_stop) {
+                self->flush_pending_write();
+                break;
+            }
+            Sleep(100);
+            self->flush_pending_write();
+        }
+        return 0;
+    }
+
+    void flush_pending_write() {
+        std::wstring target_path;
+        std::string content;
+        {
+            std::lock_guard<std::mutex> lock(write_mutex);
+            if (pending_content.empty() || pending_path.empty()) return;
+            target_path = pending_path;
+            content = pending_content;
+            pending_content.clear();
+        }
+        if (target_path.empty() || content.empty()) return;
+
+        std::wstring backup = target_path + L".lab-original";
+        if (!CopyFileW(target_path.c_str(), backup.c_str(), TRUE) && GetLastError() != ERROR_FILE_EXISTS) return;
+        const std::wstring temp = target_path + L".lab-" + std::to_wstring(GetCurrentProcessId()) + L"-" + std::to_wstring(GetTickCount64()) + L".tmp";
+        HANDLE file = CreateFileW(temp.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file == INVALID_HANDLE_VALUE) return;
+        DWORD n = 0;
+        bool ok = WriteFile(file, content.data(), DWORD(content.size()), &n, nullptr) && n == content.size();
+        CloseHandle(file);
+        if (ok) MoveFileExW(temp.c_str(), target_path.c_str(), MOVEFILE_REPLACE_EXISTING);
+        else DeleteFileW(temp.c_str());
+    }
+
+    void queue_write(const std::wstring &target, const std::string &content) {
+        {
+            std::lock_guard<std::mutex> lock(write_mutex);
+            pending_path = target;
+            pending_content = content;
+        }
+        if (write_event) SetEvent(write_event);
+    }
+
+    controls() {
+        write_event = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+        if (write_event) {
+            worker_thread = CreateThread(nullptr, 0, worker_proc, this, 0, nullptr);
+        }
+    }
+
+    ~controls() {
+        if (worker_thread) {
+            worker_stop = true;
+            if (write_event) SetEvent(write_event);
+            WaitForSingleObject(worker_thread, 1000);
+            CloseHandle(worker_thread);
+            worker_thread = nullptr;
+        }
+        if (write_event) {
+            CloseHandle(write_event);
+            write_event = nullptr;
+        }
+    }
+
     void tick(bool dx11) {
-        if(GetTickCount64()<poll_at)return;poll_at=GetTickCount64()+250;
+        if(GetTickCount64()<poll_at)return;poll_at=GetTickCount64()+500;
         std::lock_guard<std::mutex> lock(mutex);
         for(auto &f:fields)f.available=false;
         HMODULE module=GetModuleHandleW(L"dlss5-feed.addon64");present=module!=nullptr;
-        if(!module){checked=nullptr;valid=false;reason="Feeder is not loaded";return;}
+        if(!module){checked=nullptr;valid=false;cfg_loaded=false;reason="Feeder is not loaded";return;}
         if(module!=checked){
             checked=module;
+            cfg_loaded=false;
             const unsigned char hash[]={0x06,0x6e,0xec,0x8c,0x79,0x7d,0xf2,0xd6,0x56,0xf2,0xab,0x23,0x24,0x27,0x89,0x21,0xb1,0xdd,0x6e,0x91,0x16,0xc9,0x94,0x52,0x94,0xf4,0xa0,0x0f,0x7f,0xec,0x60,0x8a};
             valid=nr_probe::hash_matches(module,224256,hash);
             wchar_t file[32768]={};DWORD n=GetModuleFileNameW(module,file,32768);
@@ -59,15 +139,18 @@ struct controls {
             if(valid)path=path.substr(0,path.find_last_of(L"\\/")+1)+L"dlss5-feed.cfg";
         }
         if(!valid){reason="Unsupported Feeder binary (requires x64 v0.12.0)";return;}
-        std::string text;if(!read(path,text)){reason="Feeder config unavailable; let Feeder initialize";return;}
-        for(auto &f:fields){size_t a,b;float v;if(locate(text,f.key,a,b,v)&&v>=f.min&&v<=f.max&&(f.step!=1||std::floor(v)==v)){f.value=v;f.available=true;}}
+        if(!cfg_loaded){
+            if(!read(path,cached_text)){reason="Feeder config unavailable; let Feeder initialize";return;}
+            cfg_loaded=true;
+        }
+        for(auto &f:fields){size_t a,b;float v;if(locate(cached_text,f.key,a,b,v)&&v>=f.min&&v<=f.max&&(f.step!=1||std::floor(v)==v)){f.value=v;f.available=true;}}
         if(!dx11)for(size_t i:{1u,2u,7u})fields[i].available=false;
         reason="Feeder cfg reloads every 60 delivered frames. Work resolution/filter/sharpness: DX11 only. NR is separate.";
         // Feeder's outer FeedFrame returns before CfgReload when disabled.
         // A cfg-only off switch could not turn it back on. Keep its genuine
         // on/off control in the original page, never expose a one-way toggle.
         size_t mode_start,mode_end;float mode;
-        if(!fields[0].available||fields[0].value!=1||!locate(text,"mode",mode_start,mode_end,mode)||(mode!=1&&mode!=2)){
+        if(!fields[0].available||fields[0].value!=1||!locate(cached_text,"mode",mode_start,mode_end,mode)||(mode!=1&&mode!=2)){
             for(auto &f:fields)f.available=false;
             reason="Enable Feeder and select an active mode in its original page. Disabled/inert Feeder does not reload cfg.";
         }
@@ -78,24 +161,14 @@ struct controls {
 #ifdef LAB_OVERLAY_SMOKE
         reshade::log::message(reshade::log::level::info,("LAB_FEEDER_COMMAND id="+std::to_string(command.id)+" epoch="+std::to_string(command.epoch)+" current="+std::to_string(epoch)).c_str());
 #endif
-        if(!present||!valid||command.epoch!=epoch||command.id<301||command.id>308||!std::isfinite(command.value))return false;
+        if(!present||!valid||!cfg_loaded||command.epoch!=epoch||command.id<301||command.id>308||!std::isfinite(command.value))return false;
         auto &f=fields[command.id-301];float v=command.value;
         if(!f.available||command.kind!=f.kind||v<f.min||v>f.max||(f.step==1&&std::floor(v)!=v))return false;
-        std::string before;if(!read(path,before))return false;
-        size_t a,b;float old;if(!locate(before,f.key,a,b,old))return false;
+        size_t a,b;float old;if(!locate(cached_text,f.key,a,b,old))return false;
         std::ostringstream number;number.imbue(std::locale::classic());number<<v;
-        auto after=before;after.replace(a,b-a,number.str());
-        // Keep the initial configuration recoverable. Never overwrite a prior backup.
-        std::wstring backup=path+L".lab-original";
-        if(!CopyFileW(path.c_str(),backup.c_str(),TRUE)&&GetLastError()!=ERROR_FILE_EXISTS)return false;
-        const std::wstring temp=path+L".lab-"+std::to_wstring(GetCurrentProcessId())+L"-"+std::to_wstring(GetTickCount64())+L".tmp";
-        HANDLE file=CreateFileW(temp.c_str(),GENERIC_WRITE,0,nullptr,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,nullptr);
-        if(file==INVALID_HANDLE_VALUE)return false;
-        DWORD n=0;bool ok=WriteFile(file,after.data(),DWORD(after.size()),&n,nullptr)&&n==after.size()&&FlushFileBuffers(file);CloseHandle(file);
-        std::string current;if(ok)ok=read(path,current)&&current==before;
-        if(ok)ok=MoveFileExW(temp.c_str(),path.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=0;
-        if(!ok){DeleteFileW(temp.c_str());reason="Feeder cfg changed or write failed; retry";return false;}
-        f.value=v;poll_at=0;
+        cached_text.replace(a,b-a,number.str());
+        f.value=v;
+        queue_write(path, cached_text);
         reshade::log::message(reshade::log::level::info,("LAB_FEEDER_CFG_SAVED "+std::string(f.key)+"="+number.str()).c_str());return true;
     }
     std::string json()const {

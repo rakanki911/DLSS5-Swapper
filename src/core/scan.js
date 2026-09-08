@@ -23,6 +23,9 @@ const SKIP_DIRS = new Set([
   // Shipped installers and vendor helpers keep their own executables around.
   'installer_resources', 'installer', 'installers', 'support', 'vcredist',
   '_support', 'directx_redist', 'eaanticheat', 'easyanticheat', 'battleye',
+  // Heavy caches, fonts, and pure media asset directories without binaries.
+  'cache', '_cache', 'shadercache', 'shader_cache', 'textures',
+  'sound', 'sounds', 'audio', 'music', 'localization', 'locales', 'languages', 'fonts',
   // Never touch copies the user (or another tool) parked as a backup.
   'backup', 'backups', '_backup', 'bak', 'old', 'original', 'originals'
 ]);

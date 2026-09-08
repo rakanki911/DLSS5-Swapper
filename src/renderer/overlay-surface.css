@@ -1,3 +1,7 @@
 /* Surface-only rules; every control uses the same CSS as the Lab preview. */
 html, body { background:transparent !important; margin:0; overflow:hidden; }
 #panel { width:534px; display:flow-root; }
+body.panel-dormant * {
+  animation-play-state: paused !important;
+  transition: none !important;
+}
