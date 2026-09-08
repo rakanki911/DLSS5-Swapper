@@ -1244,6 +1244,14 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
    page ever saw them. */
 .toolbar, .brand { -webkit-app-region: drag; }
 .toolbar button, .toolbar .lang-wrap { -webkit-app-region: no-drag; }
+/* The shell keeps 14px of bare window above the panels, and that is exactly
+   where a hand lands when it reaches for the top edge to move the window. It
+   was the one strip up there that did nothing. This is that gutter and only
+   that gutter; the dialogs below still opt out in document order. */
+.window-grip {
+  position: fixed; top: 0; left: 0; right: 0; height: 14px; z-index: 1;
+  -webkit-app-region: drag;
+}
 /* Anything floating above the page has to opt out too. The toolbar's drag strip
    sits underneath the sheet's close button at the default window size, and
    Windows hit-tests the drag region before the page sees the click - maximising
