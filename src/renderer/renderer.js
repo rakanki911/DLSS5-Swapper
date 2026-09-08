@@ -670,9 +670,26 @@ function selectedRoute(d, pick, dir) {
   return routes[0];
 }
 
+// Whether the route on screen is already in this game, for this executable,
+// and whether what is there is whole. A whole install takes the button away:
+// there is nothing a second click could add, and people were clicking twice
+// to make sure. A broken one - the hook overwritten, ReShade or the add-on
+// gone - keeps it, so the install can be redone over the damage.
+function installedHere(d, pick, dir) {
+  const route = pick && selectedRoute(d, pick, dir);
+  if (!route || route !== d.installedRoute) return null;
+  if (d.installedExe && pick.rel.toLowerCase() !== String(d.installedExe).toLowerCase()) return null;
+  const whole = route === 'optiscaler'
+    ? Boolean(d.optiscaler && d.optiscaler.installed)
+    : Boolean(d.reshade && d.reshade.installed && d.addon);
+  return { route, whole };
+}
+
 function installLabel(d, pick, dir) {
   const route = pick && selectedRoute(d, pick, dir);
   if (d.installedRoute && route !== d.installedRoute) return t('applyBackend');
+  const here = installedHere(d, pick, dir);
+  if (here && here.whole) return t('alreadyInstalled', route === 'optiscaler' ? 'OptiScaler DLSS-NR' : 'DLSS 5');
   return route === 'optiscaler' ? t('installOpti') : t('install');
 }
 
@@ -861,7 +878,7 @@ async function openSheet(dir, keepLog = false) {
         `<div class="filerow"><span class="f">${esc(f.rel)}</span><span class="v">${esc(f.version || '—')}</span></div>`).join('')}</div>` : ''}
 
       <div class="sheet-actions">
-        <button class="btn-install" id="doInstall"${d.ok && pick && !pick.installIssue && routesFor(pick).length ? '' : ' disabled'}>${installLabel(d, pick, dir)}</button>
+        <button class="btn-install" id="doInstall"${d.ok && pick && !pick.installIssue && routesFor(pick).length && !installedHere(d, pick, dir)?.whole ? '' : ' disabled'}>${installLabel(d, pick, dir)}</button>
         <button class="btn-restore" id="doRestore"${d.hasBackup ? '' : ' disabled'}>${t('restore')}</button>
       </div>
       <div class="job-toolbar"><button class="ghost sm accent" id="shareResult">${t('menuCommunity')}</button><button class="ghost sm" id="copyJob"${jobLines.length ? '' : ' disabled'}>${t('copyLog')}</button><button class="ghost sm" id="saveDiag">${t('saveDiagnostics')}</button></div>

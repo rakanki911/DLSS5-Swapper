@@ -111,3 +111,25 @@ test('a finished install is announced in words, for both routes', () => {
   assert.match(renderer, /t\('installDone', route === 'optiscaler' \? 'OptiScaler DLSS-NR' : 'DLSS 5'\)/);
   assert.match(renderer, /t\('restoreDone'\)/);
 });
+
+// Once the route on screen is in the game and whole, the install button is
+// disabled and says so: a second click could add nothing, and people were
+// clicking twice to be sure. A broken install keeps the button.
+test('a whole install disables the button and names itself; a broken one keeps it', () => {
+  const context = vm.createContext({ window: {} });
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../src/renderer/i18n.js'), 'utf8'), context, { filename: 'i18n.js' });
+  const ui = context.window.i18n;
+  for (const lang of ['en', 'fr', 'ar']) {
+    ui.setLang(lang);
+    const line = ui.t('alreadyInstalled', 'OptiScaler DLSS-NR');
+    assert.ok(line.includes('OptiScaler DLSS-NR') && !line.includes('undefined'), `${lang}: ${line}`);
+  }
+
+  const renderer = fs.readFileSync(path.join(__dirname, '../src/renderer/renderer.js'), 'utf8');
+  assert.match(renderer, /id="doInstall"\$\{[^}]*!installedHere\(d, pick, dir\)\?\.whole/,
+    'the button is disabled by the same judgement that labels it');
+  assert.match(renderer, /route === 'optiscaler'\s*\?\s*Boolean\(d\.optiscaler && d\.optiscaler\.installed\)/,
+    'an OptiScaler install is whole only when the scanner says its hook and files are there');
+  assert.match(renderer, /d\.reshade && d\.reshade\.installed && d\.addon/,
+    'a ReShade install is whole only with ReShade and the add-on both present');
+});

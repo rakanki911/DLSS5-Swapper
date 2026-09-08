@@ -5,6 +5,7 @@ const { contextBridge } = require('electron');
 let groupGamesByStore = true;
 let libraryReads = 0;
 let installedRoute = null;
+let installWhole = true;
 let installIssue = null;
 let antiCheatWarning = false;
 let installCalls = [];
@@ -84,6 +85,7 @@ contextBridge.exposeInMainWorld('lab', {
   testHistoryFailure: value => { historyFailure = value; },
   testInstallIssue: value => { installIssue = value; },
   testAntiCheatWarning: value => { antiCheatWarning = value; },
+  testInstallWhole: value => { installWhole = value; },
   details: async dir => ({
     ok: true, newDlss: '310.8.0.0', recommendedRoute: 'native', installedRoute,
     previousReShadeRoute: 'native', installedApi: installedRoute ? 'dxgi' : null,
@@ -92,7 +94,7 @@ contextBridge.exposeInMainWorld('lab', {
       ...detectedApi, apiOverride: apiOverrides.get(dir + '\\Game.exe') || 'auto',
       hasNativeDlss: true, installIssue, antiCheatWarning, apiChoices: [{ api: 'dxgi', label: 'DirectX 12' }] }],
     files: [{ name: 'nvngx_dlss.dll', rel: 'nvngx_dlss.dll', version: '2.2.16' }],
-    currentDlss: { rel: 'nvngx_dlss.dll', version: '2.2.16' }, addon: installedRoute === 'native',
+    currentDlss: { rel: 'nvngx_dlss.dll', version: '2.2.16' }, addon: installedRoute === 'native' && installWhole,
     optiscaler: installedRoute === 'optiscaler' ? { version: '0.1.1.5-dlssnr', installed: true } : null,
     reshade: { installed: installedRoute === 'native', version: '6.8.0', addonSupport: true }
   }),
