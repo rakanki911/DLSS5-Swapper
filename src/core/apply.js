@@ -14,6 +14,7 @@ const feederConfig = require('./feeder-config');
 const vulkanLayer = require('./vulkan-layer');
 const journal = require('./file-journal');
 const compatibility = require('./compatibility');
+const neuralUpstream = require('./neural-upstream');
 const crypto = require('crypto');
 
 const BACKUP_DIR = '_DLSS5_Backup';
@@ -88,6 +89,13 @@ function wasAdded(manifest, rel) {
 }
 
 function rememberAdded(manifest, rel) {
+  // A path we already hold an original for must be restored from that backup,
+  // never deleted. It is reachable whenever a name is retired into the backup
+  // and then written again later while nothing is at the path: without this the
+  // path is both replaced and added, and restoreFiles puts their file back and
+  // then removes it a moment later.
+  const key = relKey(rel);
+  if (manifest.replaced.some((row) => relKey(row.rel) === key)) return;
   if (!wasAdded(manifest, rel)) manifest.added.push(rel);
 }
 
@@ -628,6 +636,25 @@ async function enableAddonInIni(exeDir, addonName, log, gameDir, manifest) {
   }
 }
 
+// Switching route restores the previous install first, so the routes cannot
+// leave two consumers behind on their own. A copy that no route put there can:
+// one the person added on the Add-ons page, or one another installer left. Any
+// such copy is moved into the backup rather than deleted, so Restore originals
+// puts back exactly what was found.
+async function retireRivalConsumers(manifest, gameDir, exeDir, keepName, log) {
+  for (const name of neuralUpstream.rivalConsumers(exeDir, keepName)) {
+    const file = path.join(exeDir, name);
+    const rel = await trackBeforeWrite(manifest, gameDir, file, { kind: 'consumer' });
+    await saveActiveManifest(gameDir, manifest);
+    // An earlier install can have left it read-only, and Windows refuses to
+    // unlink that. Failing here would leave the two-consumer fault this whole
+    // step exists to prevent.
+    await fs.promises.chmod(file, 0o666).catch(() => {});
+    await fs.promises.unlink(file);
+    log('rivalConsumerRetired', { rel, keep: keepName });
+  }
+}
+
 // A game that ships its own D3DCompiler_47.dll from before the Windows 10 SDK
 // cannot compile the neural pass, which is built as cs_5_1: Windows loads the
 // game-local copy first, the pass compiles to nothing, and every other sign -
@@ -675,9 +702,17 @@ async function applySwap(config, onLog) {
     Boolean(source.feeder && source.feeder.multipassAddon) && fs.existsSync(source.feeder.multipassAddon);
   if (config.route === 'renodx' && !multipass) throw fail('errMultipassMissing');
 
+  // The same shape again, and for the same reason: one more consumer that
+  // cannot share a folder with the others, so it is a route rather than a
+  // switch. This one runs the neural pass on the frame the game rendered
+  // instead of on the frame DLSS produced, which is the whole of the
+  // difference - the same model over 44% of the pixels.
+  const preUpscale = config.route === 'preupscale';
+  if (preUpscale && !config.preUpscaleAddon) throw fail('errNoNeuralUpstream');
+
   const scan = await scanGame(gameDir);
   const manifest = beginManifest(gameDir, exePath, api);
-  manifest.route = multipass ? 'renodx' : 'native';
+  manifest.route = preUpscale ? 'preupscale' : multipass ? 'renodx' : 'native';
   manifest.game.apiLabel = config.apiLabel;
   const setup = setupRunner || runSetup;
 
@@ -734,10 +769,12 @@ async function applySwap(config, onLog) {
     await copyTracked(manifest, gameDir, item.path, dest, { newVersion: item.version });
   }
 
-  // 3) The RenoDX add-on itself.
-  const addonSource = multipass ? source.feeder.multipassAddon : source.addon;
+  // 3) The neural consumer for this route.
+  const addonSource = preUpscale ? config.preUpscaleAddon
+    : multipass ? source.feeder.multipassAddon : source.addon;
   if (addonSource) {
     const addonName = path.basename(addonSource);
+    await retireRivalConsumers(manifest, gameDir, exeDir, addonName, log);
     const dest = path.join(exeDir, addonName);
     const rel = path.relative(gameDir, dest);
     if (fs.existsSync(dest)) {
@@ -890,6 +927,9 @@ async function restoreFiles(gameDir, manifest, onLog) {
     }
   }
   for (const rel of manifest.added) {
+    // Manifests written before the guard in rememberAdded can hold a path in
+    // both lists. The original always wins.
+    if (manifest.replaced.some((row) => relKey(row.rel) === relKey(rel))) continue;
     const target = journal.safePath(gameDir, rel);
     if (fs.existsSync(target)) {
       await journal.capture(gameDir, target);
@@ -964,4 +1004,4 @@ async function makeReShadeConfigWritable(exeDir) {
   return cleared;
 }
 
-module.exports = { makeReShadeConfigWritable, applySwap, restore, restoreFiles, retireOldShaderCompiler, canWrite, backupRoot, compareVersions, beginManifest, originalPath, copyTracked, writeTracked, saveActiveManifest, enableAddonInIni, trackBeforeWrite };
+module.exports = { makeReShadeConfigWritable, applySwap, restore, restoreFiles, retireOldShaderCompiler, retireRivalConsumers, canWrite, backupRoot, compareVersions, beginManifest, originalPath, copyTracked, writeTracked, saveActiveManifest, enableAddonInIni, trackBeforeWrite };

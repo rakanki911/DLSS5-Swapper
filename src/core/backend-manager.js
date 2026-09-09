@@ -7,6 +7,7 @@ const journal = require('./file-journal');
 const core = require('./apply');
 const ini = require('./feeder-config');
 const optiscaler = require('./optiscaler');
+const neuralUpstream = require('./neural-upstream');
 const compatibility = require('./compatibility');
 
 function readManifest(gameDir) {
@@ -21,7 +22,7 @@ function profileFile(gameDir, exePath, api, route) {
   // The profile file is named after the route, so this list is what decides
   // whether a route can keep its own settings at all - and a route missing
   // from it fails the install with nothing but "Invalid route".
-  if (!['native', 'feeder', 'optiscaler', 'renodx'].includes(route)) throw new Error('Invalid route');
+  if (!['native', 'feeder', 'optiscaler', 'renodx', 'preupscale'].includes(route)) throw new Error('Invalid route');
   const id = crypto.createHash('sha256').update(`${path.relative(gameDir, exePath).toLowerCase()}|${api}`).digest('hex').slice(0, 24);
   return journal.safePath(gameDir, `_DLSS5_Backup/.profiles/${id}-${route}.json`);
 }
@@ -126,6 +127,14 @@ async function install(config, log = () => {}) {
     if (config.route === 'optiscaler') manifest = await optiscaler.install({ ...config, profile }, log);
     else manifest = await core.applySwap(config, log);
     for (const companion of config.route === 'native' ? (config.companions || []) : []) {
+      // A companion that drives the neural pass itself is not a companion at
+      // all: writing it beside the route's own consumer puts two of them in the
+      // folder, which is the thing the routes exist to prevent. Say it was
+      // skipped rather than break the install quietly.
+      if (neuralUpstream.isConsumer(path.basename(companion))) {
+        log({ code: 'consumerCompanionSkipped', params: { name: path.basename(companion) } });
+        continue;
+      }
       const dest = path.join(path.dirname(config.exePath), path.basename(companion));
       await core.copyTracked(manifest, config.gameDir, companion, dest, { kind: 'addon' });
       await core.enableAddonInIni(path.dirname(config.exePath), path.basename(companion),

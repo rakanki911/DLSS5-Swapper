@@ -40,6 +40,12 @@
     // the reason this route exists. D3D9 goes through dgVoodoo here and is a
     // separate question. 32-bit is out: the add-on is 64-bit only.
     if (target.bitness === 64 && !target.emulator) routes.push('renodx');
+    // The neural pass costs what the pixel count costs, and DLSS is the only
+    // thing here that makes the picture smaller before it runs. So this route
+    // is offered exactly where there is an upscale to run ahead of: a 64-bit
+    // DirectX 12 game with DLSS of its own. Through the Feeder the game renders
+    // at native, and there would be nothing to be early to.
+    if (routes.includes('native') && target.hasNativeDlss) routes.push('preupscale');
     return routes;
   }
   function recommendedRoute(scan, target = scan.chosen) {

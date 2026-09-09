@@ -48,7 +48,7 @@ test('the two consumers have different names, so one can never overwrite the oth
   // One add-on is copied, chosen once, and the same variable is what gets
   // written into ReShade.ini - so the file installed and the file enabled
   // cannot drift apart.
-  assert.match(apply, /const addonSource = multipass \? source\.feeder\.multipassAddon : source\.addon;/);
+  assert.match(apply, /: multipass \? source\.feeder\.multipassAddon : source\.addon;/);
   assert.match(apply, /const addonName = path\.basename\(addonSource\);/);
 });
 
@@ -86,7 +86,7 @@ test('the route follows what the add-on says it presents on', () => {
 test('the route can keep its own settings, like every other route', () => {
   const backends = require('../src/core/backend-manager');
   const source = fs.readFileSync(path.join(__dirname, '..', 'src', 'core', 'backend-manager.js'), 'utf8');
-  assert.match(source, /\['native', 'feeder', 'optiscaler', 'renodx'\]\.includes\(route\)/,
+  assert.match(source, /\[[^\]]*'renodx'[^\]]*\]\.includes\(route\)/,
     'renodx is on the list profileFile checks');
   assert.ok(typeof backends.saveProfile === 'function' && typeof backends.loadProfile === 'function');
 });

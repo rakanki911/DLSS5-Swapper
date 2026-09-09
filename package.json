@@ -7,6 +7,7 @@
     "start": "electron .",
     "test": "node --test --test-concurrency=1 test/*.test.js",
     "test:ui": "electron scripts/test-game-filters-ui.js",
+    "test:sheet": "electron scripts/test-install-sheet-ui.js",
     "test:payload": "node scripts/test-feeder-payload.js",
     "test:optiscaler": "node scripts/test-optiscaler-payload.js",
     "payload": "node scripts/collect-payload.js",
