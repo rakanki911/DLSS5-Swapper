@@ -120,5 +120,19 @@ contextBridge.exposeInMainWorld('lab', {
   testFinishInstall: () => { holdInstall = false; finishInstall?.(); },
   setLang: async () => {},
   setTheme: async () => {},
-  onJob: () => {}
+  onJob: () => {},
+  // The window asks for these while it is opening. Without them the very first
+  // await throws and the whole run stops before a single filter is exercised,
+  // which is what "communityNoticeSettings is not a function" was. They answer
+  // with nothing rather than with fixture data: these tests are about the games
+  // grid and the install sheet, and everything here stays offline.
+  addons: async () => [],
+  overlays: async () => ({ rows: [], installed: [] }),
+  overlayPreferences: async () => ({ enabled: false }),
+  checkUpdate: async () => null,
+  communityNotices: async () => ({ notices: [], unread: 0 }),
+  communityNoticeSettings: async () => ({ on: false }),
+  communityNoticesRead: async () => {},
+  onCommunityNotices: () => {},
+  onCommunityOpen: () => {}
 });

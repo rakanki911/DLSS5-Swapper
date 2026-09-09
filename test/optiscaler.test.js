@@ -11,7 +11,7 @@ const ini = require('../src/core/feeder-config');
 
 test('OptiScaler is optional, gated by real DLSS, architecture and API', () => {
   const target = { bitness: 64, api: 'dxgi', apiLabel: 'DirectX 12', hasNativeDlss: true };
-  assert.deepEqual(routes.routesFor(target), ['native', 'feeder', 'optiscaler', 'renodx']);
+  assert.deepEqual(routes.routesFor(target), ['native', 'feeder', 'optiscaler', 'renodx', 'preupscale']);
   assert.equal(routes.recommendedRoute({ chosen: target, primaryDlss: { rel: 'nvngx_dlss.dll' } }), 'native');
   for (const delta of [{ bitness: 32 }, { hasNativeDlss: false }, { emulator: { key: 'xenia' } }, { api: 'd3d9' }, { api: 'd3d8' }, { api: 'opengl' }, { apiLabel: 'DirectX 10' }]) {
     assert.equal(routes.routesFor({ ...target, ...delta }).includes('optiscaler'), false);

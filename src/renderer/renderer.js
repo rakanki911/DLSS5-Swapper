@@ -771,7 +771,7 @@ function installOptions(d, pick, dir) {
         <option value="optiscaler"${opti ? ' selected' : ''}${optiReason ? ' disabled' : ''}>OptiScaler DLSS-NR</option>
       </select></label>
       ${!opti ? `<label><span>${t('fRoute')}</span><select id="routeChoice">${routes.filter(item => item !== 'optiscaler').map((item) =>
-        `<option value="${item}"${item === route ? ' selected' : ''}>${t(item === 'feeder' ? 'routeFeeder' : item === 'renodx' ? 'routeRenodx' : 'routeNative')}</option>`).join('')}</select></label>
+        `<option value="${item}"${item === route ? ' selected' : ''}>${t(item === 'feeder' ? 'routeFeeder' : item === 'renodx' ? 'routeRenodx' : item === 'preupscale' ? 'routePreUpscale' : 'routeNative')}</option>`).join('')}</select></label>
       ` : ''}
       ${opti ? `<label><span>${t('fOptiBuild')}</span><select id="optiBuild"></select></label>` : ''}
     </div>
@@ -781,6 +781,7 @@ function installOptions(d, pick, dir) {
         ${optiReason ? `<span>${t(optiReason)}</span>` : ''}
         ${route === 'native' ? `<span>${t('nativeEffectsHint')}</span>` : ''}
         ${route === 'renodx' ? `<span>${t('routeRenodxHint')}</span>` : ''}
+        ${route === 'preupscale' ? `<span>${t('routePreUpscaleHint')}</span>` : ''}
         ${opti && (api.api === 'vulkan' || api.label === 'DirectX 11') ? `<span>${t('optiBridgeHint')}</span>` : ''}
         ${opti && api.api === 'vulkan' ? `<span>${t('optiVulkanHint')}</span>` : ''}
       </div>`,
@@ -1431,7 +1432,7 @@ document.addEventListener('keydown', (e) => {
 });
 // Most job events are progress markers read as codes. The few that are
 // advice for the person are shown in their language instead.
-const SPOKEN_JOB_CODES = new Set(['historySaveWarning', 'driverNeuralFault', 'oldShaderCompiler', 'overlaySkipped', 'feedVkLayerReady', 'neuralModelKept']);
+const SPOKEN_JOB_CODES = new Set(['historySaveWarning', 'driverNeuralFault', 'oldShaderCompiler', 'overlaySkipped', 'feedVkLayerReady', 'neuralModelKept', 'rivalConsumerRetired', 'consumerCompanionSkipped', 'overlayPreUpscale']);
 window.lab.onJob((e) => jobLog(SPOKEN_JOB_CODES.has(e.code)
   ? t(e.code, ...Object.values(e.params || {}))
   : `${e.code} ${JSON.stringify(e.params)}`));

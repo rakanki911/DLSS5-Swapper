@@ -27,6 +27,7 @@ const installRoutes = require('./src/shared/install-routes');
 const renderingApi = require('./src/shared/rendering-api');
 const { projectUrl } = require('./src/core/project-links');
 const optiscaler = require('./src/core/optiscaler');
+const neuralUpstream = require('./src/core/neural-upstream');
 const { missingPayload } = require('./src/core/payload-guidance');
 const backends = require('./src/core/backend-manager');
 const journal = require('./src/core/file-journal');
@@ -1610,6 +1611,17 @@ ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) =>
     send({ code: 'optiVerified', params: { version: release.version } });
   }
 
+  // The pre-upscale consumer is not bundled. It is a 259 KB MIT add-on pinned
+  // by hash and fetched on first use, the same way OptiScaler arrives, and it
+  // is checked before a byte of it reaches a game folder.
+  let preUpscaleAddon = null;
+  if (route === 'preupscale') {
+    send({ code: 'preUpscaleDownloading', params: {} });
+    try { preUpscaleAddon = await neuralUpstream.ensureAddon(app.getPath('userData')); }
+    catch (err) { return { ok: false, code: componentCode(err, 'errPreUpscaleDownload'), message: err.message }; }
+    send({ code: 'preUpscaleVerified', params: { version: neuralUpstream.RELEASE.version } });
+  }
+
   // Check before restoring or touching the game: these DLLs are imported by
   // Feeder and its helper. Never report a working installation if absent.
   if (route === 'feeder') {
@@ -1677,7 +1689,13 @@ ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) =>
       // installed here for the previous one instead of stopping with "remove
       // the previous test overlay first".
       gameOverlay.replaceOutdated(overlayLibrary(), path.dirname(target.path));
-      if (gameOverlay.routes(target).includes(route)) {
+      // The overlay's controls are an adapter for one pinned RenoDX build, so
+      // they have nothing to drive on this route. The pre-upscale add-on
+      // registers a page of its own in the ReShade menu instead; say so rather
+      // than install an overlay that would sit there empty.
+      if (route === 'preupscale') {
+        send({ code: 'overlayPreUpscale', params: {} });
+      } else if (gameOverlay.routes(target).includes(route)) {
         overlayPlan = gameOverlay.prepare({ library: overlayLibrary(), target, route });
       } else {
         // Never silently. A route or an API the panel cannot ride on produced
@@ -1709,6 +1727,7 @@ ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) =>
       // replaces the ordinary one, so it is a property of the install rather
       // than an add-on somebody drops in beside it.
       multipass: (loadState().multipassGames || []).includes(path.resolve(dir).toLowerCase()),
+      preUpscaleAddon,
       antiCheatAcknowledged,
       emulator: target.emulator,
       source: p.source,
