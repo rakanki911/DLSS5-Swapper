@@ -42,10 +42,14 @@ test('install/restore IPC records all backends, not failures/cancels, and valida
       return { chosen: target, exeCandidates: [target], hasNativeDlss: true };
     } },
     './src/core/compatibility': { assertSafeTarget() {}, hasAntiCheat: () => protectedTarget },
-    './src/core/install-guards': { assertGameClosed: async () => {}, antiCheatPresent: () => false, gpuInfo: async () => [{}], gpuSupported: () => true },
+    './src/core/install-guards': { assertGameClosed: async () => {}, antiCheatPresent: () => false, gpuInfo: async () => [{}], gpuSupported: () => true, gpuModelSupported: () => true, driverSupported: () => true },
     './src/shared/install-routes': { nativeDlssPresent: () => true, routesFor: () => ['native', 'feeder', 'optiscaler'], recommendedRoute: () => 'native' },
     './src/core/runtime-components.js': { missingVCRuntime: () => [], ensureLumenite: async () => null },
-    './src/core/optiscaler': { checkConflicts() {}, ensureOptiScaler: async () => root, RELEASE: { version: 'fixture' } },
+    // releaseFor picks which pinned build a game asked for (#238); the stub
+    // has to answer it now that the install path consults it.
+    './src/core/optiscaler': { checkConflicts() {}, ensureOptiScaler: async () => root,
+      RELEASE: { version: 'fixture' }, RELEASES: [{ version: 'fixture' }],
+      releaseFor: (v) => ({ version: v || 'fixture' }) },
     './src/core/backend-manager': {
       readManifest: () => old,
       install: async config => {

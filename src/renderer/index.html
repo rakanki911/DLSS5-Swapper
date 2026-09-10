@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data:" />
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: https://5.rakanki.com http://127.0.0.1:*" />
   <title>DLSS 5 Swapper</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="overlay-lab.css" />
@@ -23,6 +23,10 @@
         <button class="nav-item" data-view="games">
           <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="11" rx="4"/><path d="M7 11v3m-1.5-1.5h3M16 12h.01M18.5 14h.01"/></svg>
           <span data-i18n="navGames">Games</span><i class="dot"></i>
+        </button>
+        <button class="nav-item" data-view="community">
+          <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.7M16 3.3a4 4 0 0 1 0 7.4"/></svg>
+          <span data-i18n="navCommunity">Community</span><i class="dot"></i>
         </button>
         <button class="nav-item" data-view="addons">
           <svg viewBox="0 0 24 24"><path d="M10 4.5a1.9 1.9 0 1 1 3.8 0V6H17a1 1 0 0 1 1 1v3.2h1.5a1.9 1.9 0 1 1 0 3.8H18V17a1 1 0 0 1-1 1h-3.2v1.5a1.9 1.9 0 1 1-3.8 0V18H7a1 1 0 0 1-1-1v-3.2H4.5a1.9 1.9 0 1 1 0-3.8H6V7a1 1 0 0 1 1-1h3z"/></svg>
@@ -49,13 +53,8 @@
       <div class="status-card">
         <div class="status-line"><i class="live"></i><b id="statusText" data-i18n="ready">Ready</b></div>
         <p class="status-sub">DLSS 5 Swapper</p>
-        <div class="status-ver-row">
-          <p class="status-sub" id="statusVersion"></p>
-          <button id="statusUpdateBadge" class="update-badge hidden" type="button" aria-label="Update available">
-            <span class="update-badge-dot"></span>
-            <span id="statusUpdateText">Update</span>
-          </button>
-        </div>
+        <p class="status-sub" id="statusVersion"></p>
+        <a class="status-update hidden" id="statusUpdate" href="https://github.com/rakanki911/DLSS5-Swapper/releases/latest" data-project="releases"></a>
         <div class="bar"><i id="statusBar" style="width:22%"></i></div>
       </div>
     </aside>
@@ -108,6 +107,28 @@
         <div class="glass log" id="log"></div>
       </section>
 
+      <!-- COMMUNITY -->
+      <section class="view" id="view-community">
+        <div class="section-head community-heading">
+          <!-- The badge is a sibling of the title, not inside it: the title's
+               text is replaced wholesale when the language changes. -->
+          <div><div class="community-title-row"><h3 id="communityTitle">Community-tested games</h3><span class="beta-tag" title="This feature is new and still being tested">BETA</span></div><p class="hint" id="communitySubtitle">Real results from DLSS 5 Swapper users.</p></div>
+          <div class="community-heading-actions">
+            <button class="glass-btn sm" id="communityRefresh">Refresh</button>
+            <span class="community-game-total" id="communityGameTotal" role="status" aria-live="polite">— games</span>
+          </div>
+        </div>
+        <div class="community-filters" role="search" aria-labelledby="communityTitle">
+          <label><span id="communitySearchLabel">Search games</span><input id="communitySearch" type="search" autocomplete="off" spellcheck="false"></label>
+          <label><span id="communityRouteLabel">Route</span><select id="communityRoute"><option value="all">All routes</option><option value="feeder">Feeder</option><option value="renodx">RenoDX</option><option value="optiscaler">OptiScaler</option></select></label>
+          <label><span id="communityApiLabel">Rendering API</span><select id="communityApi"><option value="all">All APIs</option><option value="dx12">DX12</option><option value="dx11">DX11</option><option value="dx9">DX9</option><option value="dx8">DX8</option><option value="vulkan">Vulkan</option><option value="opengl">OpenGL</option></select></label>
+          <label><span id="communityStatusLabel">Result</span><select id="communityStatus"><option value="all">All results</option><option value="working">Working</option><option value="mixed">Mixed</option><option value="broken">Not working</option></select></label>
+          <button class="ghost sm" id="communityClear">Clear filters</button>
+        </div>
+        <p id="communityNotice" class="community-notice" role="status" aria-live="polite"></p>
+        <div id="communityCards" class="community-grid"></div>
+      </section>
+
       <!-- GAMES -->
       <section class="view" id="view-games">
         <div class="section-head games-heading">
@@ -157,7 +178,7 @@
           <div class="row ol-toolbar"><label class="ol-install-switch"><input type="checkbox" role="switch" id="olEnabled"><span id="olEnabledLabel">Install with DLSS</span></label><button class="ghost sm" id="olSource">Developer files</button><button class="ghost sm" id="olHotkey">Hotkey · F8</button><button class="ghost sm" id="olCustom">Create theme</button><button class="glass-btn sm" id="olAdd">＋ Add</button></div>
         </div>
         <p id="olStatus" role="status" aria-live="polite"></p>
-        <div id="olThemeGallery"></div><div id="olLibrary"></div><div id="olInstalls"></div>
+        <p id="olBridge" class="ol-bridge"></p><div id="olThemeGallery"></div><div id="olLibrary"></div><div id="olInstalls"></div>
         <dialog id="olPreviewDialog" class="ol-dialog"><div class="ol-dialog-head"><h3 id="olPreviewLabel">Demo preview</h3><button id="olPreviewClose" class="ghost">✕</button></div><div id="olPreview"></div></dialog>
         <dialog id="olCustomDialog" class="ol-dialog ol-custom-dialog">
           <h3 id="olCustomTitle">Create a theme</h3>
@@ -193,6 +214,15 @@
           </div>
           <p class="hint hidden" id="aboutUpdateHint" role="status"></p>
           <p class="hint hidden" id="projectLinkError" role="status" data-i18n="errProjectLink"></p>
+          <div class="support">
+            <p class="support-line" data-i18n="supportBody"></p>
+            <div class="support-row">
+              <a href="https://buymeacoffee.com/rakanki911" data-project="coffee" class="support-button">
+                <img src="support-coffee.png" alt="Buy me a coffee" height="40">
+              </a>
+              <img class="support-qr" src="support-qr.png" alt="Buy me a coffee QR code" width="112" height="112">
+            </div>
+          </div>
           <p class="dim" data-i18n="aboutBy">Built by Rakan Alkhaldi</p>
         </div>
       </section>
@@ -278,6 +308,32 @@
   <div class="overlay hidden" id="overlay">
     <div class="sheet" id="sheet"></div>
   </div>
+  <dialog id="communityCardDialog" class="community-dialog">
+    <div class="community-card-head" id="communityCardHead"></div>
+    <!-- Following a game is what turns other people's comments on it into
+         something worth interrupting you for. Off unless asked for. -->
+    <button class="community-follow" id="communityFollow" type="button" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    </button>
+    <button class="community-close" id="communityCardClose" aria-label="Close">✕</button>
+    <div id="communityCardBody"></div>
+  </dialog>
+  <dialog id="communityReportDialog" class="community-dialog community-report-dialog">
+    <div class="community-card-head" id="communityReportHead"></div>
+    <button class="community-close" id="communityReportClose" aria-label="Close">✕</button>
+    <form id="communityReportForm" class="community-report-body">
+      <div class="community-report-grid">
+        <label><span id="communityReportRouteLabel" data-icon="route">Route used</span><select id="communityReportRoute" required><option value="">Choose…</option><option value="feeder">Feeder</option><option value="renodx">RenoDX</option><option value="optiscaler">OptiScaler</option></select></label>
+        <label><span id="communityReportApiLabel" data-icon="api">Rendering API</span><select id="communityReportApi"><option value="">Choose…</option><option value="dx12">DX12</option><option value="dx11">DX11</option><option value="dx9">DX9</option><option value="dx8">DX8</option><option value="vulkan">Vulkan</option><option value="opengl">OpenGL</option></select></label>
+      </div>
+      <fieldset class="community-verdicts"><legend id="communityVerdictLabel" data-icon="result">Your result</legend><button type="button" data-verdict="green"><b>Working</b><small>Game runs great</small></button><button type="button" data-verdict="yellow"><b>Works with issues</b><small>Minor or major issues</small></button><button type="button" data-verdict="red"><b>Not working</b><small>Doesn’t run or crashes</small></button></fieldset>
+      <label class="community-comment"><span id="communityCommentLabel" data-icon="comment">Optional comment</span><textarea id="communityReportComment" maxlength="1200" rows="4" placeholder="Write a comment about your experience, settings, or issues…"></textarea><span class="community-count" id="communityCommentCount">0/1200</span></label>
+      <div class="community-privacy"><b id="communityPrivacyTitle" data-icon="sent">Data that will be sent</b><div id="communityPrivacyData"></div></div>
+      <p id="communityReportError" class="community-error" role="status"></p>
+      <div class="community-submit-row"><span class="community-why" id="communityWhy">Your report helps improve compatibility for everyone.</span><button type="button" class="ghost" id="communityReportCancel">Cancel</button><button type="submit" class="glass-btn" id="communityReportSubmit">Submit report</button></div>
+    </form>
+  </dialog>
+  <div id="gameMenu" class="ctx-menu hidden" role="menu" aria-hidden="true"></div>
   <div id="copyFeedback" class="copy-feedback hidden" role="status" aria-live="polite"></div>
 
   <script src="overlay-panel.js"></script>
@@ -287,8 +343,12 @@
   <script src="i18n-extra.js"></script>
   <script src="../shared/feature-i18n.js"></script>
   <script src="game-filters.js"></script>
+  <script src="mentions.js"></script>
+  <script src="ask.js"></script>
+  <script src="cheer.js"></script>
   <script src="../shared/install-routes.js"></script>
   <script src="../shared/rendering-api.js"></script>
+  <script src="community.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

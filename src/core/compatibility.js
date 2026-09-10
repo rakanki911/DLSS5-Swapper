@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const pe = require('./pe');
 const guards = require('./install-guards');
-const { inspectReShade } = require('./scan');
+const { inspectReShade, isVulkanWrapper } = require('./scan');
 const { safePath } = require('./file-journal');
 
 function problem(code, message) { return Object.assign(new Error(message || code), { code }); }
@@ -36,19 +36,29 @@ function targetIssue(gameDir, exePath) {
   if (managedModRoot(gameDir, exePath)) return 'errManagedModpack';
   return null;
 }
+// Shader Model 5.1 arrived with the Windows 10 SDK, and the neural pass is
+// compiled as cs_5_1. A game that ships an older D3DCompiler_47.dll beside
+// its executable - Spider-Man Remastered carries 6.3.9600 from Windows 8.1 -
+// gets that copy loaded in preference to the current one in System32, and the
+// pass then compiles to nothing while everything else reports success.
+function oldShaderCompiler(exeDir, readVersion = pe.getFileVersion) {
+  const file = path.join(exeDir, 'D3DCompiler_47.dll');
+  let version;
+  try {
+    if (!fs.existsSync(file)) return null;
+    version = readVersion(file);
+  } catch { return null; }
+  // A version that cannot be read says nothing either way, and is left alone.
+  const major = /^(\d+)\./.exec(String(version || ''));
+  if (!major || Number(major[1]) >= 10) return null;
+  return { file, version };
+}
 function assertSafeTarget(gameDir, exePath) {
   const issue = targetIssue(gameDir, exePath);
   if (issue) throw problem(issue);
 }
 function assertAntiCheatConsent(gameDir, exePath, acknowledged) {
   if (hasAntiCheat(gameDir, exePath) && acknowledged !== true) throw problem('errAntiCheatConsent');
-}
-function isVulkanWrapper(file, bitness) {
-  if (pe.getBitness(file) !== bitness || pe.versionMentions(file, 'ReShade')) return false;
-  if (pe.versionMentions(file, 'DXVK') || pe.versionMentions(file, 'vkd3d')) return true;
-  const markers = pe.findMarkers(file, ['DXVK', 'vkd3d', 'vkGetInstanceProcAddr', 'ReShade']);
-  return !markers.has('ReShade') && markers.has('vkGetInstanceProcAddr') &&
-    (markers.has('DXVK') || markers.has('vkd3d'));
 }
 function assertLoaderCompatible(config, manifest) {
   const { gameDir, exePath, api, bitness, route } = config;
@@ -65,7 +75,7 @@ function assertLoaderCompatible(config, manifest) {
     throw problem('errLoaderConflict', reshade.file);
   }
   for (const name of fs.readdirSync(dir)) {
-    if (!/^(dxgi|d3d8|d3d9|d3d10|d3d10core|d3d11|d3d12|opengl32)\.dll$/i.test(name)) continue;
+    if (!/^(dxgi|ddraw|d3d8|d3d9|d3d10|d3d10core|d3d11|d3d12|opengl32)\.dll$/i.test(name)) continue;
     const file = safePath(gameDir, path.relative(gameDir, path.join(dir, name)));
     if (pe.versionMentions(file, 'ReShade') && ++reshadeHooks > 1) throw problem('errLoaderConflict', 'Multiple ReShade hooks: ' + dir);
     const key = path.relative(gameDir, file).replace(/\\/g, '/').toLowerCase();
@@ -83,4 +93,4 @@ function assertLoaderCompatible(config, manifest) {
     throw problem('errLoaderConflict', path.relative(gameDir, file));
   }
 }
-module.exports = { targetIssue, hasAntiCheat, assertSafeTarget, assertAntiCheatConsent, assertLoaderCompatible, managedModRoot };
+module.exports = { targetIssue, hasAntiCheat, oldShaderCompiler, assertSafeTarget, assertAntiCheatConsent, assertLoaderCompatible, managedModRoot };

@@ -18,10 +18,19 @@ function readManifest(gameDir) {
   return manifest;
 }
 function profileFile(gameDir, exePath, api, route) {
-  if (!['native', 'feeder', 'optiscaler'].includes(route)) throw new Error('Invalid route');
+  // The profile file is named after the route, so this list is what decides
+  // whether a route can keep its own settings at all - and a route missing
+  // from it fails the install with nothing but "Invalid route".
+  if (!['native', 'feeder', 'optiscaler', 'renodx'].includes(route)) throw new Error('Invalid route');
   const id = crypto.createHash('sha256').update(`${path.relative(gameDir, exePath).toLowerCase()}|${api}`).digest('hex').slice(0, 24);
   return journal.safePath(gameDir, `_DLSS5_Backup/.profiles/${id}-${route}.json`);
 }
+// What a settings file may be called. ReShade lets a preset be named anything,
+// and mod packs routinely ship one as .txt - the writer stored those and the
+// reader then refused them, which left the game unable to be installed at all
+// until someone deleted the profile by hand. One list, used by both.
+const CONFIG_FILE = /\.(ini|cfg|txt)$/i;
+
 function configPaths(gameDir, exePath, route) {
   const dir = path.dirname(exePath);
   if (route === 'optiscaler') return [path.join(dir, 'OptiScaler.ini')];
@@ -30,7 +39,7 @@ function configPaths(gameDir, exePath, route) {
   const files = [reshade, path.join(dir, 'dlss5-feed.cfg'), path.join(dir, 'host64', 'ReShade.ini')];
   const rel = path.relative(gameDir, preset);
   if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) files.push(preset);
-  return files;
+  return files.filter(file => CONFIG_FILE.test(file));
 }
 async function saveProfile(gameDir, old) {
   const exe = journal.safePath(gameDir, old.game.exe);
@@ -50,11 +59,19 @@ function loadProfile(config) {
   if (!fs.existsSync(file)) return {};
   const profile = JSON.parse(fs.readFileSync(file, 'utf8'));
   if (profile.version !== 1 || !profile.files || typeof profile.files !== 'object') throw new Error('Invalid backend profile');
+  const files = {};
   for (const [rel, text] of Object.entries(profile.files)) {
     journal.safePath(config.gameDir, rel);
-    if (!/\.(ini|cfg)$/i.test(rel) || typeof text !== 'string' || text.length > 4 * 1024 * 1024 || rel.toLowerCase().includes('_dlss5_backup')) throw new Error('Invalid backend profile');
+    // A path escaping the game, a non-string, an oversized blob or anything
+    // aimed at the backup folder is refused: that is tampering, not a setting.
+    if (typeof text !== 'string' || text.length > 4 * 1024 * 1024 || rel.toLowerCase().includes('_dlss5_backup')) {
+      throw new Error('Invalid backend profile');
+    }
+    // Anything that is not a settings file is simply not restored, rather than
+    // making the whole install impossible.
+    if (CONFIG_FILE.test(rel)) files[rel] = text;
   }
-  return profile.files;
+  return files;
 }
 async function install(config, log = () => {}) {
   compatibility.assertSafeTarget(config.gameDir, config.exePath);

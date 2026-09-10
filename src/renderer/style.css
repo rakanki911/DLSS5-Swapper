@@ -143,6 +143,338 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
 }
 .nav-item.active .dot { background: var(--accent); box-shadow: 0 0 8px rgba(108, 193, 10, .6); }
 
+/* ---------------- community ---------------- */
+.community-heading { align-items: flex-start; }
+.community-heading h3 { margin-bottom: 4px; }
+/* The community page is new and talks to a server that is new with it.
+   The badge says so plainly, next to the title rather than inside it -
+   the title is rewritten whenever the language changes. */
+.community-title-row { display: flex; align-items: center; gap: 10px; }
+.beta-tag {
+  display: inline-flex; align-items: center; height: 20px; padding: 0 9px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .14em; line-height: 1;
+  color: var(--accent-2); background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
+  margin-bottom: 4px; user-select: none;
+}
+:root[data-theme="dark"] .beta-tag { color: var(--accent); }
+.community-heading-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end }
+.community-game-total {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 0 4px;
+  color: var(--muted); font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums;
+}
+.community-game-total::before {
+  content: ''; width: 15px; height: 15px; opacity: .82;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23000' stroke-width='1.8' d='M8 5h8v4H8zM4 10h16v8H4zM8 14h.01M11 14h.01M16 14h.01'/%3E%3C/svg%3E") center/contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23000' stroke-width='1.8' d='M8 5h8v4H8zM4 10h16v8H4zM8 14h.01M11 14h.01M16 14h.01'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.community-filters {
+  display: grid; grid-template-columns: minmax(230px, 1.8fr) repeat(3, minmax(130px, 1fr)) auto;
+  gap: 10px; align-items: end; margin: 14px 0 18px;
+}
+.community-filters label, .community-report-grid label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; }
+.community-filters input, .community-filters select, .community-report-grid select, .community-comment textarea, .community-profile input {
+  min-height: 40px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 11px;
+  background: var(--glass); color: var(--text); font: inherit; outline: none;
+}
+.community-filters input:focus, .community-filters select:focus, .community-report-grid select:focus, .community-comment textarea:focus, .community-profile input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,193,10,.12); }
+.community-notice { min-height: 20px; color: var(--muted); margin: 0 0 10px; }
+.community-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap: 18px; }
+
+/* The poster is the card: art fills it, a veil carries the text, and everything
+   else sits on top. Without art the initials stand in on a hue derived from the
+   title, so the grid never shows a hole where a picture will be. */
+.community-card {
+  position: relative; display: block; width: 100%; padding: 0; overflow: hidden;
+  aspect-ratio: 16 / 10; text-align: start; cursor: pointer; color: #fff;
+  border: 1px solid var(--line); border-radius: 16px;
+  background:
+    radial-gradient(120% 120% at 20% 0%, hsl(var(--card-hue) 45% 30%) 0%, transparent 70%),
+    linear-gradient(160deg, hsl(var(--card-hue) 40% 22%), hsl(calc(var(--card-hue) + 40deg) 35% 12%));
+  box-shadow: 0 10px 28px rgba(0,0,0,.28);
+}
+.community-art {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  transition: transform .4s cubic-bezier(.22,.9,.3,1);
+}
+.community-card:hover .community-art { transform: scale(1.045); }
+.community-initials {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 58px; font-weight: 800; letter-spacing: .04em; color: rgba(255,255,255,.22);
+}
+/* Dark at the bottom where the words are, clear at the top where the art is. */
+.community-veil {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to top, rgba(6,10,16,.94) 0%, rgba(6,10,16,.78) 34%, rgba(6,10,16,.24) 62%, rgba(6,10,16,.34) 100%);
+}
+
+.community-pill, .community-kind {
+  position: absolute; z-index: 1; top: 12px; display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 11px; border-radius: 999px; font-size: 11px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; backdrop-filter: blur(8px);
+  background: rgba(10,16,24,.62); border: 1px solid rgba(255,255,255,.14); color: #fff;
+}
+.community-pill { inset-inline-start: 12px; }
+.community-kind { inset-inline-end: 12px; color: rgba(255,255,255,.75); }
+
+.community-card-body {
+  position: absolute; z-index: 1; inset-inline: 0; bottom: 0; display: grid; gap: 9px; padding: 16px 18px 16px;
+}
+.community-title {
+  font-size: 19px; font-weight: 700; line-height: 1.25; color: #fff;
+  text-shadow: 0 2px 12px rgba(0,0,0,.55);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+/* Numbers people read at a glance, so they are spaced and tabular: a count
+   going from 9 to 10 must not shift the two beside it. */
+.community-counts { display: flex; align-items: center; gap: 18px; font-size: 16px; font-weight: 700;
+  font-variant-numeric: tabular-nums; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,.5); }
+.community-counts span { display: inline-flex; align-items: center; gap: 7px; line-height: 1; }
+.community-counts .community-dot { width: 10px; height: 10px; }
+
+.community-card-foot {
+  display: flex; align-items: center; gap: 18px; color: rgba(255,255,255,.72); font-size: 12.5px;
+}
+.community-card-foot span { display: inline-flex; align-items: center; gap: 7px; }
+.community-card-foot svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* The affordance, bottom corner, the way the mock-up has it. */
+.community-go {
+  position: absolute; z-index: 2; inset-inline-end: 16px; bottom: 16px; width: 38px; height: 38px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: rgba(12,18,26,.66); border: 1px solid rgba(255,255,255,.18); color: #fff;
+  backdrop-filter: blur(8px);
+  transition: transform .18s cubic-bezier(.3,1.2,.4,1), background .18s ease, border-color .18s ease;
+}
+.community-go svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.community-card:hover .community-go { background: var(--accent); border-color: var(--accent); color: #08120a; transform: translateX(3px); }
+[dir="rtl"] .community-go svg { transform: scaleX(-1); }
+[dir="rtl"] .community-card:hover .community-go { transform: translateX(-3px); }
+
+.community-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; background: #82909c; flex: none; }
+.community-dot.working, .community-dot.green { background: #69bd0c; box-shadow: 0 0 9px rgba(105,189,12,.55); }
+.community-dot.mixed, .community-dot.yellow { background: #d99e00; box-shadow: 0 0 9px rgba(217,158,0,.45); }
+.community-dot.broken, .community-dot.red { background: #e54d58; box-shadow: 0 0 9px rgba(229,77,88,.45); }
+.community-report-dialog { width: min(1020px, calc(100vw - 48px)); }
+/* The design is a blue-tinted surface with the cards lifted clearly out of it,
+   not the near-black the rest of the app uses. Scoped here so nothing else
+   changes underneath. */
+.community-dialog {
+  /* Every surface in both dialogs reads these two, so re-hueing them here is
+     what carries the game's colour into the report sheet as well - its field
+     cards, its three answers, its comment box - without naming any of them.
+     The lightnesses are the ones that were always here; only the hue moves. */
+  --panel: hsl(var(--card-hue) calc(var(--card-sat) * .55) 11%);
+  --glass: hsl(var(--card-hue) calc(var(--card-sat) * .48) 15%);
+  --line: hsl(var(--card-hue) calc(var(--card-sat) * .40) 40% / .22);
+  --muted: #93a3b4;
+  --dim: #6d7f92;
+}
+:root[data-theme="light"] .community-dialog {
+  --panel: hsl(var(--card-hue) calc(var(--card-sat) * .30) 99%);
+  --glass: hsl(var(--card-hue) calc(var(--card-sat) * .34) 96%);
+  --line: hsl(var(--card-hue) calc(var(--card-sat) * .40) 40% / .16);
+  --muted: #5a6a7a; --dim: #7d8c9b;
+}
+.community-dialog {
+  /* The reset at the top of this file sets margin:0 on everything, which takes
+     away the margin:auto a modal <dialog> is centred by - so without this it
+     opens in the top-left corner. */
+  margin: auto;
+  width: min(760px, calc(100vw - 42px)); max-height: calc(100vh - 54px);
+  /* Up and down is the only direction there is anything to scroll in. A
+     glow, a long word or a wide row would otherwise draw a sideways bar
+     under a page that has nowhere to go sideways. */
+  overflow-y: auto; overflow-x: hidden;
+  border: 1px solid var(--line); border-radius: 18px; padding: 22px; background: var(--panel); color: var(--text); box-shadow: 0 30px 90px rgba(0,0,0,.35);
+}
+.community-dialog::backdrop { background: rgba(6,13,20,.68); backdrop-filter: blur(6px); }
+/* The opened card: wide art behind the header, the tall poster beside the
+   title the way a store page shows it. */
+.community-dialog { padding: 0; }
+.community-card-head {
+  position: relative; overflow: hidden; padding: 20px 24px 18px;
+  border-radius: 18px 18px 0 0; isolation: isolate;
+  background: linear-gradient(150deg, hsl(var(--card-hue) 42% 22%), hsl(calc(var(--card-hue) + 40deg) 34% 12%));
+}
+.community-head-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+.community-head-veil {
+  position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(to top, rgba(8,13,20,.97) 4%, rgba(8,13,20,.72) 46%, rgba(8,13,20,.42) 100%);
+}
+.community-card-head { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: end; }
+.community-poster {
+  width: 122px; aspect-ratio: 2/3; border-radius: 13px; overflow: hidden; display: grid; place-items: center;
+  border: 1px solid rgba(255,255,255,.18); box-shadow: 0 14px 30px rgba(0,0,0,.55); background: rgba(10,16,24,.6);
+}
+.community-poster img { width: 100%; height: 100%; object-fit: cover; }
+.community-poster .community-initials { position: static; font-size: 34px; }
+.community-head-copy { display: grid; gap: 7px; min-width: 0; padding-bottom: 4px; }
+.community-head-copy h3 { margin: 0; font-size: 30px; font-weight: 740; line-height: 1.15; color: #fff; text-shadow: 0 3px 18px rgba(0,0,0,.6); }
+.community-head-copy p { margin: 0; color: rgba(255,255,255,.72); font-size: 13px; }
+
+.community-close {
+  position: absolute; top: 16px; inset-inline-end: 16px; z-index: 3;
+  width: 40px; height: 40px; display: grid; place-items: center; cursor: pointer;
+  border-radius: 12px; border: 1px solid rgba(255,255,255,.18); color: #fff; font-size: 15px;
+  background: rgba(12,18,26,.6); backdrop-filter: blur(10px);
+  transition: background .16s ease, transform .16s cubic-bezier(.3,1.3,.4,1);
+}
+.community-close:hover { background: rgba(226,90,90,.85); transform: scale(1.06); }
+
+/* One chip per route: a coloured mark, the name, its three counts. */
+.community-route-counts { display: flex; flex-wrap: nowrap; gap: 8px; margin-top: 6px; }
+.community-route-count {
+  display: inline-flex; align-items: center; gap: 9px; padding: 7px 9px; min-width: 0; flex: 1 1 0;
+  border-radius: 12px; border: 1px solid rgba(255,255,255,.14); background: rgba(12,18,26,.55);
+  backdrop-filter: blur(10px); transition: border-color .18s ease, transform .18s cubic-bezier(.3,1.2,.4,1);
+}
+.community-route-count:hover { transform: translateY(-2px); border-color: rgba(255,255,255,.3); }
+.community-route-tile {
+  width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: none; color: #fff;
+}
+.community-route-tile svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.community-route-count.feeder .community-route-tile { background: linear-gradient(140deg,#1f7a3f,#0f4a26); }
+.community-route-count.renodx .community-route-tile { background: linear-gradient(140deg,#6c3fd0,#3b1f78); }
+.community-route-count.optiscaler .community-route-tile { background: linear-gradient(140deg,#1f6fd0,#123f7a); }
+.community-route-copy { display: grid; gap: 3px; min-width: 0; }
+.community-route-copy b { color: #fff; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The counts inside a chip are read next to each other, not across the card. */
+.community-route-count .community-counts { gap: 10px; font-size: 13px; text-shadow: none; }
+.community-route-count .community-counts span { gap: 5px; }
+.community-route-count .community-dot { width: 8px; height: 8px; }
+.community-route-go { width: 13px; height: 13px; flex: none; margin-inline-start: auto; fill: none; stroke: rgba(255,255,255,.5); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+[dir="rtl"] .community-route-go { transform: scaleX(-1); }
+
+/* A comment. The sheen sweeps across it under the pointer. */
+.community-comments { display: grid; gap: 12px; padding: 18px 22px 22px; }
+.community-comment-card {
+  position: relative; overflow: hidden; display: grid; grid-template-columns: auto 1fr; gap: 16px;
+  border: 1px solid var(--line); border-radius: 16px; padding: 16px; background: var(--glass);
+  transition: transform .2s cubic-bezier(.22,.9,.3,1), border-color .2s ease, box-shadow .2s ease;
+}
+.community-comment-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,.10); box-shadow: 0 14px 34px rgba(0,0,0,.28); }
+
+/* A gold rim that lights the edge nearest the pointer and travels with it.
+   The gradient is painted over the whole card, then masked down to the border
+   itself: fill the box, punch out everything inside the 1px frame, and only
+   the frame is left to glow. */
+.community-comment-card::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.2px;
+  pointer-events: none; opacity: 0; transition: opacity .28s ease;
+  background:
+    radial-gradient(210px circle at var(--mx, 50%) var(--my, 50%),
+      rgba(255,206,110,.95) 0%, rgba(232,168,62,.55) 26%, rgba(214,150,40,0) 62%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+}
+.community-comment-card:hover::before { opacity: 1; }
+
+/* And the faintest warmth inside the glass, so the rim is not floating on its
+   own. Behind everything, above nothing. */
+.community-comment-card::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  opacity: 0; transition: opacity .28s ease;
+  background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255,196,86,.07) 0%, rgba(255,196,86,0) 70%);
+}
+.community-comment-card:hover::after { opacity: 1; }
+.community-comment-card > * { position: relative; z-index: 1; }
+.community-sheen {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.13) 50%, transparent 62%);
+  background-size: 220% 100%; background-position: 130% 0;
+  transition: opacity .2s ease;
+}
+.community-comment-card:hover .community-sheen { opacity: 1; animation: community-sweep .85s cubic-bezier(.3,.7,.4,1) }
+@keyframes community-sweep { from { background-position: 130% 0 } to { background-position: -60% 0 } }
+
+.community-avatar-tile {
+  width: 58px; height: 58px; border-radius: 15px; display: grid; place-items: center; flex: none;
+  border: 1px solid var(--line); background: linear-gradient(150deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+  font-size: 27px;
+}
+.community-admin-avatar { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; display: block }
+.community-admin-badge {
+  display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 6px;
+  background: var(--accent); color: #08120a; font-size: 9px; line-height: 1.4;
+  font-weight: 800; letter-spacing: .08em;
+}
+.community-announcement {
+  display: grid; grid-template-columns: auto 1fr; gap: 16px; padding: 16px;
+  border: 1px solid color-mix(in srgb,var(--accent) 58%,var(--line)); border-radius: 15px;
+  background: linear-gradient(135deg,color-mix(in srgb,var(--accent) 10%,var(--glass)),var(--glass));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+[dir="rtl"] .community-announcement { box-shadow: inset -3px 0 0 var(--accent) }
+.community-announcement > div { min-width: 0; display: grid; gap: 9px }
+.community-announcement header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px }
+.community-announcement p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55 }
+.community-pinned { color: var(--accent); font-size: 11px; font-weight: 700; margin-inline-start: 3px }
+.community-comment-main { display: grid; gap: 10px; min-width: 0; }
+.community-comment-card header { display: flex; align-items: center; gap: 8px; }
+.community-comment-card header b { color: var(--text); font-size: 15px; }
+.community-comment-card header small { color: var(--muted); font-size: 12.5px; font-weight: 500; }
+.community-when { margin-inline-start: auto; color: var(--muted); font-size: 12.5px; }
+.community-comment-card header .community-dot { flex: none; }
+.community-comment-card p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14.5px; line-height: 1.5; }
+.community-empty { color: var(--muted); margin: 0; }
+
+/* The hardware behind a verdict is half of what makes it worth reading. */
+.community-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.community-tags span {
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px;
+  background: rgba(255,255,255,.04); color: var(--text); font-size: 12.5px; white-space: nowrap;
+}
+
+.community-reactions { display: flex; flex-wrap: wrap; gap: 9px; }
+.community-reactions button {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px;
+  background: rgba(255,255,255,.04); color: var(--text); font-size: 14px; line-height: 1;
+}
+.community-reactions button span { font-size: 13px; font-weight: 650; color: var(--muted); font-variant-numeric: tabular-nums; }
+.community-reactions button.on span { color: var(--text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .community-comment-card, .community-route-count, .community-close { transition: none }
+  .community-comment-card:hover .community-sheen { animation: none; opacity: 0 }
+  /* The rim still marks what the pointer is on; it simply stops fading. */
+  .community-comment-card::before, .community-comment-card::after { transition: none }
+}
+
+.community-verdicts { border: 0; padding: 0; margin: 17px 0; display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; }
+.community-verdicts legend { grid-column: 1/-1; margin-bottom: 7px; color: var(--muted); font-size: 12px; }
+.community-verdicts button { border: 1px solid var(--line); border-radius: 11px; padding: 11px; background: var(--glass); color: var(--text); cursor: pointer; }
+.community-verdicts button[data-verdict="green"] { color: #69bd0c; } .community-verdicts button[data-verdict="yellow"] { color: #d99e00; } .community-verdicts button[data-verdict="red"] { color: #e54d58; }
+.community-verdicts button.selected { border-color: currentColor; box-shadow: inset 0 0 0 1px currentColor; }
+.community-comment textarea { resize: vertical; min-height: 88px; }
+.community-privacy { margin-top: 16px; border: 1px solid rgba(108,193,10,.35); border-radius: 13px; padding: 14px; background: rgba(108,193,10,.06); }
+.community-privacy > b { display: block; margin-bottom: 9px; }
+#communityPrivacyData { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+#communityPrivacyData div { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; border-bottom: 1px solid var(--line); padding: 4px 0; }
+#communityPrivacyData span { color: var(--muted); } .community-privacy p { color: var(--muted); font-size: 11px; margin: 10px 0 0; }
+.community-error, .community-profile-status { color: #d74b55; min-height: 18px; }
+.community-submit-row { display: flex; justify-content: flex-end; gap: 9px; margin-top: 12px; }
+.community-profile { display: grid; grid-template-columns: minmax(220px,1fr) minmax(300px,1.2fr); gap: 24px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.community-profile.admin-session { grid-template-columns: minmax(260px,560px); }
+.community-admin-identity { display: flex; align-items: center; gap: 11px; margin: 16px 0; }
+.community-admin-identity strong { display: flex; align-items: center; gap: 7px; }
+.community-profile-copy label { display: grid; gap: 6px; margin-top: 13px; color: var(--muted); font-size: 12px; }
+.community-profile-picker > span { color: var(--muted); font-size: 12px; }
+.community-profile-picker > div { display: grid; grid-template-columns: repeat(8,36px); gap: 6px; margin: 8px 0 12px; }
+.community-profile-picker [data-community-icon] { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 9px; background: var(--glass); cursor: pointer; }
+.community-profile-picker [data-community-icon].selected { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.community-live-privacy { margin: 12px 0 8px; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.community-remove-me { width: fit-content; border: 1px solid rgba(229,77,88,.38); border-radius: 9px; padding: 8px 11px; color: #d94d58; background: rgba(229,77,88,.06); font: inherit; font-size: 12px; cursor: pointer; }
+.community-remove-me:hover { border-color: #e54d58; background: rgba(229,77,88,.12); }
+.community-remove-me:disabled { opacity: .55; cursor: default; }
+@media (max-width: 980px) { .community-filters { grid-template-columns: 1fr 1fr; } .community-route-counts { grid-template-columns: 1fr; } }
+@media (max-width: 680px) { .community-report-grid, .community-profile, #communityPrivacyData { grid-template-columns: 1fr; } .community-verdicts { grid-template-columns: 1fr; } }
+
 .status-card {
   margin-top: auto;
   padding: 16px;
@@ -154,6 +486,14 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
 .live { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px rgba(108, 193, 10, .7); }
 .status-sub { font-size: 11.5px; color: var(--dim); margin-top: 4px; }
 .bar { height: 4px; border-radius: 4px; background: var(--line); margin-top: 12px; overflow: hidden; }
+/* Only there when a newer release exists; it is a link, never a nag. */
+.status-update {
+  display: block; margin: 6px 0 2px; font-size: 11.5px; font-weight: 600;
+  color: var(--accent); text-decoration: none;
+}
+.status-update:hover { text-decoration: underline; }
+/* A check that could not run is worth saying, but quietly: it is not news. */
+.status-update.muted { color: var(--muted); font-weight: 500; pointer-events: none; }
 .bar i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .3s ease; }
 
 /* ---------------- main ---------------- */
@@ -191,6 +531,29 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
   align-items: center;
   justify-content: space-between;
   margin: 26px 4px 12px;
+}
+/* #231: the way into the library sat at the far end of it. With thirty games,
+   the moment you want "Add a game" is the moment you have just scrolled it off
+   the top. The heading rides along instead - it is the only sticky thing on
+   the page, and it sits below the game sheet and every menu. */
+.section-head.games-heading {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  /* Bleed over the view's own 6px side padding so no card shows past the edges
+     of the bar as it scrolls underneath. */
+  margin: 0 -6px 12px;
+  padding: 18px 10px 12px;
+  /* The page behind is a gradient, so the bar borrows it rather than painting
+     a colour that would only match in one place. */
+  background: color-mix(in srgb, var(--bg-3) 72%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid transparent;
+  transition: border-color .2s ease;
+}
+.section-head.games-heading.stuck { border-bottom-color: var(--stroke); }
+@media (prefers-reduced-motion: reduce) {
+  .section-head.games-heading { transition: none }
 }
 .section-head h3 { font-size: 15.5px; font-weight: 650; }
 .section-head .count { color: var(--dim); font-weight: 400; font-size: 13px; margin-inline-start: 6px; }
@@ -967,6 +1330,9 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
    moved the sheet clear of the strip, which is why it worked there and not
    here. */
 .overlay, .overlay *, .lang-menu, .exe-menu { -webkit-app-region: no-drag; }
+/* A dialog can sit over the toolbar, and the toolbar is the window's drag
+   handle: without this the close button is inside it and cannot be clicked. */
+.community-dialog, .community-dialog * { -webkit-app-region: no-drag; }
 
 .win {
   width: 34px; height: 34px; flex: none;
@@ -1021,228 +1387,1267 @@ body { cursor: default; }
   .hist-row .n { flex-basis: 100%; }
 }
 
-/* ---------------- in-app update UI ---------------- */
-.status-ver-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+/* Support block on the About page. Both images are local files: the page
+   allows no remote images, and this must work offline. */
+.support { margin: 22px 0 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+.support-line { font-size: 13px; color: var(--muted); line-height: 1.8; margin-bottom: 14px; }
+.support-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.support-button { display: inline-flex; border-radius: 10px; }
+.support-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.support-qr { border-radius: 10px; background: #fff; padding: 6px; }
+
+/* ---------------- community: motion ---------------- */
+
+/* Cards arrive rather than appear, each a little after the one before it, so a
+   refreshed page reads as one movement instead of a flash. */
+@keyframes community-rise { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+.community-grid > * { animation: community-rise .34s cubic-bezier(.22,.9,.3,1) both }
+.community-grid > *:nth-child(1) { animation-delay: .01s } .community-grid > *:nth-child(2) { animation-delay: .04s }
+.community-grid > *:nth-child(3) { animation-delay: .07s } .community-grid > *:nth-child(4) { animation-delay: .10s }
+.community-grid > *:nth-child(5) { animation-delay: .13s } .community-grid > *:nth-child(6) { animation-delay: .16s }
+.community-grid > *:nth-child(7) { animation-delay: .19s } .community-grid > *:nth-child(8) { animation-delay: .22s }
+.community-grid > *:nth-child(n+9) { animation-delay: .25s }
+
+.community-card { transition: transform .18s cubic-bezier(.22,.9,.3,1), border-color .18s ease, box-shadow .18s ease }
+.community-card:active { transform: translateY(0) scale(.995) }
+
+/* A live count that just changed is worth one beat of attention, not a flash. */
+@keyframes community-bump { 50% { transform: scale(1.18) } }
+.community-counts .changed { animation: community-bump .42s cubic-bezier(.3,1.4,.4,1); display: inline-block }
+
+/* Green means people got it working, so it breathes; the others sit still. */
+@keyframes community-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(105,189,12,.5) } 50% { box-shadow: 0 0 0 5px rgba(105,189,12,0) } }
+.community-dot.working { animation: community-pulse 2.6s ease-out infinite }
+
+/* Waiting for the first answer should look like the thing that is coming. */
+@keyframes community-shimmer { to { background-position: 200% 0 } }
+.community-skeleton {
+  height: 148px; border-radius: 14px; border: 1px solid var(--line);
+  background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--text) 7%, transparent) 40%, transparent 60%)
+              var(--panel, transparent);
+  background-size: 200% 100%; animation: community-shimmer 1.25s linear infinite;
 }
 
-.update-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  border: 1px solid var(--accent);
-  color: var(--text);
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .2s ease;
-  animation: pulseBadge 2.4s infinite;
-}
-.update-badge:hover {
-  background: var(--accent);
-  color: #0b1405;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(108, 193, 10, .35);
-}
-@keyframes pulseBadge {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(108, 193, 10, .4); }
-  50% { box-shadow: 0 0 0 6px rgba(108, 193, 10, 0); }
+/* Nobody asked for motion sickness. */
+@media (prefers-reduced-motion: reduce) {
+  .community-grid > *, .community-counts .changed, .community-dot.working, .community-skeleton { animation: none }
+  .community-card, .avatar { transition: none }
 }
 
-.update-badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  display: inline-block;
-  box-shadow: 0 0 8px var(--accent);
+/* The card arrives the way the grid behind it does. */
+@keyframes community-dialog-in { from { opacity: 0; transform: translateY(12px) scale(.985) } to { opacity: 1; transform: none } }
+.community-dialog[open] { animation: community-dialog-in .22s cubic-bezier(.22,.9,.3,1) both }
+.community-dialog::backdrop { animation: community-fade .22s ease both }
+@keyframes community-fade { from { opacity: 0 } to { opacity: 1 } }
+@media (prefers-reduced-motion: reduce) {
+  .community-dialog[open], .community-dialog::backdrop { animation: none }
 }
-.update-badge:hover .update-badge-dot {
-  background: #0b1405;
+
+/* A reaction you have pressed reads as pressed, and pressing it again takes it back. */
+.community-reactions button { transition: transform .14s cubic-bezier(.3,1.3,.4,1), border-color .14s ease, background .14s ease, color .14s ease }
+.community-reactions button:hover { transform: translateY(-1px) }
+.community-reactions button:active { transform: scale(.94) }
+.community-reactions button.on {
+  border-color: var(--accent); color: var(--text);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+@media (prefers-reduced-motion: reduce) { .community-reactions button { transition: none } }
+
+/* The little celebration when you add a reaction. It lives inside the card it
+   belongs to, takes no clicks, and clears itself up. */
+.community-burst { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; border-radius: inherit; }
+.community-burst span {
+  position: absolute; bottom: -6%; font-size: var(--size); line-height: 1;
+  will-change: transform, opacity; opacity: 0;
+  animation: community-rise-away var(--life) cubic-bezier(.18,.66,.32,1) var(--delay) forwards;
+}
+@keyframes community-rise-away {
+  0%   { transform: translate3d(0,0,0) scale(.35) rotate(0deg); opacity: 0 }
+  14%  { opacity: 1 }
+  70%  { opacity: 1 }
+  100% { transform: translate3d(var(--dx), var(--dy), 0) scale(var(--scale)) rotate(var(--spin)); opacity: 0 }
+}
+
+/* ---------------- a thread under one result ---------------- */
+/* It replaces the list rather than opening a second window: one thing on
+   screen, one way back. */
+.community-thread { display: grid; gap: 16px; padding: 18px 22px 22px;
+  animation: community-rise .26s cubic-bezier(.22,.9,.3,1) both; }
+.community-back {
+  justify-self: start; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  padding: 8px 14px 8px 10px; border-radius: 999px; font-size: 13px;
+  border: 1px solid var(--line); background: var(--glass); color: var(--text);
+  transition: transform .16s cubic-bezier(.3,1.2,.4,1), border-color .16s ease;
+}
+.community-back:hover { transform: translateX(-2px); border-color: var(--accent); }
+.community-back svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+[dir="rtl"] .community-back svg { transform: scaleX(-1); }
+[dir="rtl"] .community-back:hover { transform: translateX(2px); }
+
+/* The subject of the thread, said once and small. A full comment card here
+   buried the conversation under a repeat of what was just clicked. */
+.community-thread-root { display: grid; gap: 8px; }
+.community-thread-label {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--dim);
+}
+.community-quote {
+  position: relative; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start;
+  padding: 14px 16px; border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--glass));
+  border: 1px solid var(--line);
+}
+/* One accent bar down the leading edge: this is the thing being answered. */
+.community-quote::before {
+  content: ''; position: absolute; inset-block: 11px; inset-inline-start: 0; width: 3px;
+  border-radius: 0 3px 3px 0; background: var(--accent); opacity: .85;
+}
+[dir="rtl"] .community-quote::before { border-radius: 3px 0 0 3px; }
+.community-quote header .community-dot { flex: none; }
+.community-quote header { display: flex; align-items: center; gap: 8px; }
+.community-quote header b { font-size: 14px; }
+.community-quote header small { color: var(--muted); font-size: 12px; font-weight: 500; }
+.community-quote p { margin: 5px 0 0; font-size: 14px; line-height: 1.45; }
+.community-about { display: block; margin-top: 7px; color: var(--muted); font-size: 12px; }
+
+.community-replies { display: grid; gap: 10px; }
+.community-reply {
+  display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start;
+  border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: var(--glass);
+  animation: community-rise .3s cubic-bezier(.22,.9,.3,1) both;
+}
+.community-reply header, .community-quote header { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.community-reply header b { font-size: 14px; }
+.community-reply header small { color: var(--muted); font-size: 12px; font-weight: 500; }
+.community-reply p { margin: 6px 0 0; font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.community-avatar-tile.small { width: 40px; height: 40px; border-radius: 12px; font-size: 19px; }
+
+/* One box, the same width as everything above it, with the button inside it
+   rather than hanging off the corner. */
+.community-composer {
+  position: relative; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--glass); transition: border-color .16s ease, box-shadow .16s ease;
+}
+.community-composer:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent); }
+.community-composer textarea {
+  display: block; width: 100%; resize: vertical; min-height: 62px; max-height: 220px;
+  font: inherit; font-size: 14px; line-height: 1.5; color: var(--text);
+  background: transparent; border: 0; outline: none;
+  padding: 14px 108px 14px 16px;
+}
+[dir="rtl"] .community-composer textarea { padding: 14px 16px 14px 108px; }
+.community-composer button {
+  position: absolute; inset-inline-end: 9px; bottom: 9px;
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  border: 0; border-radius: 10px; padding: 9px 14px; font-size: 13px; font-weight: 650;
+  background: var(--accent); color: #08120a;
+  transition: transform .16s cubic-bezier(.3,1.2,.4,1), filter .16s ease;
+}
+.community-composer button:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.community-composer button:disabled { opacity: .55; cursor: default; transform: none; }
+.community-composer button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+[dir="rtl"] .community-composer button svg { transform: scaleX(-1); }
+
+/* The way in, on every result. */
+.community-open-thread {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer; margin-inline-start: auto;
+  border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px;
+  background: transparent; color: var(--muted); font-size: 13px;
+  transition: color .16s ease, border-color .16s ease, background .16s ease;
+}
+.community-open-thread:hover { color: var(--text); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.community-open-thread svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.community-open-thread span { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .community-thread, .community-reply { animation: none }
+  .community-back { transition: none }
+}
+
+/* A route chip is a filter now, so it has to look pressable and look pressed. */
+.community-route-count { cursor: pointer; font: inherit; text-align: start; }
+.community-route-count.on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, rgba(12,18,26,.55));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.community-route-count.on .community-route-go { stroke: var(--accent); transform: rotate(90deg); }
+[dir="rtl"] .community-route-count.on .community-route-go { transform: rotate(90deg) scaleX(-1); }
+.community-route-go { transition: transform .18s cubic-bezier(.3,1.2,.4,1), stroke .18s ease; }
+
+/* What is being shown, and the way back to everything. */
+.community-route-filter {
+  display: flex; align-items: center; gap: 12px; margin: 0 22px; padding: 11px 15px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--glass);
+  color: var(--muted); font-size: 13px;
+}
+.community-route-filter span { font-weight: 650; color: var(--text); }
+.community-route-filter button {
+  margin-inline-start: auto; cursor: pointer; font: inherit; font-size: 12.5px;
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 13px;
+  background: transparent; color: var(--muted);
+  transition: color .16s ease, border-color .16s ease;
+}
+.community-route-filter button:hover { color: var(--text); border-color: var(--accent); }
+
+/* The way into the community from a game that is already open. It is the one
+   new thing in this row, so it carries the accent; the rest stay quiet. */
+.job-toolbar .ghost.accent {
+  color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  margin-inline-end: auto;
+}
+.job-toolbar .ghost.accent:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); border-color: var(--accent); }
+
+/* ---------------- the report dialog ---------------- */
+/* One glyph per label and per row: the eye finds the line it wants without
+   reading any of them. */
+.c-icon { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* What the app knows about the machine, said once under the title. */
+.community-head-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.community-chip {
+  display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: rgba(255,255,255,.92);
+  background: rgba(12,18,26,.55); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(10px);
+}
+.community-chip .c-icon { width: 14px; height: 14px; }
+
+.community-report-body {
+  display: grid; gap: 16px; padding: 18px 22px 18px;
+  background:
+    radial-gradient(120% 60% at 50% 0%, hsl(var(--card-hue) var(--card-sat) 45% / .16) 0%, transparent 62%),
+    var(--panel);
+  border-radius: 0 0 18px 18px;
+  transition: background .9s ease;
+}
+.community-report-body > * { animation: community-rise .3s cubic-bezier(.22,.9,.3,1) both; }
+.community-report-body > *:nth-child(1) { animation-delay: .02s }
+.community-report-body > *:nth-child(2) { animation-delay: .06s }
+.community-report-body > *:nth-child(3) { animation-delay: .10s }
+.community-report-body > *:nth-child(4) { animation-delay: .14s }
+.community-report-body > *:nth-child(n+5) { animation-delay: .18s }
+
+.community-report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.community-report-body label > span, .community-verdicts legend {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 7px; padding: 0;
+  color: var(--text); font-size: 13px; font-weight: 650;
+}
+.community-report-body label > span .c-icon, .community-verdicts legend .c-icon { width: 16px; height: 16px; color: rgba(255,255,255,.78); }
+
+.community-report-body select, .community-report-body textarea {
+  width: 100%; font: inherit; font-size: 13.5px; color: var(--text);
+  background: var(--glass); border: 1px solid var(--line); border-radius: 11px; padding: 11px 13px;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.community-report-body textarea { min-height: 74px; resize: vertical; line-height: 1.5; }
+.community-report-body select:focus, .community-report-body textarea:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent);
+}
+.community-comment { position: relative; display: block; }
+.community-count { display: block; justify-self: end; margin-top: 5px; text-align: end; color: var(--dim); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.community-count.near { color: var(--accent); }
+
+/* Three answers, each saying what it means. */
+.community-verdicts { border: 0; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.community-verdicts legend { grid-column: 1/-1; margin: 0 0 7px; }
+.community-verdicts button {
+  position: relative; display: grid; justify-items: center; gap: 6px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 13px; padding: 13px 10px 11px;
+  background: var(--glass); color: var(--text); font: inherit;
+  transition: transform .18s cubic-bezier(.3,1.2,.4,1), border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.community-verdicts button::before {
+  content: ''; width: 14px; height: 14px; border-radius: 50%; background: currentColor;
+  margin-bottom: 5px; transition: box-shadow .22s cubic-bezier(.3,1.3,.4,1);
+}
+.community-verdicts button b { font-size: 14px; font-weight: 680; color: var(--text); }
+.community-verdicts button small { font-size: 11.5px; color: var(--muted); }
+.community-verdicts button:hover { transform: translateY(-2px); border-color: currentColor; }
+.community-verdicts button[data-verdict="green"] { color: #69bd0c }
+.community-verdicts button[data-verdict="yellow"] { color: #e2a900 }
+.community-verdicts button[data-verdict="red"] { color: #e54d58 }
+.community-verdicts button.selected {
+  border-color: currentColor; background: color-mix(in srgb, currentColor 13%, transparent);
+  box-shadow: 0 0 0 1px currentColor, 0 12px 34px color-mix(in srgb, currentColor 30%, transparent);
+}
+.community-verdicts button.selected::before { box-shadow: 0 0 0 5px color-mix(in srgb, currentColor 20%, transparent); }
+/* The tick that marks the answer chosen. */
+.community-verdicts button::after {
+  content: ''; position: absolute; top: 9px; inset-inline-end: 9px; width: 19px; height: 19px;
+  border-radius: 50%; background: currentColor; opacity: 0; transform: scale(.6);
+  transition: opacity .18s ease, transform .22s cubic-bezier(.3,1.4,.4,1);
+  -webkit-mask: no-repeat center/13px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 13 4 4L19 7'/%3E%3C/svg%3E"), linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+}
+.community-verdicts button.selected::after { opacity: 1; transform: none; }
+
+/* Exactly what leaves the machine, in two columns with a glyph a line. */
+.community-privacy {
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius: 14px; padding: 14px 15px;
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+.community-privacy > b { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; font-size: 13.5px; font-weight: 650; }
+.community-privacy > b .c-icon {
+  width: 16px; height: 16px; box-sizing: content-box; padding: 6px; border-radius: 9px;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+#communityPrivacyData { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 12px; }
+#communityPrivacyData > div {
+  display: flex; align-items: center; gap: 10px; font-size: 12.5px;
+  padding: 9px 12px; border-radius: 10px; background: var(--glass);
+  border: 1px solid rgba(255,255,255,.06);
+}
+#communityPrivacyData > div .c-icon { width: 14px; height: 14px; color: var(--muted); }
+#communityPrivacyData > div > span { color: var(--muted); }
+#communityPrivacyData > div > b { margin-inline-start: auto; font-weight: 680; text-align: end; overflow-wrap: anywhere; }
+/* Why any of this is worth doing, next to the buttons that do it. */
+.community-submit-row { display: flex; align-items: center; gap: 10px; padding-top: 0; }
+.community-why {
+  display: flex; align-items: center; gap: 8px; margin-inline-end: auto; color: var(--muted); font-size: 12px;
+}
+.community-why::before {
+  content: ''; width: 17px; height: 17px; flex: none; background: var(--accent);
+  -webkit-mask: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/%3E%3C/svg%3E");
+          mask: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/%3E%3C/svg%3E");
+}
+.community-submit-row .ghost { padding: 11px 20px; border-radius: 11px; font-size: 13.5px; }
+.community-submit-row .glass-btn {
+  display: inline-flex; align-items: center; gap: 9px; padding: 11px 22px; border-radius: 11px;
+  background: var(--accent); color: #08120a; border-color: transparent; font-weight: 700; font-size: 13.5px;
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--accent) 30%, transparent);
+  transition: transform .16s cubic-bezier(.3,1.2,.4,1), filter .16s ease, box-shadow .16s ease;
+}
+.community-submit-row .glass-btn::before {
+  content: ''; width: 17px; height: 17px; background: currentColor;
+  -webkit-mask: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='m4 12 16-8-6 8 6 8z'/%3E%3Cpath d='M4 12h10'/%3E%3C/svg%3E");
+          mask: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='m4 12 16-8-6 8 6 8z'/%3E%3Cpath d='M4 12h10'/%3E%3C/svg%3E");
+}
+.community-submit-row .glass-btn:hover { transform: translateY(-2px); filter: brightness(1.07); }
+.community-submit-row .glass-btn:disabled { opacity: .6; transform: none; box-shadow: none; }
+.community-error { margin: 0; color: #e05a5a; font-size: 13px; min-height: 18px; }
+
+@media (max-width: 680px) { .community-report-grid, #communityPrivacyData, .community-verdicts { grid-template-columns: 1fr; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .community-report-body > *, .community-verdicts button { animation: none; transition: none }
+}
+
+/* Shorter windows still get the whole dialog: the parts that can give way do.
+   Nobody should have to scroll to reach the button that sends the report. */
+@media (max-height: 820px) {
+  .community-poster { width: 88px }
+  .community-head-copy h3 { font-size: 22px }
+  .community-report-body { gap: 12px; padding: 13px 18px 15px }
+  .community-report-body textarea { min-height: 58px }
+  .community-verdicts button { padding: 10px 8px 9px }
+}
+
+/* ---------------- edges that catch the light ---------------- */
+/* The design's surfaces are lit rather than outlined: a hairline along the top
+   of each one, and the whole dialog rimmed. */
+.community-dialog { box-shadow: 0 40px 110px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.07); }
+
+/* Who made it and what it is, above the title. */
+.community-kicker {
+  font-size: 11.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+  color: rgba(255,255,255,.62);
+}
+
+/* Each field sits in its own card with its label, the way the drawing has it. */
+.community-report-grid > label {
+  display: block; margin: 0; padding: 14px 16px 15px;
+  border: 1px solid var(--line); border-radius: 15px;
+  background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.012));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.community-report-grid > label:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 0 22px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.community-report-grid > label > span { margin-bottom: 10px; }
+
+/* The answers and the privacy block get the same treatment. */
+.community-verdicts button, .community-privacy, .community-report-body textarea {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+.community-verdicts button.selected {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 0 0 1px currentColor,
+              0 0 26px color-mix(in srgb, currentColor 28%, transparent),
+              0 12px 30px color-mix(in srgb, currentColor 22%, transparent);
+}
+.community-privacy {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 0 34px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* The line under the title of the privacy block, so it explains itself. */
+.community-privacy > b { align-items: flex-start; }
+.community-privacy > b small {
+  display: block; margin-top: 3px; font-size: 11.5px; font-weight: 500; color: var(--muted); line-height: 1.4;
+}
+.community-privacy > b .c-icon { margin-top: 1px; }
+
+/* ---------------- the right-click menu ---------------- */
+/* Drawn by the app, so it can carry the game's own art and the app's edges.
+   A native menu can carry neither. */
+.ctx-menu {
+  position: fixed; z-index: 60; width: 310px; padding: 8px;
+  border-radius: 18px; border: 1px solid rgba(255,255,255,.09);
+  background: color-mix(in srgb, #0f1822 92%, transparent);
+  backdrop-filter: blur(22px) saturate(1.2);
+  box-shadow: 0 30px 80px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.07);
+  animation: ctx-in .16s cubic-bezier(.22,.9,.3,1) both;
+  -webkit-app-region: no-drag;
+}
+:root[data-theme="light"] .ctx-menu {
+  background: color-mix(in srgb, #ffffff 94%, transparent);
+  border-color: rgba(16,24,32,.10);
+  box-shadow: 0 30px 80px rgba(16,24,32,.22), inset 0 1px 0 rgba(255,255,255,.9);
+}
+@keyframes ctx-in { from { opacity: 0; transform: translateY(-6px) scale(.98) } to { opacity: 1; transform: none } }
+
+.ctx-head { display: flex; align-items: center; gap: 13px; padding: 10px 10px 14px; }
+.ctx-art {
+  width: 52px; height: 52px; flex: none; border-radius: 13px; overflow: hidden;
+  display: grid; place-items: center; border: 1px solid var(--line);
+  background: var(--panel-2); color: var(--dim); font-weight: 700; font-size: 17px;
+}
+.ctx-art img { width: 100%; height: 100%; object-fit: cover; }
+.ctx-name { display: grid; gap: 3px; min-width: 0; }
+.ctx-name b { font-size: 15px; font-weight: 660; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctx-name small { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* One rule between groups, drawn by the group rather than by an empty element. */
+.ctx-group + .ctx-group { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 6px; }
+.ctx-menu button {
+  display: flex; align-items: center; gap: 14px; width: 100%; cursor: pointer;
+  padding: 11px 13px; border: 0; border-radius: 12px; background: transparent;
+  color: var(--text); font: inherit; font-size: 14.5px; text-align: start;
+  transition: background .13s ease, color .13s ease;
+}
+.ctx-menu button svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; color: var(--muted); }
+.ctx-menu button span { flex: 1; }
+.ctx-menu button .ctx-go { width: 16px; height: 16px; opacity: .5; }
+[dir="rtl"] .ctx-menu button .ctx-go { transform: scaleX(-1); }
+.ctx-menu button:hover:not(:disabled), .ctx-menu button:focus-visible {
+  background: rgba(255,255,255,.07); outline: none;
+}
+.ctx-menu button:hover:not(:disabled) svg, .ctx-menu button:focus-visible svg { color: var(--text); }
+:root[data-theme="light"] .ctx-menu button:hover:not(:disabled) { background: rgba(16,24,32,.06); }
+.ctx-menu button:disabled { opacity: .38; cursor: default; }
+.ctx-menu button[data-menu="hide"]:hover:not(:disabled) { color: #e05a5a; }
+.ctx-menu button[data-menu="hide"]:hover:not(:disabled) svg { color: #e05a5a; }
+
+@media (prefers-reduced-motion: reduce) { .ctx-menu { animation: none } }
+
+/* ---------------- notes about a game ---------------- */
+/* Five stacked boxes became one that can be put away. A warning still says so
+   on the outside: what can cost an account is not hidden behind a closed lid. */
+/* The row of selects above sets its own top margin and nothing sets a bottom
+   one, so without this the box sits flush against them. */
+.sheet-notes { margin-top: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--glass); overflow: hidden; }
+.sheet-notes.has-warning { border-color: rgba(226,90,90,.42); background: rgba(226,90,90,.06); }
+.sheet-notes-head {
+  display: flex; align-items: center; gap: 11px; width: 100%; cursor: pointer;
+  padding: 12px 14px; border: 0; background: transparent; color: var(--text);
+  font: inherit; font-size: 13.5px; font-weight: 620; text-align: start;
+  transition: background .14s ease;
+}
+.sheet-notes-head:hover { background: rgba(255,255,255,.04); }
+.sheet-notes-head > svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; color: var(--muted); }
+.sheet-notes.has-warning .sheet-notes-head, .sheet-notes.has-warning .sheet-notes-head > svg { color: #e05a5a; }
+.sheet-notes-head > span { flex: 1; }
+.sheet-notes-count {
+  font-style: normal; font-size: 12px; font-weight: 700; min-width: 22px; text-align: center;
+  padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,.08); color: var(--muted);
+}
+.sheet-notes.has-warning .sheet-notes-count { background: rgba(226,90,90,.18); color: #e05a5a; }
+.sheet-notes-chevron { width: 16px; height: 16px; transition: transform .2s cubic-bezier(.3,1.1,.4,1); }
+.sheet-notes-head[aria-expanded="true"] .sheet-notes-chevron { transform: rotate(180deg); }
+.sheet-notes-body { display: grid; gap: 10px; padding: 2px 12px 12px; animation: community-rise .22s cubic-bezier(.22,.9,.3,1) both; }
+/* An explicit display outranks the hidden attribute, so setting hidden did
+   nothing at all and the box would not close. */
+.sheet-notes-body[hidden] { display: none; }
+/* Inside the box the notes are plain: the box carries the edge now. */
+.sheet-notes-body .emu-note { border-radius: 11px; }
+@media (prefers-reduced-motion: reduce) { .sheet-notes-body, .sheet-notes-chevron { animation: none; transition: none } }
+
+/* ---------- your own words, and who is told about them ---------- */
+/* Edit and delete sit under the thing they act on, quiet until wanted: they
+   are for the rare occasion, not part of reading. */
+.community-own { display: flex; gap: 8px; margin-top: 8px; }
+.community-own button {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 9px;
+  border: 1px solid var(--line); background: var(--glass); color: var(--muted);
+  font-size: 12px; font-weight: 600; cursor: pointer; transition: .15s ease;
+}
+.community-own button svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.community-own button:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.community-own button.danger:hover { color: #f4736a; border-color: color-mix(in srgb, #f4736a 45%, var(--line)); }
+.community-reply.own > div > header b::after {
+  content: ''; display: inline-block; width: 5px; height: 5px; margin-inline-start: 6px;
+  border-radius: 50%; background: var(--accent); vertical-align: middle;
+}
+.community-reply.editing textarea {
+  width: 100%; margin-top: 6px; padding: 10px 12px; border-radius: 10px; resize: vertical;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: var(--panel); color: var(--text); font: inherit; font-size: 13.5px;
+}
+
+/* The bell sits beside the close button and lights up when it is on. */
+/* Beside the close button, and the same button: one size, one shape, one line.
+   It was 34px against 40px and started exactly where the other ended, which is
+   why the pair looked crooked and glued together. */
+.community-follow {
+  position: absolute; top: 16px; inset-inline-end: 66px; z-index: 4;
+  width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.18); background: rgba(12,18,26,.6); color: rgba(255,255,255,.78);
+  cursor: pointer; backdrop-filter: blur(10px);
+  transition: background .16s ease, color .16s ease, border-color .16s ease,
+              box-shadow .2s ease, transform .16s cubic-bezier(.3,1.3,.4,1);
+}
+.community-follow svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.community-follow:hover { color: #fff; border-color: rgba(255,255,255,.34); transform: scale(1.06); }
+.community-follow.on {
+  color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, rgba(12,18,26,.6));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+/* Switching it on rings the bell and sends one ring outward; switching it off
+   lets the bell drop still. The ring is drawn on a layer of its own so it can
+   grow past the button without the button growing with it. */
+.community-follow::after {
+  content: ''; position: absolute; inset: -1px; border-radius: inherit;
+  border: 2px solid var(--accent); opacity: 0; pointer-events: none;
+}
+.community-follow.ringing::after { animation: follow-ripple .72s cubic-bezier(.2,.8,.3,1) both; }
+.community-follow.ringing svg { animation: follow-ring .72s cubic-bezier(.36,.07,.19,.97) both; transform-origin: 50% 20%; }
+.community-follow.hushing svg { animation: follow-hush .36s cubic-bezier(.3,1.2,.4,1) both; transform-origin: 50% 20%; }
+
+@keyframes follow-ring {
+  0%   { transform: scale(1) rotate(0) }
+  15%  { transform: scale(1.18) rotate(-16deg) }
+  32%  { transform: scale(1.1) rotate(13deg) }
+  50%  { transform: scale(1.04) rotate(-9deg) }
+  68%  { transform: scale(1) rotate(6deg) }
+  84%  { transform: rotate(-3deg) }
+  100% { transform: rotate(0) }
+}
+@keyframes follow-ripple {
+  0%   { transform: scale(.86); opacity: .9 }
+  100% { transform: scale(1.85); opacity: 0 }
+}
+@keyframes follow-hush {
+  0%   { transform: scale(1) rotate(0) }
+  45%  { transform: scale(.78) rotate(4deg); opacity: .55 }
+  100% { transform: scale(1) rotate(0); opacity: 1 }
+}
+@media (prefers-reduced-motion: reduce) {
+  .community-follow.ringing svg, .community-follow.hushing svg,
+  .community-follow.ringing::after { animation: none }
+  .community-follow:hover { transform: none }
+}
+
+/* The list that opens under an "@". Only people already on the card. */
+.community-composer { position: relative; }
+.community-mentions {
+  position: absolute; bottom: calc(100% + 8px); inset-inline-start: 0; z-index: 20;
+  min-width: 200px; max-height: 220px; overflow-y: auto; padding: 6px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--panel);
+  box-shadow: 0 18px 40px rgba(0,0,0,.45);
+}
+/* The composer pins its own button to a corner; these are a list inside it and
+   must be told to sit in the flow, or all six stack in that same corner and the
+   menu collapses to a sliver. */
+.community-mentions button {
+  position: static; inset: auto; transform: none;
+  display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 8px 10px;
+  border: 0; border-radius: 9px; background: transparent; color: var(--text);
+  font: inherit; font-size: 13px; font-weight: 600; text-align: start; cursor: pointer;
   box-shadow: none;
 }
+.community-mentions button small { color: var(--dim); font-weight: 500; }
+.community-mentions button:hover { background: var(--accent-soft); }
 
-.update-dialog {
-  width: min(520px, 100%);
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
+/* A game already reported: the button offers the other thing. */
+.job-toolbar .shared {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  color: var(--accent-2);
+  background: var(--accent-soft);
+}
+:root[data-theme="dark"] .job-toolbar .shared { color: var(--accent); }
+
+/* ---------------- the app's own way of asking ----------------
+   Replaces window.confirm, which drew the operating system's box: unstyleable,
+   captioned with the executable's name, and belonging to nothing on screen.
+   Built on <dialog> so the top layer, the focus trap and Escape are the
+   browser's job rather than ours. */
+.ask {
+  /* The reset at the top of this file sets margin:0 on everything, which takes
+     away the margin:auto a modal <dialog> is centred by - without this it opens
+     in the top-left corner with its close button off the screen. */
+  margin: auto;
+  border: 0; padding: 0; background: transparent; color: var(--text);
+  max-width: min(560px, calc(100vw - 32px)); width: 100%;
+  max-height: calc(100vh - 48px); overflow: visible;
+}
+.ask::backdrop {
+  background: rgba(4, 8, 12, .46);
+  backdrop-filter: blur(10px) saturate(.92);
+  -webkit-backdrop-filter: blur(10px) saturate(.92);
+  animation: ask-veil .22s ease both;
+}
+@keyframes ask-veil { from { opacity: 0 } to { opacity: 1 } }
+@keyframes ask-rise {
+  from { opacity: 0; transform: translateY(14px) scale(.965) }
+  to   { opacity: 1; transform: none }
 }
 
-.update-dialog-head {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 16px;
+.ask-card {
+  position: relative; border-radius: 26px; overflow: hidden;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--panel) 78%, transparent),
+    color-mix(in srgb, var(--panel) 88%, transparent));
+  backdrop-filter: blur(30px) saturate(1.2);
+  -webkit-backdrop-filter: blur(30px) saturate(1.2);
+  border: 1px solid color-mix(in srgb, var(--stroke) 70%, transparent);
+  box-shadow: 0 40px 90px rgba(0, 0, 0, .5), 0 1px 0 rgba(255, 255, 255, .07) inset;
+  animation: ask-rise .26s cubic-bezier(.22, .9, .3, 1) both;
+}
+:root[data-theme="dark"] .ask-card {
+  background: linear-gradient(180deg, rgba(24, 34, 45, .74), rgba(15, 23, 31, .82));
+  border-color: rgba(255, 255, 255, .11);
 }
 
-.update-badge-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: #0b1405;
+.ask-body { display: grid; grid-template-columns: auto 1fr; gap: 20px; padding: 30px 30px 26px; }
+
+/* The tile carries the whole tone of the question: red to destroy, green to
+   go ahead. Nothing else in the box needs to shout. */
+.ask-icon {
+  width: 62px; height: 62px; border-radius: 19px; display: grid; place-items: center;
+  border: 1px solid transparent;
+}
+.ask-icon svg { width: 27px; height: 27px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.ask-danger .ask-icon {
+  color: #ff5d63; background: color-mix(in srgb, #ff5d63 14%, transparent);
+  border-color: color-mix(in srgb, #ff5d63 26%, transparent);
+}
+.ask-accent .ask-icon {
+  color: var(--accent-2); background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+:root[data-theme="dark"] .ask-accent .ask-icon { color: var(--accent); }
+
+.ask-copy { min-width: 0; padding-top: 2px; }
+.ask-kicker {
+  display: block; margin-bottom: 7px; font-size: 11px; font-weight: 700;
+  letter-spacing: .17em; text-transform: uppercase; color: var(--dim);
+}
+.ask-copy h2 { margin: 0 0 10px; font-size: 25px; font-weight: 750; line-height: 1.15; letter-spacing: -.01em; }
+.ask-copy p { margin: 0 0 8px; color: var(--muted); font-size: 14.5px; line-height: 1.55; overflow-wrap: anywhere; }
+.ask-copy p:last-child { margin-bottom: 0; }
+
+.ask-foot {
+  display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+  padding: 18px 30px 22px; border-top: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  background: rgba(255, 255, 255, .028);
+}
+:root[data-theme="light"] .ask-foot { background: rgba(16, 24, 32, .035); }
+.ask-foot button {
+  border-radius: 13px; padding: 12px 24px; font: inherit; font-size: 14.5px; font-weight: 650;
+  cursor: pointer; transition: transform .14s ease, filter .14s ease, border-color .14s ease, background .14s ease;
+}
+.ask-ghost { border: 1px solid var(--stroke); background: transparent; color: var(--muted); }
+.ask-ghost:hover { color: var(--text); border-color: var(--muted); }
+.ask-go { border: 0; color: #fff; }
+.ask-danger .ask-go {
+  background: linear-gradient(180deg, #ff5f66, #e63c47);
+  box-shadow: 0 10px 26px rgba(230, 60, 71, .34);
+}
+.ask-accent .ask-go {
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  color: #08120a; box-shadow: 0 10px 26px color-mix(in srgb, var(--accent) 34%, transparent);
+}
+.ask-go:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.ask-foot button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.ask-x {
+  position: absolute; top: 16px; inset-inline-end: 16px; z-index: 2;
+  width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%;
+  border: 1px solid var(--stroke); background: transparent; color: var(--dim); cursor: pointer;
+  transition: color .14s ease, border-color .14s ease;
+}
+.ask-x svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.ask-x:hover { color: var(--text); border-color: var(--muted); }
+
+@media (max-width: 560px) {
+  .ask-body { grid-template-columns: 1fr; gap: 14px; padding: 24px 22px 20px; }
+  .ask-copy h2 { font-size: 21px; }
+  .ask-foot { padding: 16px 22px 20px; }
+  .ask-foot button { flex: 1 1 auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ask-card, .ask::backdrop { animation: none; }
+  .ask-go:hover { transform: none; }
+}
+
+/* ---------------- after Send ----------------
+   The room goes soft, a mark draws itself, and then what was written comes
+   back with a way to go and look at it. Built on <dialog> so it sits above the
+   report sheet and the card sheet without either of them knowing. */
+.cheer {
+  margin: auto; border: 0; padding: 0; background: transparent; color: var(--text);
+  max-width: min(520px, calc(100vw - 32px)); width: 100%;
+  max-height: calc(100vh - 40px); overflow: visible;
+}
+.cheer::backdrop {
+  background: rgba(4, 8, 12, .5);
+  backdrop-filter: blur(16px) saturate(.9);
+  -webkit-backdrop-filter: blur(16px) saturate(.9);
+  animation: ask-veil .3s ease both;
+}
+.cheer-stage { position: relative; display: grid; place-items: center; min-height: 280px; }
+
+/* ---- the mark ---- */
+.cheer-mark {
+  position: relative; display: grid; place-items: center;
+  transition: opacity .3s ease, transform .34s cubic-bezier(.4, 0, .6, 1);
+}
+.cheer-mark svg { width: 132px; height: 132px; overflow: visible; }
+.cheer-ring {
+  fill: color-mix(in srgb, currentColor 22%, transparent); stroke: currentColor; stroke-width: 5;
+  transform-origin: 50% 50%;
+  animation: cheer-pop .55s cubic-bezier(.16, 1.3, .4, 1) both;
+}
+.cheer-stroke {
+  fill: none; stroke: #fff; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 80; stroke-dashoffset: 80;
+  animation: cheer-draw .42s cubic-bezier(.65, 0, .35, 1) .3s both;
+}
+.cheer-stroke-2 { animation-delay: .46s; }
+.cheer-ok .cheer-mark { color: #34a853; }
+.cheer-bad .cheer-mark { color: #e2574c; }
+/* One ring leaves the mark and fades, so it lands rather than just appears. */
+.cheer-pulse {
+  position: absolute; width: 132px; height: 132px; border-radius: 50%;
+  border: 3px solid currentColor;
+  animation: cheer-pulse 1.1s cubic-bezier(.2, .8, .3, 1) .22s both;
+}
+.cheer-bad .cheer-mark svg { animation: cheer-shake .45s cubic-bezier(.36, .07, .19, .97) .34s both; }
+.cheer-mark.cheer-gone { opacity: 0; transform: scale(.72); pointer-events: none; position: absolute; }
+
+@keyframes cheer-pop { from { transform: scale(.35); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+@keyframes cheer-draw { to { stroke-dashoffset: 0 } }
+@keyframes cheer-pulse {
+  from { transform: scale(.6); opacity: .85 }
+  to   { transform: scale(1.75); opacity: 0 }
+}
+@keyframes cheer-shake {
+  10%, 90% { transform: translateX(-3px) } 20%, 80% { transform: translateX(5px) }
+  30%, 50%, 70% { transform: translateX(-8px) } 40%, 60% { transform: translateX(8px) }
+}
+
+/* ---- the paper ---- */
+.cheer-paper { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.cheer-paper i {
+  position: absolute; top: 50%; left: 50%; display: block;
+  animation: cheer-fall var(--life) cubic-bezier(.15, .6, .5, 1) var(--wait) both;
+}
+@keyframes cheer-fall {
+  0%   { transform: translate(-50%, -50%) scale(.4); opacity: 0 }
+  12%  { opacity: 1 }
+  35%  { transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) rotate(calc(var(--spin) * .4)) scale(1) }
+  100% { transform: translate(calc(-50% + var(--x) * 1.25), calc(-50% + var(--y) + var(--fall))) rotate(var(--spin)) scale(1); opacity: 0 }
+}
+
+/* ---- what was written ---- */
+.cheer-card {
+  position: absolute; inset-inline: 0; width: 100%;
+  border-radius: 22px; overflow: hidden; opacity: 0; transform: translateY(18px) scale(.97);
+  pointer-events: none; transition: opacity .34s ease, transform .4s cubic-bezier(.22, .9, .3, 1);
+  background: linear-gradient(180deg, rgba(24, 34, 45, .8), rgba(15, 23, 31, .88));
+  backdrop-filter: blur(30px) saturate(1.2); -webkit-backdrop-filter: blur(30px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, .11);
+  box-shadow: 0 40px 90px rgba(0, 0, 0, .5);
+}
+:root[data-theme="light"] .cheer-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .86), rgba(244, 247, 250, .92));
+  border-color: rgba(16, 24, 32, .1);
+}
+.cheer-card.cheer-here { opacity: 1; transform: none; pointer-events: auto; position: relative; }
+
+.cheer-head {
+  position: relative; display: flex; align-items: flex-end; gap: 14px;
+  padding: 16px 18px 14px; min-height: 104px; isolation: isolate;
+}
+.cheer-hero { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+.cheer-veil {
+  position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(180deg, rgba(8, 12, 18, .35), rgba(8, 12, 18, .88));
+}
+.cheer-poster {
+  width: 54px; aspect-ratio: 2/3; border-radius: 9px; overflow: hidden; flex: none;
+  border: 1px solid rgba(255, 255, 255, .18); box-shadow: 0 10px 22px rgba(0, 0, 0, .5);
+}
+.cheer-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cheer-head-copy { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.cheer-kicker {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase;
+  color: rgba(255, 255, 255, .68);
+}
+.cheer-head-copy b {
+  color: #fff; font-size: 19px; font-weight: 720; line-height: 1.2;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .6);
+}
+.cheer-badge { flex: none; width: 34px; height: 34px; display: grid; place-items: center; }
+.cheer-badge svg { width: 34px; height: 34px; }
+.cheer-badge .cheer-ring { animation: none; fill: currentColor; stroke: none; }
+.cheer-badge .cheer-stroke { animation: none; stroke-dashoffset: 0; stroke-width: 8; }
+.cheer-ok .cheer-badge { color: #34a853; }
+.cheer-bad .cheer-badge { color: #e2574c; }
+
+.cheer-body { display: grid; gap: 11px; padding: 16px 18px 4px; }
+.cheer-note { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.cheer-quote {
+  margin: 0; padding: 12px 14px; border-radius: 12px; background: rgba(255, 255, 255, .045);
+  border: 1px solid var(--line); color: var(--text); font-size: 14px; line-height: 1.55;
+  display: flex; gap: 9px; align-items: baseline; overflow-wrap: anywhere;
+}
+:root[data-theme="light"] .cheer-quote { background: rgba(16, 24, 32, .04); }
+.cheer-tags { display: flex; flex-wrap: wrap; gap: 7px; }
+.cheer-tags span {
+  border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px;
+  color: var(--muted); font-size: 11.5px; font-weight: 600;
+}
+.cheer-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 18px 18px; }
+.cheer-foot button {
+  border-radius: 12px; padding: 11px 20px; font: inherit; font-size: 14px; font-weight: 650;
+  cursor: pointer; transition: transform .14s ease, filter .14s ease, border-color .14s ease, color .14s ease;
+}
+.cheer-go { border: 0; background: linear-gradient(180deg, var(--accent), var(--accent-2)); color: #08120a; }
+.cheer-ok .cheer-go { box-shadow: 0 10px 26px color-mix(in srgb, var(--accent) 32%, transparent); }
+.cheer-bad .cheer-go {
+  background: linear-gradient(180deg, #ff5f66, #e63c47); color: #fff;
+  box-shadow: 0 10px 26px rgba(230, 60, 71, .3);
+}
+.cheer-ghost { border: 1px solid var(--stroke); background: transparent; color: var(--muted); }
+.cheer-ghost:hover { color: var(--text); border-color: var(--muted); }
+.cheer-go:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.cheer-foot button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cheer-ring, .cheer-stroke, .cheer-pulse, .cheer-paper i, .cheer::backdrop,
+  .cheer-bad .cheer-mark svg { animation: none; }
+  .cheer-stroke { stroke-dashoffset: 0; }
+  .cheer-card, .cheer-mark { transition: none; }
+  .cheer-go:hover { transform: none; }
+}
+
+/* ---------------- a card lit by its own poster ----------------
+   Three numbers are written on the dialog by the page: the hue, saturation and
+   lightness read out of the game's art in the main process. Registering them is
+   what makes a change animate - an unregistered custom property is a string,
+   and strings jump. Registered, they interpolate, so moving from one game to
+   the next is a slow wash from one colour into the other rather than a cut. */
+@property --card-hue {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 210deg;
+}
+@property --card-sat {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 45%;
+}
+@property --card-light {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 26%;
+}
+
+/* Everything below is built out of those three, so the whole sheet moves as one
+   when they change. The ground stays very dark - the text on it has to be the
+   most legible thing in the room - but it is unmistakably *that game's* dark,
+   and the accent it is trimmed with is allowed to be loud. */
+.community-dialog {
+  --tint-ground: hsl(var(--card-hue) calc(var(--card-sat) * .62) 5%);
+  --tint-card:   hsl(var(--card-hue) calc(var(--card-sat) * .52) 9%);
+  --tint-raise:  hsl(var(--card-hue) calc(var(--card-sat) * .58) 13%);
+  --tint-line:   hsl(var(--card-hue) calc(var(--card-sat) * .70) 34%);
+  --tint-accent: hsl(var(--card-hue) calc(var(--card-sat) * 1.25) 58%);
+  --tint-glow:   hsl(var(--card-hue) calc(var(--card-sat) * 1.15) 50%);
+
+  transition: --card-hue 1.1s cubic-bezier(.4, 0, .2, 1),
+              --card-sat 1.1s cubic-bezier(.4, 0, .2, 1),
+              --card-light 1.1s cubic-bezier(.4, 0, .2, 1),
+              background-color .9s ease, border-color .9s ease;
+  background-color: var(--tint-ground);
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .5) 18%);
+}
+:root[data-theme="light"] .community-dialog {
+  --tint-ground: hsl(var(--card-hue) calc(var(--card-sat) * .30) 97%);
+  --tint-card:   hsl(var(--card-hue) calc(var(--card-sat) * .26) 99%);
+  --tint-raise:  hsl(var(--card-hue) calc(var(--card-sat) * .34) 95%);
+  --tint-line:   hsl(var(--card-hue) calc(var(--card-sat) * .45) 62%);
+  --tint-accent: hsl(var(--card-hue) calc(var(--card-sat) * 1.05) 42%);
+  --tint-glow:   hsl(var(--card-hue) calc(var(--card-sat) * .9) 55%);
+}
+
+/* The ground the conversation sits on. Two soft lights on long cycles that do
+   not divide into each other, so the movement never lands on a beat you can
+   count.
+
+   They move by sliding the gradients inside a box that never changes size. An
+   earlier version grew the box past the sheet instead, which is what drew a
+   horizontal scrollbar under a page with nothing to scroll to. */
+#communityCardBody { position: relative; isolation: isolate; }
+#communityCardBody::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(closest-side, hsl(var(--card-hue) var(--card-sat) 48% / .40), transparent 100%),
+    radial-gradient(closest-side, hsl(calc(var(--card-hue) + 34deg) var(--card-sat) 44% / .30), transparent 100%);
+  background-repeat: no-repeat;
+  background-size: 130% 78%, 110% 68%;
+  background-position: 8% 2%, 92% 98%;
+  animation: card-drift 34s ease-in-out infinite alternate;
+}
+@keyframes card-drift {
+  0%   { background-position: 4% 0%, 96% 100% }
+  50%  { background-position: 24% 14%, 74% 84% }
+  100% { background-position: 12% 24%, 88% 92% }
+}
+
+/* Every comment is that game's card, not a grey one with a hint of it. */
+.community-dialog .community-comment-card,
+.community-dialog .community-reply {
+  background: linear-gradient(150deg, var(--tint-raise), var(--tint-card));
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .6) 26%);
+  transition: transform .2s cubic-bezier(.22,.9,.3,1), border-color .2s ease,
+              box-shadow .2s ease, background .9s ease;
+}
+.community-dialog .community-comment-card:hover {
+  border-color: color-mix(in srgb, var(--tint-line) 70%, transparent);
+  box-shadow: 0 14px 34px rgba(0,0,0,.34), 0 0 24px hsl(var(--card-hue) var(--card-sat) 40% / .22);
+}
+.community-dialog .community-quote,
+.community-dialog .community-composer,
+.community-dialog .community-thread-root {
+  background: linear-gradient(150deg, var(--tint-raise), var(--tint-card));
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .6) 24%);
+  transition: background .9s ease, border-color .16s ease, box-shadow .16s ease;
+}
+
+/* The avatar tile and the hardware pills belong to the same room. */
+.community-dialog .community-avatar-tile {
+  background: linear-gradient(150deg,
+    hsl(var(--card-hue) var(--card-sat) 40% / .30),
+    hsl(var(--card-hue) var(--card-sat) 26% / .12));
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .6) 30%);
+  transition: background .9s ease, border-color .9s ease;
+}
+.community-dialog .community-tags span {
+  background: hsl(var(--card-hue) var(--card-sat) 30% / .20);
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .55) 26%);
+  transition: background .9s ease, border-color .9s ease;
+}
+
+/* The reactions take the colour too, and the one you pressed wears the accent
+   outright - it is the only thing on the card that is yours. */
+.community-dialog .community-reactions button,
+.community-dialog .community-open-thread {
+  background: hsl(var(--card-hue) var(--card-sat) 34% / .18);
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .55) 28%);
+}
+.community-dialog .community-reactions button:hover,
+.community-dialog .community-open-thread:hover {
+  border-color: color-mix(in srgb, var(--tint-accent) 60%, transparent);
+  background: hsl(var(--card-hue) var(--card-sat) 40% / .28);
+}
+.community-dialog .community-reactions button.on {
+  border-color: var(--tint-accent);
+  background: hsl(var(--card-hue) var(--card-sat) 42% / .34);
+  box-shadow: 0 0 16px hsl(var(--card-hue) var(--card-sat) 50% / .34);
+}
+.community-dialog .community-reactions button.on span { color: #fff; }
+
+/* The pinned announcement is the one thing meant to be read before anything
+   else, so it is lit rather than tinted: the accent as a border, a glow around
+   it, and a bar down its leading edge. */
+.community-dialog .community-announcement {
+  background: linear-gradient(135deg,
+    hsl(var(--card-hue) var(--card-sat) 34% / .34),
+    hsl(calc(var(--card-hue) + 22deg) var(--card-sat) 24% / .18));
+  border: 1px solid var(--tint-accent);
+  box-shadow: inset 3px 0 0 var(--tint-accent), 0 0 26px hsl(var(--card-hue) var(--card-sat) 50% / .28);
+  transition: background .9s ease, border-color .9s ease, box-shadow .9s ease;
+}
+[dir="rtl"] .community-dialog .community-announcement {
+  box-shadow: inset -3px 0 0 var(--tint-accent), 0 0 26px hsl(var(--card-hue) var(--card-sat) 50% / .28);
+}
+.community-dialog .community-pinned,
+.community-dialog .community-announcement .community-admin-badge { color: var(--tint-accent); }
+.community-dialog .community-announcement .community-admin-badge {
+  background: hsl(var(--card-hue) var(--card-sat) 30% / .5);
+  border: 1px solid var(--tint-accent);
+}
+
+/* The route chips across the header, and the ring the card head sits in. */
+.community-dialog .community-route-count {
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .6) 34% / .6);
+  transition: border-color .9s ease, transform .18s cubic-bezier(.3,1.2,.4,1);
+}
+
+/* The grid outside the dialog is lit the same way, one colour per card. */
+.community-card {
+  transition: --card-hue .8s ease, --card-sat .8s ease, --card-light .8s ease,
+              transform .22s cubic-bezier(.22,.9,.3,1), box-shadow .22s ease, border-color .22s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #communityCardBody::before { animation: none }
+  .community-dialog, .community-card,
+  .community-dialog .community-comment-card,
+  .community-dialog .community-reply,
+  .community-dialog .community-quote,
+  .community-dialog .community-announcement,
+  .community-dialog .community-composer { transition: none }
+}
+
+/* ---------------- the report sheet, lit the same way ----------------
+   Its surfaces already follow, because --panel and --glass are the game's now.
+   What is left is the decoration that was painted the app's green: it becomes
+   the game's colour too. What is NOT re-hued is anything whose colour carries
+   meaning - the three verdicts stay green, amber and red, and Submit stays the
+   app's green, because those colours are the message. */
+.community-report-body { position: relative; isolation: isolate; }
+.community-report-body::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  border-radius: 0 0 18px 18px;
+  background:
+    radial-gradient(closest-side, hsl(var(--card-hue) var(--card-sat) 48% / .26), transparent 100%),
+    radial-gradient(closest-side, hsl(calc(var(--card-hue) + 34deg) var(--card-sat) 44% / .20), transparent 100%);
+  background-repeat: no-repeat;
+  background-size: 120% 70%, 100% 60%;
+  background-position: 6% 0%, 94% 100%;
+  animation: card-drift 34s ease-in-out infinite alternate;
+}
+
+/* The card each field sits in, and the ring it wears while being filled in. */
+.community-report-grid > label {
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .5) 30%);
+  background: linear-gradient(180deg,
+    hsl(var(--card-hue) var(--card-sat) 40% / .12),
+    hsl(var(--card-hue) var(--card-sat) 30% / .04));
+  transition: border-color .18s ease, box-shadow .18s ease, background .9s ease;
+}
+.community-report-grid > label:focus-within {
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * 1.15) 58%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08),
+              0 0 22px hsl(var(--card-hue) var(--card-sat) 50% / .22);
+}
+.community-report-body select,
+.community-report-body textarea {
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .45) 28%);
+  transition: border-color .18s ease, box-shadow .18s ease, background .9s ease;
+}
+.community-report-body select:focus,
+.community-report-body textarea:focus {
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * 1.1) 55%);
+  box-shadow: 0 0 0 3px hsl(var(--card-hue) var(--card-sat) 50% / .16);
+}
+
+/* The three answers keep their own colours - a green that is not green would
+   be a lie - but the ground they sit on belongs to the game. */
+.community-verdicts button {
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .5) 28%);
+  transition: transform .18s cubic-bezier(.3,1.2,.4,1), border-color .18s ease,
+              background .9s ease, box-shadow .18s ease;
+}
+
+/* What will be sent: framed in the game's colour rather than the app's. */
+.community-privacy {
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .9) 45%);
+  background:
+    linear-gradient(150deg,
+      hsl(var(--card-hue) var(--card-sat) 40% / .16),
+      hsl(calc(var(--card-hue) + 26deg) var(--card-sat) 30% / .07));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05),
+              0 0 30px hsl(var(--card-hue) var(--card-sat) 50% / .14);
+  transition: border-color .9s ease, background .9s ease, box-shadow .9s ease;
+}
+.community-privacy > b .c-icon {
+  color: hsl(var(--card-hue) calc(var(--card-sat) * 1.1) 62%);
+  background: hsl(var(--card-hue) var(--card-sat) 40% / .18);
+}
+#communityPrivacyData > div {
+  background: hsl(var(--card-hue) var(--card-sat) 34% / .13);
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .5) 28%);
+  transition: background .9s ease, border-color .9s ease;
+}
+
+/* The line under the buttons, and the shield beside it. */
+.community-why { color: var(--muted); }
+.community-why .c-icon { color: hsl(var(--card-hue) calc(var(--card-sat) * 1.05) 58%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .community-report-body::before { animation: none }
+  .community-report-grid > label, .community-verdicts button,
+  .community-privacy, #communityPrivacyData > div,
+  .community-report-body select, .community-report-body textarea { transition: none }
+}
+
+/* ---------------- reply subject, one complete rounded surface ----------------
+   The hue comes from the game's poster/hero palette. Dark and light modes use
+   different materials while preserving the same fully rounded silhouette. */
+.community-dialog .community-thread-root {
+  position: relative;
   display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  box-shadow: 0 8px 20px rgba(108, 193, 10, .25);
+  gap: 16px;
+  padding: 17px 18px 20px;
+  overflow: hidden;
+  color: #f4f7fb;
+  border: 1px solid hsl(var(--card-hue) calc(var(--card-sat) * .72) 42% / .34);
+  border-radius: 24px;
+  background:
+    radial-gradient(80% 130% at 0% 0%, hsl(var(--card-hue) var(--card-sat) 48% / .26), transparent 62%),
+    radial-gradient(70% 120% at 100% 10%, hsl(calc(var(--card-hue) + 18deg) var(--card-sat) 43% / .22), transparent 66%),
+    linear-gradient(145deg,
+      hsl(var(--card-hue) calc(var(--card-sat) * .60) 12%),
+      hsl(calc(var(--card-hue) + 18deg) calc(var(--card-sat) * .34) 8%));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 16px 38px rgba(0,0,0,.24),
+    0 0 28px hsl(var(--card-hue) var(--card-sat) 42% / .12);
 }
-.update-badge-icon svg {
-  width: 22px;
+.community-dialog .community-thread-label {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 22px;
+  padding-inline: 2px;
+  color: #aeb8c7;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+.community-dialog .community-thread-label::before {
+  content: '';
+  width: 4px;
   height: 22px;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  flex: none;
+  border-radius: 999px;
+  background: var(--tint-accent);
+  box-shadow: 0 0 15px hsl(var(--card-hue) var(--card-sat) 55% / .62);
 }
-
-.update-version-row {
-  display: flex;
+.community-dialog .community-quote {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--panel-2);
-  border: 1px solid var(--stroke);
-}
-.update-arrow {
-  color: var(--muted);
-  font-size: 13px;
-}
-.update-size {
-  margin-inline-start: auto;
-  font-size: 11.5px;
-  color: var(--dim);
+  gap: 16px;
+  min-height: 92px;
+  padding: 18px 20px 18px 28px;
+  overflow: hidden;
+  color: #f4f7fb;
+  border: 1px solid hsl(var(--card-hue) calc(var(--card-sat) * .52) 52% / .24);
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg,
+      hsl(var(--card-hue) calc(var(--card-sat) * .52) 17% / .82),
+      hsl(calc(var(--card-hue) + 18deg) calc(var(--card-sat) * .26) 9% / .90));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055);
 }
 
-.update-notes {
-  max-height: 180px;
-  overflow-y: auto;
-  margin-bottom: 16px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: var(--panel-2);
-  border: 1px solid var(--stroke);
-  font-size: 12.5px;
-  line-height: 1.6;
-  color: var(--text);
-  white-space: pre-wrap;
-  word-break: break-word;
-  scrollbar-width: thin;
+:root[data-theme="light"] .community-dialog .community-thread-root {
+  color: #17202b;
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .58) 47% / .34);
+  background:
+    radial-gradient(80% 130% at 0% 0%, hsl(var(--card-hue) var(--card-sat) 66% / .30), transparent 64%),
+    radial-gradient(70% 120% at 100% 10%, hsl(calc(var(--card-hue) + 18deg) var(--card-sat) 91% / .45), transparent 68%),
+    linear-gradient(145deg, #fffdfd, hsl(var(--card-hue) 28% 96%));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 16px 34px hsl(var(--card-hue) 28% 34% / .14);
 }
+:root[data-theme="light"] .community-dialog .community-thread-label { color: #667487; }
+:root[data-theme="light"] .community-dialog .community-quote {
+  color: #17202b;
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .48) 46% / .28);
+  background: linear-gradient(135deg, rgba(255,255,255,.88), hsl(var(--card-hue) 35% 95% / .92));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+}
+:root[data-theme="light"] .community-dialog .community-quote .community-when,
+:root[data-theme="light"] .community-dialog .community-quote .community-about,
+:root[data-theme="light"] .community-dialog .community-quote header small { color: #667487; }
+:root[data-theme="light"] .community-dialog .community-quote header b { color: #17202b; }
 
-.update-progress-wrap {
-  margin-bottom: 16px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: var(--panel-2);
-  border: 1px solid var(--stroke);
-}
-.update-progress-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-.update-bar {
-  margin-top: 0;
-  height: 6px;
-}
-.update-progress-sub {
-  margin-top: 8px;
-  font-size: 11px;
-  color: var(--dim);
-  display: flex;
-  justify-content: space-between;
-}
-
-.update-error-msg {
-  color: #ff6a6a;
-  margin-bottom: 14px;
-  font-size: 12px;
-}
-
-.update-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  align-items: center;
-}
-.update-actions a.ghost {
-  margin-inline-end: auto;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-}
-
-/* Floating update toast */
-.update-toast {
+/* App-owned message menu. It follows the app theme and exposes only the
+   operations available to the current identity. */
+.community-message-menu {
   position: fixed;
-  bottom: 24px;
-  inset-inline-start: 24px;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 16px;
-  background: var(--panel);
-  border: 1px solid var(--stroke);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, .45);
+  inset: auto;
+  margin: 0;
+  z-index: 10000;
+  display: grid;
+  min-width: 190px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  box-shadow: 0 18px 50px rgba(0,0,0,.34);
   backdrop-filter: blur(20px);
-  animation: toastSlideIn .25s cubic-bezier(.2, .85, .3, 1) both;
 }
-@keyframes toastSlideIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.toast-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 10px var(--accent);
-  flex-shrink: 0;
-  animation: pulseBadge 1.8s infinite;
-}
-.toast-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.toast-body b {
-  font-size: 12.5px;
+.community-message-menu button {
+  width: 100%;
+  padding: 10px 12px;
   color: var(--text);
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
 }
-.toast-body span {
-  font-size: 11.5px;
-  color: var(--muted);
+.community-message-menu button:hover { background: var(--glass); }
+.community-message-menu button.danger { color: #ff6f7c; }
+.community-dialog .community-quote::before {
+  inset-block: 20px;
+  inset-inline-start: 0;
+  width: 6px;
+  border-radius: 0 999px 999px 0;
+  background: var(--tint-accent);
+  opacity: 1;
+  box-shadow: 0 0 16px hsl(var(--card-hue) var(--card-sat) 55% / .60);
 }
-.toast-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-inline-start: 8px;
+[dir="rtl"] .community-dialog .community-quote::before { border-radius: 999px 0 0 999px; }
+.community-dialog .community-quote > div { min-width: 0; align-self: center; }
+.community-dialog .community-quote header { gap: 9px; min-width: 0; }
+.community-dialog .community-quote header b { color: #f8fafc; font-size: 16px; font-weight: 800; }
+.community-dialog .community-quote header small { color: #8f9bad; font-size: 13px; }
+.community-dialog .community-quote .community-when { color: #aab5c5; font-size: 13px; }
+.community-dialog .community-quote header .community-dot {
+  width: 11px;
+  height: 11px;
+  box-shadow: 0 0 13px currentColor;
 }
-button.xs {
-  font-size: 11px;
-  padding: 4px 10px;
-  border-radius: 8px;
+.community-dialog .community-quote .community-about {
+  margin-top: 9px;
+  color: #aab5c5;
+  font-size: 13px;
+  line-height: 1.35;
 }
-
-.about-update-wrap {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 14px;
+.community-dialog .community-thread-root .community-avatar-tile.small {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  font-size: 25px;
+  border-color: hsl(var(--card-hue) calc(var(--card-sat) * .70) 52% / .65);
 }
-
+@media (max-width: 620px) {
+  .community-dialog .community-thread-root { padding: 14px; border-radius: 20px; }
+  .community-dialog .community-quote { gap: 12px; min-height: 78px; padding: 14px 14px 14px 22px; border-radius: 17px; }
+  .community-dialog .community-thread-root .community-avatar-tile.small { width: 46px; height: 46px; border-radius: 13px; font-size: 21px; }
+  .community-dialog .community-quote header b { font-size: 14px; }
+  .community-dialog .community-quote header small,
+  .community-dialog .community-quote .community-when,
+  .community-dialog .community-quote .community-about { font-size: 11.5px; }
+}

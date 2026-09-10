@@ -30,6 +30,38 @@ async function render(){
  const builtinName=(r.value.overlays.find(o=>o.id==='builtin')||{}).name;
  $('olInstalls').innerHTML=r.value.installations.length?`<details><summary>${text('Existing installations','التثبيتات الحالية')} (${r.value.installations.length})</summary>${r.value.installations.map(e=>`<article class="ol-card"><b>${esc(e.overlayId==='builtin'&&builtinName?builtinName:e.name)}</b><p>${esc(e.directory)}</p>${button('uninstall',e.id,text('Remove overlay only','إزالة الأوفرلاي فقط'))}</article>`).join('')}</details>`:'';
  if(r.value.errors.length)$('olStatus').textContent=r.value.errors.join('\n');
+ await showBridge();
+}
+// The panel in the game says it is waiting; this says what for. Without it
+// there is no way to tell a service that never started from a game that has
+// not attached yet.
+async function showBridge(){
+ const box=$('olBridge'); if(!box)return;
+ let state=null;
+ try{const r=await window.lab.overlayBridge(); if(r&&r.ok)state=r.value;}catch{}
+ // A missing add-on outranks anything about the service: it is the reason no
+ // game will ever attach, and it used to leave the page saying "ready".
+ if(state&&state.addon===false){
+  box.dataset.state='off';
+  box.textContent=text(
+   `The overlay add-on is missing from this app, so no game can load it: ${state.addonFile||''}. Antivirus software removes this file - restore it from your antivirus quarantine and add an exclusion, or reinstall DLSS 5 Swapper.`,
+   `ملف الأوفرلاي مفقود من البرنامج، فلا تستطيع أي لعبة تحميله: ${state.addonFile||''}. برامج الحماية تحذف هذا الملف - استعده من الحجر الصحي وأضف استثناءً، أو أعد تثبيت البرنامج.`);
+  return;
+ }
+ if(!state||!state.listening){
+  box.dataset.state='off';
+  box.textContent=text('Overlay service is not running. Restart DLSS 5 Swapper, then press the hotkey in game.',
+   'خدمة الأوفرلاي لا تعمل. أعد تشغيل البرنامج ثم اضغط زر الاختصار داخل اللعبة.');
+  return;
+ }
+ if(state.connected){
+  box.dataset.state='on';
+  box.textContent=text('Overlay service connected to a running game.','خدمة الأوفرلاي متصلة بلعبة تعمل الآن.');
+  return;
+ }
+ box.dataset.state='ready';
+ box.textContent=text('Overlay service ready, waiting for a game. Keep DLSS 5 Swapper open and press the hotkey in game.',
+  'خدمة الأوفرلاي جاهزة وتنتظر لعبة. أبقِ البرنامج مفتوحاً واضغط زر الاختصار داخل اللعبة.');
 }
 async function action(name,id){if(busy)return;if(name==='preview'){preview(id);return;}if(name==='select'){await save({theme:id});return;}if(name==='delete-theme'){await save({custom:null,theme:prefs.theme==='custom'?'green':prefs.theme});return;}busy=true;try{const r=await({add:window.lab.overlayAdd,remove:window.lab.overlayRemove,install:window.lab.overlayInstall,uninstall:window.lab.overlayUninstall,source:window.lab.overlaySource})[name](id);$('olStatus').textContent=r.ok?text('Done.','تم.'):r.error;}catch(e){$('olStatus').textContent=e.message;}finally{busy=false;await render();}}
 $('olAdd').onclick=()=>action('add');$('olSource').onclick=()=>action('source');$('olEnabled').onchange=()=>save({enabled:$('olEnabled').checked});

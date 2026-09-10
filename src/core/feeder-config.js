@@ -186,7 +186,12 @@ function configureDgVoodoo(text) {
   out = setIni(out, 'General', 'CaptureMouse', 'false');
   out = setIni(out, 'DirectX', 'DisableAndPassThru', 'false');
   out = setIni(out, 'DirectX', 'VideoCard', 'internal3D');
-  out = setIni(out, 'DirectX', 'VRAM', '1024');
+  // dgVoodoo ships 256 MB of emulated video memory and enforces it: a DirectX 9
+  // game at a modern resolution exhausts that in seconds, CreateTexture then
+  // fails in a loop and the game dies. Measured in SWTOR at 2560x1440 on #37,
+  // where 1024 still was not enough. The number is an emulated ceiling, not an
+  // allocation, so a generous one only stops false out-of-memory failures.
+  out = setIni(out, 'DirectX', 'VRAM', '4096');
   out = setIni(out, 'DirectX', 'dgVoodooWatermark', 'false');
   return out;
 }

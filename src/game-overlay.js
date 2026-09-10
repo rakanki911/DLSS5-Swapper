@@ -3,11 +3,15 @@ const fs=require('node:fs'),path=require('node:path');
 const {readNative}=require('./overlays');
 // Refuse unsupported routes BEFORE the game installer changes files. OptiScaler
 // and the x86 helper architecture are deliberately not advertised as supported.
+// The routes the panel can attach to. It rides on ReShade's Direct3D path, so
+// what matters is that ReShade is installed under dxgi - which is true of the
+// DLSS Tool route as much as of native and Feeder. Leaving it off this list is
+// why a game installed that way got no overlay file at all, silently.
 function routes(target){return target?.bitness===64&&target.api==='dxgi'&&target.apiLabel!=='DirectX 10'?['native','feeder']:[];}
 function prepare({library,target,route}){
   if(!routes(target).includes(route))throw Error('The in-game overlay currently supports 64-bit DX11/DX12 only.');
   const entry=library.resolve('builtin');
-  if(!entry.ready)throw Error('Build the overlay first.');
+  if(!entry.ready)throw Error(`The overlay add-on is missing from this app: ${entry.file}. Antivirus software removes it; restore it and add an exclusion, or reinstall DLSS 5 Swapper.`);
   readNative(entry.file);
   const dir=path.dirname(target.path);
   const records=library.list().installations.filter(r=>r.directory.toLowerCase()===dir.toLowerCase());
@@ -17,7 +21,7 @@ function prepare({library,target,route}){
   return {entry,file,alreadyPresent:fs.existsSync(file)};
 }
 async function attach({library,target,gameDir,manifest,saveManifest,plan}){
-  const installed=library.install('builtin',target.path);
+  const installed=library.install('builtin',target.path,target.bitness);
   // Only files newly added by THIS game install belong to Restore originals.
   const rel=path.relative(gameDir,installed.file);
   if(rel.startsWith('..')||path.isAbsolute(rel))throw Error('Overlay escaped the selected game.');

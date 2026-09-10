@@ -57,6 +57,15 @@ contextBridge.exposeInMainWorld('lab', {
     nextMenuAction = null;
     return selected;
   },
+  communityProfile: async () => ({ name: 'Fixture', icon: 0, tag: 'test' }),
+  communitySaveProfile: async profile => ({ ok: true, profile: { ...profile, tag: 'test' } }),
+  communityDeleteMe: async () => ({ ok: true, result: { reports: 0, replies: 0 } }),
+  communityCards: async () => ({ ok: true, cards: [], total: 0 }),
+  communityCard: async () => ({ ok: false, error: 'not_found' }),
+  communityUpdates: async () => ({ ok: true, notModified: true }),
+  communityPrefill: async dir => ({ ok: true, prefill: { title: 'Fixture game', game: { title: 'Fixture game', exe: 'Game.exe' }, route: 'feeder', api: 'dx12', gpu: 'Fixture GPU', driver: '1.0', cpu: 'Fixture CPU', os: 'win32 test', app: 'test', dir } }),
+  communityReport: async () => ({ ok: true, result: { card: 'title:fixturegame', report: 1 } }),
+  communityReaction: async () => ({ ok: true }),
   testMenuAction: value => { nextMenuAction = value; },
   testMenuCalls: () => gameMenuCalls,
   testActionCalls: () => gameActionCalls,

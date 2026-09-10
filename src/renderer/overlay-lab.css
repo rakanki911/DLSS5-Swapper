@@ -80,3 +80,10 @@
 .ol-custom-dialog input[type=text]:focus { outline:none; border-color:var(--accent) }
 /* The preview is the real panel, scaled down so the dialog stays a dialog. */
 .ol-custom-preview { max-height:300px; overflow:hidden; border-radius:12px; margin-bottom:12px; direction:ltr }
+/* What the overlay service is doing, with a dot that says it at a glance. */
+.ol-bridge { margin:14px 0 0; font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px }
+.ol-bridge:empty { display:none }
+.ol-bridge::before { content:''; width:8px; height:8px; border-radius:50%; background:var(--dim); flex:none }
+.ol-bridge[data-state="on"]::before { background:#6cc10a }
+.ol-bridge[data-state="ready"]::before { background:#d8a300 }
+.ol-bridge[data-state="off"]::before { background:#e05a5a }

@@ -62,6 +62,7 @@ window.mountOverlayPanel = (root, footer = 'Design inspired by the NVIDIA refere
   root.innerHTML = `<div class="ol-panel" dir="ltr">
     <header><span class="ol-eyebrow">DLSS 5 SWAPPER CONTROLS</span><span class="ol-prototype">PREVIEW</span></header>
     <label class="ol-check ol-master"><input type="checkbox" checked/> DLSS ON <small>Preview only</small></label>
+    <label class="ol-check ol-badge"><input type="checkbox"/> ON-SCREEN STATUS <small>Shows DLSS 5 On/Off over the game</small></label>
     <section><h4>GLOBAL CONTROLS</h4>${slider('olStructure', 'Structure Intensity', .38)}${slider('olTone', 'Tone Intensity', .28)}</section>
     <section class="ol-muted"><label class="ol-check"><input type="checkbox" disabled/> MODEL AUTOMASK <small>SDK required</small></label>${slider('olMaskStructure', 'Structure Intensity', 1)}</section>
     <section><label class="ol-check"><input type="checkbox" checked/> DEVELOPER MASKING <small>Demo groups</small></label>

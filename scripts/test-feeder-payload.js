@@ -15,7 +15,7 @@ const { ensureDgVoodoo } = require('../src/core/runtime-components');
 (async () => {
   const source = scanSource(path.join(__dirname, '../payload'));
   assert.equal(source.feeder.releaseVerified, true);
-  assert.equal(source.feeder.version, '0.12.0');
+  assert.equal(source.feeder.version, require("../src/core/feeder-release").version);
   // Download/cache only within the project, never the user's application data.
   source.feeder.dgVoodooDir = await ensureDgVoodoo(path.join(__dirname, '../vendor/runtime-tests'));
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-payload-test-'));
@@ -36,7 +36,7 @@ const { ensureDgVoodoo } = require('../src/core/runtime-components');
       // Repair an incorrectly sized helper ReShade left by an older install.
       if (bitness === 32) fs.copyFileSync(path.join(source.feeder.vulkanLayerDir, 'ReShade32.dll'), path.join(dir, 'host64/dxgi.dll'));
       await applySwap(options);
-      assert.equal(manifest.feeder.version, '0.12.0');
+      assert.equal(manifest.feeder.version, require("../src/core/feeder-release").version);
       assert.equal(pe.getBitness(path.join(dir, 'dxgi.dll')), bitness);
       assert.equal(pe.getBitness(path.join(dir, `dlss5-feed.addon${bitness}`)), bitness);
       if (api === 'd3d8' || api === 'd3d9') {

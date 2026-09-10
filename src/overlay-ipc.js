@@ -2,7 +2,7 @@
 const path = require('node:path');
 const { createOverlayLibrary } = require('./overlays');
 
-module.exports = function registerOverlayIpc({ app, ipcMain, dialog, shell, window }) {
+module.exports = function registerOverlayIpc({ app, ipcMain, dialog, shell, window, bridge = () => null }) {
   const appRoot = path.resolve(__dirname, '..');
   // Installed, the built add-on rides along as an extra resource; from source it
   // is whatever scripts/build-overlay.ps1 last produced.
@@ -18,6 +18,20 @@ module.exports = function registerOverlayIpc({ app, ipcMain, dialog, shell, wind
     catch (error) { return { ok: false, error: error.message }; }
   });
   handle('list', () => library().list());
+  // What the panel in the game is waiting for, said on the Overlay page:
+  // whether the service is up at all, and whether a game is attached.
+  handle('bridge', () => {
+    const live = bridge();
+    const state = live ? live.state() : { listening: false, connected: false, game: false };
+    // The service can be listening perfectly while the add-on the game has to
+    // load is not there at all - antivirus takes it, and nothing said so.
+    // resolve() hashes the file, so a truncated or gutted one throws rather
+    // than reporting itself absent. Either way the game cannot load it.
+    let addon = false, addonFile = null;
+    try { const entry = library().resolve('builtin'); addon = Boolean(entry.ready); addonFile = entry.file; }
+    catch { addon = false; }
+    return { ...state, addon, addonFile };
+  });
   handle('preferences',()=>require('./overlay-preferences').read(app.getPath('userData')));
   handle('save-preferences',patch=>require('./overlay-preferences').save(app.getPath('userData'),patch));
   handle('add', async () => {

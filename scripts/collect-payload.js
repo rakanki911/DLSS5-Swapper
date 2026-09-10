@@ -122,20 +122,58 @@ function findReShadeSetup() {
   return found[0] || null;
 }
 
-function findHostAddon(sourceDir) {
-  const expected = 'd5adf82eb44b065f4c590ac91fe824bab07afea0eb9f994bde936710c8593952';
+// The two RenoDX consumers this app can install, each found beside the source
+// tree and each verified by digest before it is copied. Neither is downloaded:
+// they are not published as releases with URLs, so the digest is the only thing
+// standing between the build and a file that merely has the right name.
+const RENODX_ADDONS = Object.freeze({
+  // What every route has used so far.
+  'renodx-dlss5.addon64': 'd5adf82eb44b065f4c590ac91fe824bab07afea0eb9f994bde936710c8593952',
+  // ShortFuse's DLSS Tool build. It carries the multipass control that #251
+  // asks for - DirectNeuralRenderingPassCount - and it REPLACES the one above
+  // rather than joining it: two neural consumers in one game leave the tickbox
+  // saying yes while the picture says no.
+  'renodx-dlss.addon64': '1d855cf226857dce890cffbf7206ba9b6497ce1d471b217c1c8b44b6cd5d27e9'
+});
+
+function findRenoDxAddon(sourceDir, wanted) {
+  const expected = RENODX_ADDONS[wanted];
   for (const dir of [sourceDir, path.resolve(ROOT, '..'), ...DEFAULT_SOURCES]) {
     let files = [];
     try { files = fs.readdirSync(dir); } catch { continue; }
-    const name = files.find((file) => /^renodx-dlss5\.addon64$/i.test(file));
+    const name = files.find((file) => file.toLowerCase() === wanted);
     if (!name) continue;
     const full = path.join(dir, name);
     if (sha256(full) === expected) return full;
   }
   return null;
 }
+const findHostAddon = (sourceDir) => findRenoDxAddon(sourceDir, 'renodx-dlss5.addon64');
+
+// The overlay will not drive Feeder's sliders unless the binary it finds is the
+// exact size and digest compiled into overlay/feeder-controls.hpp. That pin was
+// left behind by an earlier upgrade and every slider went quietly unavailable -
+// nothing failed, nothing was logged, the panel simply did nothing. The build
+// refuses to produce that state again.
+function assertOverlayPinMatches() {
+  const header = path.join(ROOT, 'overlay', 'feeder-controls.hpp');
+  let text = '';
+  try { text = fs.readFileSync(header, 'utf8'); } catch { return; }
+  const bytes = (text.match(/const unsigned char hash\[\]=\{([^}]+)\}/) || [])[1];
+  const size = (text.match(/hash_matches\(module,\s*(\d+)/) || [])[1];
+  const pinned = bytes ? bytes.split(',').map((b) => b.trim().replace(/^0x/, '')).join('') : '';
+  const wanted = feederRelease.hashes['dlss5-feed.addon64'];
+  if (pinned === wanted && Number(size) === feederRelease.addon64Size) return;
+  throw new Error([
+    'overlay/feeder-controls.hpp is pinned to a different Feeder than the one being shipped.',
+    `  shipping  ${feederRelease.version}  ${feederRelease.addon64Size} bytes  ${wanted}`,
+    `  overlay   ${size} bytes  ${pinned}`,
+    '  Update the hash and size in that header, then run npm run overlay:build.'
+  ].join('\n'));
+}
 
 async function collectFeeder(source) {
+  assertOverlayPinMatches();
   console.log(`\nDLSS5-Feeder v${feederRelease.version} (matching 32/64-bit clients and host):`);
   const feeder = path.join(PAYLOAD, 'feeder');
   const upstream = await extracted(COMPONENTS.feeder, `feeder-${feederRelease.version}`);
@@ -165,6 +203,12 @@ async function collectFeeder(source) {
     throw new Error('The verified RenoDX DLSS5 v4.7 add-on required by Feeder was not found.');
   }
   copyFile(hostAddon, path.join(feeder, 'host64', 'renodx-dlss5.addon64'));
+  // The multipass consumer rides in the same folder. It is optional: a build
+  // machine without it produces an app whose multipass route simply is not
+  // offered, rather than a build that fails.
+  const multipass = findRenoDxAddon(source.dir, 'renodx-dlss.addon64');
+  if (multipass) copyFile(multipass, path.join(feeder, 'host64', 'renodx-dlss.addon64'));
+  else console.log('  note: renodx-dlss.addon64 not found beside the source - the multipass route will be absent');
   fs.mkdirSync(path.join(feeder, 'licenses'), { recursive: true });
   fs.writeFileSync(path.join(feeder, 'licenses', 'THIRD-PARTY-SOURCES.txt'), [
     `DLSS5-Feeder v${feederRelease.version} — https://github.com/jlrouzies-fr/DLSS5-Feeder`,

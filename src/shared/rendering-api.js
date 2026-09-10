@@ -5,6 +5,7 @@
 // installation-route eligibility. Detection itself is never overwritten.
 (function (root) {
   const choices = [
+    { value: 'ddraw', api: 'ddraw', label: 'DirectDraw' },
     { value: 'd3d8', api: 'd3d8', label: 'DirectX 8' },
     { value: 'd3d9', api: 'd3d9', label: 'DirectX 9' },
     { value: 'd3d10', api: 'd3d10', label: 'DirectX 10' },

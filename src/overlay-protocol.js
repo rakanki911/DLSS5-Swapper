@@ -1,4 +1,8 @@
 'use strict';
+
+// Room for the Feeder to grow controls without a protocol change; a cap so a
+// malformed status cannot ask for unbounded work.
+const MAX_FEED_TOOLS = 24;
 const WIDTH = 534, MAX_HEIGHT = 1600;
 const FRAME_MAGIC = 0x31464c44, INPUT_MAGIC = 0x31494c44;
 const HELLO_VALUE = 0x4c414234, PREVIOUS_HELLO_VALUE = 0x4c414233, OLD_HELLO_VALUE = 0x4c414232, LEGACY_HELLO_VALUE = 0x4c414231;
@@ -43,10 +47,22 @@ module.exports.status = value => {
     if (t.min >= t.max || t.step <= 0) throw Error('Invalid range');
   }
   const result = { epoch: value.epoch, effects: value.effects, nrAvailable: false, tools: value.tools };
+  // The on-screen status card belongs to the add-on rather than to any
+  // consumer, so it rides alongside rather than inside the tool lists.
+  if (value.badge !== undefined) {
+    if (typeof value.badge !== 'boolean') throw Error('Invalid badge state');
+    result.badge = value.badge;
+  }
   if (value.nrTools !== undefined) {
     if (!Array.isArray(value.nrTools) || ![11, 15].includes(value.nrTools.length) || typeof value.nrAvailable !== 'boolean' || typeof value.nrEnabled !== 'boolean' || typeof value.nrReason !== 'string' || value.nrReason.length > 160) throw Error('Invalid RenoDX status');
     const checked = module.exports.status({ epoch: value.epoch, effects: value.effects, tools: value.nrTools.map((t, i) => {
-      if (t.id !== 101 + i || t.kind !== (i >= 12 ? 4 : [2, 3, 10, 11].includes(i) ? 1 : 0) || t.effect !== 'RenoDX v4.7') throw Error('Invalid RenoDX tool');
+      // The label is a label. Two different consumers fill this block - the
+      // v4.7 build and ShortFuse's DLSS Tool - and pinning the string here
+      // would reject the second while claiming the first is the only one there
+      // can ever be. The shape is still the contract: ids in order from 101,
+      // and the kind each position must have.
+      if (t.id !== 101 + i || t.kind !== (i >= 12 ? 4 : [2, 3, 10, 11].includes(i) ? 1 : 0) ||
+          typeof t.effect !== 'string' || !/^RenoDX/.test(t.effect) || t.effect.length > 32) throw Error('Invalid RenoDX tool');
       if (t.kind === 4 && (!Array.isArray(t.options) || t.options.length > 16 || t.options.some(s => typeof s !== 'string' || s.length > 128) ||
           !Number.isInteger(t.value) || (t.available && (t.options.length < 2 || t.min !== 0 || t.max !== t.options.length - 1 || t.value < 0 || t.value > t.max)))) throw Error('Invalid RenoDX choices');
       return { ...t, id: i + 1, kind: t.kind === 4 ? 0 : t.kind };
@@ -55,9 +71,15 @@ module.exports.status = value => {
     result.nrAvailable = value.nrAvailable; result.nrEnabled = value.nrEnabled; result.nrReason = value.nrReason;
   }
   if(value.feedTools!==undefined){
-    if(!Array.isArray(value.feedTools)||value.feedTools.length!==8||typeof value.feedPresent!=='boolean'||typeof value.feedReason!=='string'||value.feedReason.length>180)throw Error('Invalid Feeder status');
+    // The count and the version string used to be written out here as 8 and
+    // "Feeder 0.12.0". Both went stale the moment the add-on gained a control
+    // or the Feeder was upgraded, and a stale one rejects every status the
+    // overlay sends - the panel then shows nothing and says nothing about why.
+    // What is actually the contract is the shape: ids in order from 301, a
+    // toggle first and sliders after. The version rides along as a label.
+    if(!Array.isArray(value.feedTools)||value.feedTools.length<1||value.feedTools.length>MAX_FEED_TOOLS||typeof value.feedPresent!=='boolean'||typeof value.feedReason!=='string'||value.feedReason.length>180)throw Error('Invalid Feeder status');
     const checked=module.exports.status({epoch:value.epoch,effects:value.effects,tools:value.feedTools.map((t,i)=>{
-      if(t.id!==301+i||t.kind!==(i===0?1:0)||t.effect!=='Feeder 0.12.0')throw Error('Invalid Feeder tool');return {...t,id:i+1};
+      if(t.id!==301+i||t.kind!==(i===0?1:0)||typeof t.effect!=='string'||!/^Feeder [0-9]/.test(t.effect)||t.effect.length>32)throw Error('Invalid Feeder tool');return {...t,id:i+1};
     })});
     result.feedTools=checked.tools.map((t,i)=>({...t,id:301+i}));result.feedPresent=value.feedPresent;result.feedReason=value.feedReason;
   }
@@ -66,6 +88,9 @@ module.exports.status = value => {
 module.exports.command = (status, c) => {
   if (!status || !c || c.epoch !== status.epoch || !Number.isInteger(c.id) || !Number.isFinite(c.value)) throw Error('Stale/invalid command');
   const t = c.id >= 301 ? status.feedPresent && status.feedTools?.find(t=>t.id===c.id) : c.id === 200 && status.nrTools ? { kind: 1, min: 0, max: 1, available: true } :
+    // The card is answered by the add-on itself and needs no consumer, so
+    // it stays reachable even when nothing is connected to drive.
+    c.id === 50 ? { kind: 1, min: 0, max: 1, available: true } :
     c.id >= 101 ? status.nrAvailable && status.nrTools?.find(t => t.id === c.id) :
     c.id === 0 ? { kind: 3, min: 0, max: 1, available: true } : status.tools.find(t => t.id === c.id);
   if (!t?.available || c.kind !== t.kind || c.value < t.min || c.value > t.max || (t.kind === 4 ? !Number.isInteger(c.value) : t.kind !== 0 && c.value !== 0 && c.value !== 1)) throw Error('Unsupported command');

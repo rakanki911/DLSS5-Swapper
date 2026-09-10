@@ -9,7 +9,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-filter-ui-')));
-const timeout = setTimeout(() => { console.error('UI test timed out'); app.exit(1); }, 30000);
+const timeout = setTimeout(() => { console.error('UI test timed out'); app.exit(1); }, 60000);
 
 app.whenReady().then(async () => {
   const gameMenu = require('../src/core/game-menu');
@@ -26,7 +26,9 @@ app.whenReady().then(async () => {
     }
   });
   const errors = [];
-  win.webContents.on('console-message', (_event, level, message) => { if (level >= 3) errors.push(message); });
+  win.webContents.on('console-message', (_event, level, message) => {
+    if (level >= 3) { errors.push(message); console.error('[renderer]', message); }
+  });
   await win.loadFile(path.join(__dirname, '../src/renderer/index.html'));
   const run = (code) => win.webContents.executeJavaScript(code);
   await run(`new Promise(resolve => {

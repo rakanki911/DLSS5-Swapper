@@ -11,7 +11,7 @@ const ini = require('../src/core/feeder-config');
 
 test('OptiScaler is optional, gated by real DLSS, architecture and API', () => {
   const target = { bitness: 64, api: 'dxgi', apiLabel: 'DirectX 12', hasNativeDlss: true };
-  assert.deepEqual(routes.routesFor(target), ['native', 'feeder', 'optiscaler']);
+  assert.deepEqual(routes.routesFor(target), ['native', 'feeder', 'optiscaler', 'renodx']);
   assert.equal(routes.recommendedRoute({ chosen: target, primaryDlss: { rel: 'nvngx_dlss.dll' } }), 'native');
   for (const delta of [{ bitness: 32 }, { hasNativeDlss: false }, { emulator: { key: 'xenia' } }, { api: 'd3d9' }, { api: 'd3d8' }, { api: 'opengl' }, { apiLabel: 'DirectX 10' }]) {
     assert.equal(routes.routesFor({ ...target, ...delta }).includes('optiscaler'), false);
@@ -41,12 +41,40 @@ test('GPU requirements and process guards reject known unsupported/running targe
   assert.equal(guards.gpuSupported([{ name: 'NVIDIA GeForce RTX 5090 Laptop GPU', driver: '617.00' }]), true);
   assert.equal(guards.gpuSupported([{ name: 'NVIDIA GeForce RTX 4090', driver: '617.00' }]), false);
   assert.equal(guards.gpuSupported([{ name: 'NVIDIA GeForce RTX 5090', driver: '616.55' }]), false);
+  // The card is refused; an older driver is only a warning, so the install path
+  // asks these two separately.
+  assert.equal(guards.gpuModelSupported([{ name: 'NVIDIA GeForce RTX 5090', driver: '610.00' }]), true);
+  assert.equal(guards.driverSupported([{ name: 'NVIDIA GeForce RTX 5090', driver: '610.00' }]), false);
+  assert.equal(guards.gpuModelSupported([{ name: 'NVIDIA GeForce RTX 4090', driver: '617.00' }]), false);
+  assert.equal(guards.driverSupported([{ name: 'NVIDIA GeForce RTX 5080', driver: '617.00' }]), true);
+  // The driver range upstream measured faulting inside NVIDIA's neural runtime
+  // is a warning of its own, independent of the OptiScaler requirements.
+  assert.equal(guards.driverNeuralFault([{ name: 'NVIDIA GeForce RTX 5090', driver: '616.56' }]), false);
+  assert.equal(guards.driverNeuralFault([{ name: 'NVIDIA GeForce RTX 5090', driver: '616.64' }]), true);
+  assert.equal(guards.driverNeuralFault([{ name: 'NVIDIA GeForce RTX 4070', driver: '616.86' }]), true);
+  assert.equal(guards.driverNeuralFault([{ name: 'NVIDIA GeForce RTX 5090', driver: '610.00' }]), false);
+  assert.equal(guards.driverNeuralFault(null), false);
+  assert.equal(guards.driverNames([{ name: 'RTX 5090', driver: '616.64' }]), 'RTX 5090 - 616.64');
+  // Blackwell is the requirement, not the name: the professional boards report
+  // themselves as "RTX PRO 6000 Blackwell" and were refused for not being 50xx.
+  assert.equal(guards.gpuModelSupported([{ name: 'NVIDIA RTX PRO 6000 Blackwell Workstation Edition', driver: '616.56' }]), true);
+  assert.equal(guards.gpuModelSupported([{ name: 'NVIDIA RTX PRO 5000 Blackwell', driver: '616.56' }]), true);
+  assert.equal(guards.driverSupported([{ name: 'NVIDIA RTX PRO 6000 Blackwell', driver: '616.56' }]), true);
+  // An older professional card of the same family name is still refused.
+  assert.equal(guards.gpuModelSupported([{ name: 'NVIDIA RTX PRO 6000 Ada Generation', driver: '617.00' }]), false);
+  assert.equal(guards.gpuModelSupported([{ name: 'NVIDIA RTX A6000', driver: '617.00' }]), false);
   const root = path.resolve('test-fixture-game');
   const game = path.join(root, 'Game.exe');
   const rows = [{ Name: 'Game.exe', ExecutablePath: game, ProcessId: -1 }, { Name: 'Game.exe', ExecutablePath: null, ProcessId: -2 }, { Name: 'Other.exe', ExecutablePath: path.resolve('elsewhere', 'Other.exe'), ProcessId: -3 }];
   assert.equal(guards.matchingProcesses(rows, root, game).length, 2);
   await assert.rejects(guards.assertGameClosed(root, game, async () => JSON.stringify(rows)), { code: 'errGameRunning' });
-  await assert.rejects(guards.assertGameClosed(root, game, async () => { throw new Error('Access denied'); }), { code: 'errProcessCheck' });
+  // When the process list cannot be read - PowerShell restricted, a cold WMI
+  // call past its timeout - the executable itself is asked instead. A file
+  // that opens for writing is not a running game, and the install proceeds;
+  // refusing there is what stopped people with a closed game from installing.
+  const unavailable = async () => { throw new Error('Access denied'); };
+  await guards.assertGameClosed(root, game, unavailable, () => false);
+  await assert.rejects(guards.assertGameClosed(root, game, unavailable, () => true), { code: 'errGameRunning' });
   await guards.assertGameClosed(root, game, async () => '[]');
 });
 

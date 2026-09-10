@@ -28,8 +28,8 @@ test('manual DX11/DX12 use dxgi but route eligibility follows the selected label
     const dx12 = api.effective(target, 'd3d12');
     assert.equal(dx11.api, 'dxgi');
     assert.equal(dx12.api, 'dxgi');
-    assert.deepEqual(routes.routesFor(dx11), ['feeder', 'optiscaler']);
-    assert.deepEqual(routes.routesFor(dx12), ['native', 'feeder', 'optiscaler']);
+    assert.deepEqual(routes.routesFor(dx11), ['feeder', 'optiscaler', 'renodx']);
+    assert.deepEqual(routes.routesFor(dx12), ['native', 'feeder', 'optiscaler', 'renodx']);
     assert.deepEqual(routes.routesFor(api.effective(target, 'd3d10')), []);
     assert.deepEqual(routes.routesFor(api.effective(target, 'vulkan')), ['feeder', 'optiscaler']);
   }

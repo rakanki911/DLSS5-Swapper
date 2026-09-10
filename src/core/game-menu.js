@@ -6,6 +6,7 @@ const path = require('path');
 const DEFAULT_LABELS = {
   details: 'View game details', open: 'Open game folder', copy: 'Copy folder path',
   scan: 'Rescan this game', poster: 'Change cover', restore: 'Restore originals',
+  community: 'Add to community-tested games',
   hide: 'Hide from library (keep files)', cancel: 'Cancel',
   confirmRestore: 'Restore the original files for this game?',
   restoreHint: 'Close the game first. Files installed by Swapper will be removed and backed-up originals restored.'
@@ -36,6 +37,7 @@ function template({ name, labels, busy, restorable }, select) {
     item('details'), item('open', true), item('copy', true),
     { type: 'separator' },
     item('scan'), item('poster'), item('restore', !busy && restorable),
+    { type: 'separator' }, item('community'),
     { type: 'separator' }, item('hide')
   ];
 }

@@ -86,8 +86,8 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
   }
   function addTool(target, t) {
     // Feeder's signed tri-state values use the same compact dropdown widget.
-    const feedChoices={306:['Auto','Force SDR','Force HDR'],307:['Auto','Normal','Inverted'],308:['Bilinear','FSR 1','DLSS SR (experimental)']};
-    if(feedChoices[t.id])t={...t,options:feedChoices[t.id],name:{306:'HDR contract',307:'Depth convention',308:'Work upscale'}[t.id]};
+    const feedChoices={306:['Auto','Force SDR','Force HDR'],307:['Auto','Normal','Inverted'],308:['Bilinear','FSR 1','DLSS SR (experimental)'],309:['Auto','Off','On']};
+    if(feedChoices[t.id])t={...t,options:feedChoices[t.id],name:{306:'HDR contract',307:'Depth convention',308:'Work upscale',309:'HDR10 bridge'}[t.id]};
     const isChoice=t.kind===4||!!t.options;
     const row = el(isChoice?'div':'label', isChoice?'ol-choice':t.kind===0?'ol-slider':'ol-check ol-live-toggle');
     row.title = `${t.effect || 'ReShade'} / ${t.name}`;
@@ -104,9 +104,12 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
   function bindNr(panel) {
     for (const control of panel.querySelectorAll('input, button')) control.disabled = true;
     panel.querySelector('.ol-master small').textContent = status===sample?'Preview only':status?.nrAvailable ? 'RenoDX live' : 'Waiting for RenoDX';
+    const badgeNote = panel.querySelector('.ol-badge small');
+    if (badgeNote) badgeNote.textContent = status===sample ? 'Preview only' : 'Shows DLSS 5 On/Off over the game';
     panel.querySelector('.ol-prototype').textContent = status===sample?'PREVIEW':status?.nrAvailable ? 'CONNECTED' : 'NOT CONNECTED';
     const mapping = [[panel.querySelector('#olStructure'), 101], [panel.querySelector('#olTone'), 102],
-      [panel.querySelector('.ol-master input'), 103], [panel.querySelector('.ol-muted input[type=checkbox]'), 104],
+      [panel.querySelector('.ol-master input'), 103], [panel.querySelector('.ol-badge input'), 50],
+      [panel.querySelector('.ol-muted input[type=checkbox]'), 104],
       [panel.querySelector('#olMaskStructure'), 105]];
     for (const [input, id] of mapping) {
       input.dataset.liveId = id;
@@ -164,7 +167,8 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
       backend.onclick=()=>{
         sample.feedPresent=!sample.feedPresent;
         sample.feedReason='Design preview only. Feeder cfg controls; work resolution, filter and sharpness require DX11.';
-        sample.feedTools=[['Feeder enabled (original panel)',1,1,0,1],['Work resolution (%)',0,100,50,100],['Work sharpness',0,.3,0,1],['Motion scale X',0,1,-2,2],['Motion scale Y',0,1,-2,2],['HDR contract',0,-1,-1,1],['Depth convention',0,-1,-1,1],['Work upscale',0,0,0,2]].map(([name,kind,value,min,max],i)=>({id:301+i,name,kind,value,min,max,step:[0,1,5,6,7].includes(i)?1:.01,available:i!==0,effect:'Feeder 0.12.0'}));
+        sample.badge=false;
+        sample.feedTools=[['Feeder enabled (original panel)',1,1,0,1],['Work resolution (%)',0,100,50,100],['Work sharpness',0,.3,0,1],['Motion scale X',0,1,-2,2],['Motion scale Y',0,1,-2,2],['HDR contract',0,-1,-1,1],['Depth convention',0,-1,-1,1],['Work upscale',0,0,0,2],['HDR10 bridge',0,-1,-1,1],['HDR paper white (nits)',0,203,50,1000]].map(([name,kind,value,min,max],i)=>({id:301+i,name,kind,value,min,max,step:[0,1,5,6,7,8,9].includes(i)?1:.01,available:i!==0,effect:'Feeder 0.15.1'}));
         build();update();
       };
       modes.after(backend);
@@ -193,6 +197,9 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
     for (const input of root.querySelectorAll('[data-live-id]')) {
       const id = Number(input.dataset.liveId);
       const t = id >= 301 ? status?.feedPresent&&status.feedTools?.find(t=>t.id===id) : id === 0 ? { kind: 3, value: status?.effects ? 1 : 0, available: !!status } :
+        // The on-screen status card is the add-on's own, so it is available
+        // as soon as the overlay is connected - with or without a consumer.
+        id === 50 ? { kind: 1, value: status?.badge ? 1 : 0, available: !!status, effect: 'DLSS 5 Swapper', name: 'On-screen status card' } :
         id >= 101 ? status?.nrAvailable && status.nrTools?.find(t => t.id === id) : status?.tools.find(t => t.id === id);
       input.disabled = !t?.available;
       if (!t || input.dataset.dragging || (document.activeElement === input && input.type === 'number')) continue;

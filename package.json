@@ -1,6 +1,6 @@
 {
   "name": "dlss5-swapper",
-  "version": "2.2.1",
+  "version": "2.2.5",
   "description": "DLSS 5 (Neural Rendering) for your games - a library that finds them, and one click to install",
   "main": "main.js",
   "scripts": {
@@ -81,7 +81,8 @@
     },
     "compression": "maximum",
     "portable": {
-      "artifactName": "DLSS5-Swapper-${version}-portable.exe"
+      "artifactName": "DLSS5-Swapper-${version}-portable.exe",
+      "unpackDirName": "DLSS5-Swapper"
     },
     "nsis": {
       "oneClick": false,

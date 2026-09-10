@@ -95,3 +95,27 @@ test('another game keeps its overlay when this one is updated', (t) => {
   assert.ok(fs.existsSync(untouched.file), 'only the game being installed into is updated');
   assert.deepEqual(library(newBuild).list().installations.map(r => r.directory), [second]);
 });
+
+test('a protected Xbox executable uses the architecture found by the game scanner', async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dlss5-overlay-xbox-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  const gameDir = realDir(root, 'XboxGame', 'Content');
+  const exe = path.join(gameDir, 'Game.exe');
+  fs.writeFileSync(exe, 'encrypted executable placeholder');
+  const build = minimalPe(path.join(root, 'build', 'overlay.addon64'), { dll: true, filler: 2 });
+  const library = createOverlayLibrary(path.join(root, 'library'), build);
+  const target = { path: exe, bitness: 64, api: 'dxgi', apiLabel: 'DirectX 12' };
+  const plan = gameOverlay.prepare({ library, target, route: 'native' });
+  const manifest = { added: [] };
+
+  assert.throws(() => library.install('builtin', exe), /Invalid Windows PE binary/);
+  const installed = await gameOverlay.attach({
+    library, target, gameDir, manifest, plan,
+    saveManifest: async () => {}
+  });
+
+  assert.equal(fs.existsSync(installed.file), true);
+  assert.deepEqual(manifest.added, [path.basename(installed.file)]);
+  assert.equal(manifest.labOverlay.architecture, 64);
+});

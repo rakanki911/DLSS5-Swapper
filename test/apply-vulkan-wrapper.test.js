@@ -29,7 +29,13 @@ test('Vulkan Feeder install/reinstall/restore keeps DXVK files intact for x86 an
     feeder: { ok32: true, ok64: true, vulkanOk: true, vulkanLayerDir: layerDir,
       addon32: put('dlss5-feed.addon32'), addon64: put('dlss5-feed.addon64'),
       host64: put('host64/dlss5-feed-host64.exe'), hostAddon: put('host64/renodx-dlss5.addon64'),
-      shaderRoot, feedShader: path.join(shaderRoot, 'Shaders/DLSS5_Feed.fx') } };
+      shaderRoot, feedShader: path.join(shaderRoot, 'Shaders/DLSS5_Feed.fx'),
+      feedLayer64: path.join(root, 'payload', 'layer-x64'),
+      feedLayer32: path.join(root, 'payload', 'layer-x86') } };
+  put('layer-x64/VkLayer_feed_vk.dll'); put('layer-x64/VkLayer_feed_vk.json');
+  put('layer-x64/run-with-feed-layer.bat');
+  put('layer-x86/VkLayer_feed_vk32.dll'); put('layer-x86/VkLayer_feed_vk32.json');
+  put('layer-x86/run-with-feed-layer32.bat');
   const values = new Set();
   const runner = async (_file, args) => {
     if (args[0] === 'query') return { code: values.size ? 0 : 1,
@@ -60,11 +66,19 @@ test('Vulkan Feeder install/reinstall/restore keeps DXVK files intact for x86 an
       for (const [file, bytes] of originals) assert.deepEqual(fs.readFileSync(file), bytes);
       assert.equal(values.size, bitness === 32 ? 2 : 1);
       assert.equal(fs.existsSync(path.join(gameDir, 'dgVoodoo.conf')), false);
+      // Feeder's own interop layer travels with a Vulkan install: no registry
+      // key, nothing global, and the launcher sits beside the game.
+      const layerHome = path.join(gameDir, 'dlss5-feed-vk-layer');
+      const launcher = bitness === 32 ? 'run-with-feed-layer32.bat' : 'run-with-feed-layer.bat';
+      assert.equal(fs.existsSync(path.join(layerHome, launcher)), true, 'the layer launcher is installed');
+      assert.equal(fs.existsSync(path.join(layerHome, bitness === 32 ? 'VkLayer_feed_vk32.dll' : 'VkLayer_feed_vk.dll')), true);
+      assert.ok(manifest.added.some(item => item.includes('dlss5-feed-vk-layer')), 'and it is tracked for restore');
     }
     assert.equal(await manager.restore(gameDir), true);
     for (const [file, bytes] of originals) assert.deepEqual(fs.readFileSync(file), bytes);
     assert.equal(values.size, 0);
     assert.equal(fs.existsSync(path.join(core.backupRoot(gameDir), 'manifest.json')), false);
     assert.equal(fs.existsSync(path.join(gameDir, 'reshade-shaders')), false);
+    assert.equal(fs.existsSync(path.join(gameDir, 'dlss5-feed-vk-layer')), false, 'restore removes the layer too');
   }
 });

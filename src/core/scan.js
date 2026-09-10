@@ -3,6 +3,7 @@
 // which executable is the game, which rendering API it uses, where the
 // existing DLSS/Streamline files live, and whether ReShade is already there.
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const pe = require('./pe');
 const emulators = require('./emulators');
@@ -104,9 +105,42 @@ const API_MARKERS = [
   // is one such layout, so those exports are authoritative D3D12 evidence too.
   'D3D12CreateDevice', 'D3D12SDKPath', 'D3D12SDKVersion',
   'D3D11CreateDevice', 'D3D10CreateDevice',
+  // DirectDraw's two entry points. Without them a Genesis emulator reads as
+  // having no 3D in it at all (#150).
+  'DirectDrawCreateEx', 'DirectDrawCreate',
   'Direct3DCreate9', 'Direct3DCreate8', 'CreateDXGIFactory', 'vkCreateInstance', 'wglCreateContext'
 ];
 
+// A Direct3D DLL sitting beside the executable that is really DXVK or vkd3d:
+// the game calls Direct3D, the wrapper turns it into Vulkan, and the frame
+// is presented by Vulkan. Both halves of the app need to agree on this - the
+// installer already refused to overwrite such a file, while the scanner
+// still called the game DirectX and offered a route that could not work.
+function isVulkanWrapper(file, bitness) {
+  if (pe.getBitness(file) !== bitness || pe.versionMentions(file, 'ReShade')) return false;
+  if (pe.versionMentions(file, 'DXVK') || pe.versionMentions(file, 'vkd3d')) return true;
+  const markers = pe.findMarkers(file, ['DXVK', 'vkd3d', 'vkGetInstanceProcAddr', 'ReShade']);
+  return !markers.has('ReShade') && markers.has('vkGetInstanceProcAddr') &&
+    (markers.has('DXVK') || markers.has('vkd3d'));
+}
+
+// Which DLL a game of each API would be calling, so only the file that could
+// be a wrapper is opened.
+const WRAPPED_BY_API = {
+  dxgi: ['d3d12.dll', 'd3d11.dll', 'dxgi.dll'],
+  d3d10: ['d3d10.dll', 'd3d10_1.dll'],
+  d3d9: ['d3d9.dll'],
+  d3d8: ['d3d8.dll'],
+  ddraw: ['ddraw.dll']
+};
+function vulkanWrapperBeside(file, api, bitness) {
+  const dir = path.dirname(file);
+  for (const name of WRAPPED_BY_API[api] || []) {
+    const candidate = findCaseInsensitive(dir, name);
+    try { if (candidate && isVulkanWrapper(candidate, bitness)) return true; } catch { /* unreadable is not a wrapper */ }
+  }
+  return false;
+}
 function apiFromNames(imports) {
   const has = (n) => imports.includes(n);
   if (has('d3d12.dll')) return { api: 'dxgi', label: 'DirectX 12' };
@@ -116,6 +150,10 @@ function apiFromNames(imports) {
   if (has('vulkan-1.dll')) return { api: 'vulkan', label: 'Vulkan' };
   if (has('d3d9.dll')) return { api: 'd3d9', label: 'DirectX 9' };
   if (has('d3d8.dll')) return { api: 'd3d8', label: 'DirectX 8' };
+  // DirectDraw. dgVoodoo translates it the same way it does DX8 and DX9, and
+  // it is what the Genesis and other pre-Direct3D emulators draw through -
+  // reported as "No 3D executable found" on #150, because nothing looked.
+  if (has('ddraw.dll')) return { api: 'ddraw', label: 'DirectDraw' };
   if (has('opengl32.dll')) return { api: 'opengl', label: 'OpenGL' };
   return null;
 }
@@ -130,6 +168,7 @@ function apiFromMarkers(file) {
   if (markers.has('CreateDXGIFactory')) return { api: 'dxgi', label: 'DirectX (DXGI)' };
   if (markers.has('Direct3DCreate9')) return { api: 'd3d9', label: 'DirectX 9' };
   if (markers.has('Direct3DCreate8')) return { api: 'd3d8', label: 'DirectX 8' };
+  if (markers.has('DirectDrawCreateEx') || markers.has('DirectDrawCreate')) return { api: 'ddraw', label: 'DirectDraw' };
   if (markers.has('vkCreateInstance')) return { api: 'vulkan', label: 'Vulkan' };
   if (markers.has('wglCreateContext')) return { api: 'opengl', label: 'OpenGL' };
   return null;
@@ -196,9 +235,39 @@ function apiFromFileName(file) {
   if (/(?:^|[_-])(?:d3d|dx)10(?:[_-]|\.|$)/.test(name)) return { api: 'd3d10', label: 'DirectX 10' };
   if (/(?:^|[_-])(?:d3d|dx)9(?:[_-]|\.|$)/.test(name)) return { api: 'd3d9', label: 'DirectX 9' };
   if (/(?:^|[_-])(?:d3d|dx)8(?:[_-]|\.|$)/.test(name)) return { api: 'd3d8', label: 'DirectX 8' };
+  if (/(?:^|[_-])ddraw(?:[_-]|\.|$)/.test(name)) return { api: 'ddraw', label: 'DirectDraw' };
   if (/(?:^|[_-])vulkan(?:[_-]|\.|$)/.test(name)) return { api: 'vulkan', label: 'Vulkan' };
   if (/(?:^|[_-])(?:ogl|opengl)(?:[_-]|\.|$)/.test(name)) return { api: 'opengl', label: 'OpenGL' };
   return null;
+}
+
+// Where RDR2 keeps its own graphics settings. The executable is byte-for-byte
+// the same under DX12 and Vulkan, so this file is the only place the answer
+// exists, and people who switch the renderer for a Vulkan-only ReShade add-on
+// were left looking at a card that still said DirectX 12.
+function rdr2SettingsFiles() {
+  const home = process.env.USERPROFILE || os.homedir();
+  const rel = path.join('Rockstar Games', 'Red Dead Redemption 2', 'Settings', 'system.xml');
+  // Documents is often redirected into OneDrive, which leaves the original
+  // path empty rather than missing.
+  const roots = [path.join(home, 'Documents'), path.join(home, 'OneDrive', 'Documents')];
+  if (process.env.OneDrive) roots.push(path.join(process.env.OneDrive, 'Documents'));
+  return roots.map((root) => path.join(root, rel));
+}
+
+// Deliberately one-way: only an explicit Vulkan setting moves the answer. A
+// missing, unreadable or unrecognised file keeps the DirectX 12 this profile
+// has always reported, so a wrong guess here can never take a working game
+// away from someone.
+function rdr2Renderer(files = rdr2SettingsFiles()) {
+  for (const file of files) {
+    let text;
+    try { text = fs.readFileSync(file, 'utf8'); } catch { continue; }
+    const setting = /<API[^>]*>([^<]*)<\/API>/i.exec(text);
+    if (setting && /vulkan/i.test(setting[1])) return { api: 'vulkan', label: 'Vulkan' };
+    if (setting) return { api: 'dxgi', label: 'DirectX 12' };
+  }
+  return { api: 'dxgi', label: 'DirectX 12' };
 }
 
 // A few engines keep compatibility or launcher code for an API they never use
@@ -206,10 +275,10 @@ function apiFromFileName(file) {
 // renderers are DX12 and Vulkan, so binary-string guessing is actively wrong
 // for this executable. Profiles are intentionally exact-name and expose every
 // renderer the user can select instead of pretending the first marker wins.
-function gameApiProfile(file) {
+function gameApiProfile(file, renderer = rdr2Renderer) {
   if (/^rdr2\.exe$/i.test(path.basename(file))) {
     return {
-      detected: { api: 'dxgi', label: 'DirectX 12', via: 'game-profile' },
+      detected: { ...renderer(), via: 'game-profile' },
       choices: [
         { api: 'dxgi', label: 'DirectX 12' },
         { api: 'vulkan', label: 'Vulkan' }
@@ -259,7 +328,19 @@ function detectEngineApi(file) {
     'left4dead2.exe': ['bin/shaderapidx9.dll', 'bin/engine.dll'],
     'killingfloor.exe': ['D3D9Drv.dll', 'D3DDrv.dll', 'OpenGLDrv.dll'],
     'farcry5.exe': ['FC_m64.dll'],
-    'watch_dogs.exe': ['Disrupt_b64.dll']
+    'watch_dogs.exe': ['Disrupt_b64.dll'],
+    'kingdomcome.exe': ['WHGame.dll'],
+    // X-Ray picks its renderer at startup and loads it with LoadLibrary, so
+    // xrEngine.exe imports no Direct3D and reads as having no 3D in it at all.
+    // R1 is DX8/9 fixed-function, R2 DX9, R3 DX10, R4 DX11 - whichever is
+    // present answers. Reported as "No 3D executable found" on #232.
+    'xrengine.exe': ['xrRender_R4.dll', 'xrRender_R3.dll', 'xrRender_R2.dll', 'xrRender_R1.dll'],
+    // Source games each ship their own executable name. shaderapidx9.dll is
+    // the engine's renderer and its filename is specific enough to be
+    // evidence; Portal 2 is the one on #217.
+    'portal2.exe': ['bin/shaderapidx9.dll', 'bin/x64/shaderapidx9.dll'],
+    'csgo.exe': ['bin/shaderapidx9.dll'],
+    'garrysmod.exe': ['bin/shaderapidx9.dll', 'bin/win64/shaderapidx9.dll']
   }[path.basename(file).toLowerCase()];
   if (!modules) return null;
   const bitness = pe.getBitness(file);
@@ -272,6 +353,27 @@ function detectEngineApi(file) {
     if (!module || pe.getBitness(module) !== bitness) continue;
     const api = apiFromNames(pe.getImports(module)) || apiFromMarkers(module);
     if (api) return { ...api, via: 'engine-module:' + rel };
+  }
+  return null;
+}
+
+// The graphics evidence a game keeps in one of its own libraries rather than
+// in the executable. Bounded hard: this runs only when a scan already found
+// nothing, and it must not turn that into a long walk.
+function rendererModule(gameDir, budget = 60) {
+  const queue = [[gameDir, 0]];
+  while (queue.length && budget > 0) {
+    const [dir, depth] = queue.shift();
+    let entries = [];
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { continue; }
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { if (depth < 3) queue.push([full, depth + 1]); continue; }
+      if (!/\.dll$/i.test(entry.name) || budget-- <= 0) continue;
+      try {
+        if (apiFromNames(pe.getImports(full)) || apiFromMarkers(full)) return entry.name;
+      } catch { /* an unreadable module is not evidence */ }
+    }
   }
   return null;
 }
@@ -306,6 +408,11 @@ function selectPrimaryDlss(files, chosen) {
 // Prefer the executable a player normally launches. Several older games ship
 // separate SP and MP/Online programs in the same folder; installing beside the
 // multiplayer binary makes ReShade appear missing in the single-player game.
+// How many unreadable executables a folder may add to the picker. Enough for
+// a launcher, a script extender and a couple of engine binaries; not a menu
+// of every tool an installer left behind.
+const UNDETECTED_LIMIT = 8;
+
 function playableRoleScore(exe) {
   const rel = String(exe.rel || exe.path || '').toLowerCase();
   let score = 0;
@@ -318,6 +425,9 @@ function playableRoleScore(exe) {
 
 async function scanGame(gameDir) {
   const exeCandidates = [];
+  // Executables that are real PE binaries but name no rendering API. Kept
+  // aside rather than thrown away: see the fallback below.
+  const undetectedExes = [];
   const dlssFiles = [];
   const streamlineFiles = [];
   let addonPresent = null;
@@ -337,7 +447,14 @@ async function scanGame(gameDir) {
       const detected = emulator
         ? { ...emulators.apiChoices(emulator)[0], via: 'emulator-profile' }
         : (gameProfile ? gameProfile.detected : detectApi(full, pe.getImports(full)));
-      if (!detected) return;
+      if (!detected) {
+        undetectedExes.push({ path: full, rel: path.relative(gameDir, full), name, size, depth, bitness });
+        return;
+      }
+      // DXVK and vkd3d present the frame with Vulkan even though the game asks
+      // for Direct3D, so that is the renderer to report and to install for.
+      const wrapped = !emulator && !gameProfile && detected.api !== 'vulkan' &&
+        vulkanWrapperBeside(full, detected.api, bitness);
       // File size is not a game classifier. Genuine engine dispatchers can be
       // only a few KB; retain them when PE/API evidence above is available.
       exeCandidates.push({
@@ -346,19 +463,21 @@ async function scanGame(gameDir) {
         name,
         size,
         depth,
-        api: detected.api,
-        apiLabel: detected.label,
-        via: detected.via,
+        api: wrapped ? 'vulkan' : detected.api,
+        apiLabel: wrapped ? 'Vulkan' : detected.label,
+        via: wrapped ? 'vulkan-wrapper' : detected.via,
         dynamic: detected.via !== 'imports',
         bitness,
-        dx12: detected.label === 'DirectX 12',
+        dx12: !wrapped && detected.label === 'DirectX 12',
         emulator: emulator ? {
           key: emulator.key, name: emulator.name, system: emulator.system,
           hint: emulator.hint
         } : null,
         apiChoices: emulator
           ? emulators.apiChoices(emulator)
-          : (gameProfile ? gameProfile.choices : [{ api: detected.api, label: detected.label }])
+          : gameProfile ? gameProfile.choices
+            : wrapped ? [{ api: 'vulkan', label: 'Vulkan' }, { api: detected.api, label: detected.label }]
+              : [{ api: detected.api, label: detected.label }]
       });
     } else if (DLSS_FILE.test(name) || STREAMLINE_FILE.test(name)) {
       const item = {
@@ -423,6 +542,33 @@ async function scanGame(gameDir) {
   exeCandidates.length = 0;
   exeCandidates.push(...unique);
 
+  // Executables that named no API at all. Protected builds, script extenders
+  // and launchers that start the real engine resolve Direct3D in a way that
+  // leaves no import and no string behind, and dropping them silently is what
+  // "no 3D executable" and "my game's exe is not in the list" come from.
+  //
+  // They are offered only once the folder is already known to be a game -
+  // either something else named an API, or the folder ships DLSS/Streamline -
+  // so an ordinary folder of tools is still not a game. The renderer is left
+  // unknown rather than guessed; the person picks it with the API override.
+  const isGameFolder = exeCandidates.length > 0 || dlssFiles.length > 0 || streamlineFiles.length > 0;
+  if (isGameFolder && undetectedExes.length) {
+    const offered = [];
+    for (const exe of [...undetectedExes].sort((a, b) =>
+      (playableRoleScore(b) - playableRoleScore(a)) || (a.depth - b.depth) || (b.size - a.size))) {
+      const key = exe.name.toLowerCase();
+      if (seenNames.has(key) || offered.length >= UNDETECTED_LIMIT) continue;
+      seenNames.add(key);
+      offered.push({
+        ...exe, api: null, apiLabel: null, via: 'undetected',
+        dynamic: true, dx12: false, emulator: null, apiChoices: []
+      });
+    }
+    // Always after the ones that did name an API, so the automatic choice is
+    // never taken away from a game that was being detected correctly.
+    exeCandidates.push(...offered);
+  }
+
   const chosen = exeCandidates[0] || null;
   const primaryDlss = selectPrimaryDlss(dlssFiles, chosen);
   // When nothing turned up, say which kind of folder this actually is instead
@@ -435,7 +581,12 @@ async function scanGame(gameDir) {
     if (xboxDeclared.length || /(?:^|[\\/])windowsapps(?:[\\/]|$)/i.test(path.resolve(gameDir))) emptyReason = 'xbox-protected';
     else if (looksPacked) emptyReason = 'installer';
     else if (!top.some((f) => f.endsWith('.exe'))) emptyReason = 'no-exe';
-    else emptyReason = 'no-graphics-exe';
+    // "No 3D executable" was true and useless: it came out both for a folder
+    // with no game in it and for X-Ray, Source and Source 2, whose executables
+    // load a renderer with LoadLibrary and so import no Direct3D themselves
+    // (#232, #199, #150). Those two need different answers, and the game's own
+    // DLLs say which one this is.
+    else emptyReason = rendererModule(gameDir) ? 'renderer-in-dll' : 'no-graphics-exe';
   }
   let install = null;
   const activeManifest = path.join(gameDir, '_DLSS5_Backup', 'manifest.json');
@@ -522,8 +673,15 @@ function scanSource(sourceDir) {
     feedShader: path.join(feederDir, 'reshade-shaders', 'Shaders', 'DLSS5_Feed.fx'),
     shaderRoot: path.join(feederDir, 'reshade-shaders'),
     hostAddon: path.join(feederDir, 'host64', 'renodx-dlss5.addon64'),
+    // ShortFuse's DLSS Tool build, carrying the multipass control (#251).
+    // Optional: a payload built without it simply does not offer the route.
+    multipassAddon: path.join(feederDir, 'host64', 'renodx-dlss.addon64'),
     dgVoodooDir: path.join(feederDir, 'dgvoodoo'),
-    vulkanLayerDir: path.join(sourceDir, 'reshade-vulkan')
+    vulkanLayerDir: path.join(sourceDir, 'reshade-vulkan'),
+    // Feeder's interop layer, one folder per architecture, copied beside a
+    // Vulkan game so it can be launched with the layer when needed.
+    feedLayer64: path.join(feederDir, 'layer-x64'),
+    feedLayer32: path.join(feederDir, 'layer-x86')
   };
   feeder.releaseVerified = Object.entries(feederRelease.hashes).every(([rel, expected]) => {
     try {
@@ -563,5 +721,7 @@ function scanSource(sourceDir) {
 }
 
 module.exports = {
-  scanGame, scanSource, walk, selectPrimaryDlss, xboxExecutables, playableRoleScore, inspectReShade
+  scanGame, scanSource, walk, selectPrimaryDlss, xboxExecutables, playableRoleScore, inspectReShade,
+  isVulkanWrapper, vulkanWrapperBeside,
+  gameApiProfile, rdr2Renderer, rdr2SettingsFiles
 };

@@ -10,3 +10,12 @@ extern "C" void lab_imgui_vec2(void *function, float *x, float *y) {
     const auto value = reinterpret_cast<ImVec2(*)()>(function)();
     *x = value.x; *y = value.y;
 }
+
+// Same reason, for the one ImVec2-returning call that takes arguments. Calling
+// it directly from the MinGW-built add-on returns the struct by the wrong
+// convention and ReShade reads a null - a crash inside dxgi.dll whose stack
+// names this add-on, in every game, on the first frame that measures text.
+extern "C" void lab_imgui_text_size(void *function, const char *text, float *x, float *y) {
+    const auto value = reinterpret_cast<ImVec2(*)(const char *, const char *, bool, float)>(function)(text, nullptr, false, -1.f);
+    *x = value.x; *y = value.y;
+}

@@ -119,12 +119,17 @@ function createOverlayLibrary(root, builtinFile, forbiddenRoots = []) {
     fs.unlinkSync(entry.file);
     fs.unlinkSync(path.join(entries, `${id}.json`));
   }
-  function install(id, exe) {
+  function install(id, exe, knownArchitecture = null) {
     const entry = resolve(id);
     if (!entry.ready) throw Error('Build the overlay add-on first.');
     const binary = readNative(entry.file);
-    const targetExe = readNative(exe, false);
-    if (binary.architecture !== targetExe.architecture) throw Error('Overlay and executable architectures do not match.');
+    const targetStat = fs.lstatSync(exe);
+    if (!targetStat.isFile() || targetStat.isSymbolicLink()) throw Error('Expected a regular Windows executable.');
+    const targetArchitecture = knownArchitecture === null
+      ? readNative(exe, false).architecture
+      : knownArchitecture;
+    if (![32, 64].includes(targetArchitecture)) throw Error('Invalid executable architecture.');
+    if (binary.architecture !== targetArchitecture) throw Error('Overlay and executable architectures do not match.');
     const targetDir = fs.realpathSync(path.dirname(exe));
     for (const forbidden of forbiddenRoots) if (inside(path.resolve(forbidden), targetDir)) throw Error('The main app and toolchain directories cannot be overlay targets.');
     if (list().installations.some(record => record.overlayId === id && record.directory.toLowerCase() === targetDir.toLowerCase() && record.sha256 !== binary.sha256)) throw Error('Remove the previous test overlay before installing a new build.');

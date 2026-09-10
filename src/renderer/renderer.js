@@ -8,7 +8,7 @@ const state = { games: [], recents: [], history: [], newDlss: null, log: [], the
 const filters = { query: '', api: 'all', dlss: 'all', addon: 'all' };
 const gameFilters = window.gameFilters;
 
-const ORDER = ['Steam', 'Epic Games', 'GOG', 'Added by hand', 'My folders'];
+const ORDER = ['Steam', 'Epic Games', 'GOG', 'Xbox', 'Ubisoft', 'Added by hand', 'My folders'];
 const rank = (l) => (ORDER.indexOf(l) === -1 ? ORDER.length : ORDER.indexOf(l));
 const short = (v) => (v ? String(v).replace(/\.0$/, '') : null);
 const initials = (name) =>
@@ -69,6 +69,7 @@ function show(view) {
   if (view === 'settings') renderSettings();
   if (view === 'addons') renderAddons();
   if (view === 'overlays') window.overlayLab.render();
+  if (view === 'community') window.communityUi.render();
 }
 
 for (const link of document.querySelectorAll('[data-project]')) {
@@ -132,6 +133,7 @@ const REASONS = {
   installer: 'rInstaller',
   'no-exe': 'rNoExe',
   'no-graphics-exe': 'rNoGraphics',
+  'renderer-in-dll': 'rRendererInDll',
   'xbox-protected': 'rXboxProtected',
   error: 'rError'
 };
@@ -183,7 +185,7 @@ function renderGameFilters() {
   const apis = [
     ['all', t('allApis')], ['dx11-dx12', 'DirectX 11 / 12'],
     ...['DirectX 12', 'DirectX 11', 'DirectX 10', 'DirectX 9', 'DirectX 8', 'Vulkan', 'OpenGL'].map((api) => [api, api]),
-    ['no-graphics-exe', t('rNoGraphics')], ['no-exe', t('rNoExe')],
+    ['no-graphics-exe', t('rNoGraphics')], ['renderer-in-dll', t('rRendererInDll')], ['no-exe', t('rNoExe')],
     ['pending', t('scanning')]
   ];
   for (const game of state.games) {
@@ -556,6 +558,7 @@ $('dlgSave').onclick = async () => {
   renderAddons();
 };
 
+
 async function renderSettings() {
   const info = await window.lab.settings();
   $('settings').innerHTML = `
@@ -563,6 +566,19 @@ async function renderSettings() {
       <div class="v" id="setGroupGamesHint">${t('setGroupGamesHint')}</div></div>
       <button class="setting-switch" id="setGroupGames" type="button" role="switch"
         aria-checked="${info.groupGamesByStore !== false}" aria-label="${t('setGroupGames')}" aria-describedby="setGroupGamesHint">
+        <span class="knob"></span>
+      </button></div>
+    <div class="set-row"><div><div class="k">${t('setNotices')}</div>
+      <div class="v" id="setNoticesHint">${t('setNoticesHint')}</div></div>
+      <button class="setting-switch" id="setNotices" type="button" role="switch"
+        aria-checked="${(await window.lab.communityNoticeSettings()).on ? 'true' : 'false'}"
+        aria-label="${t('setNotices')}" aria-describedby="setNoticesHint">
+        <span class="knob"></span>
+      </button></div>
+    <div class="set-row"><div><div class="k">${t('setTray')}</div>
+      <div class="v" id="setTrayHint">${t('setTrayHint')}</div></div>
+      <button class="setting-switch" id="setTray" type="button" role="switch"
+        aria-checked="${info.closeToTray !== false}" aria-label="${t('setTray')}" aria-describedby="setTrayHint">
         <span class="knob"></span>
       </button></div>
     <div class="set-row"><div><div class="k">${t('setAutoScan')}</div>
@@ -590,19 +606,40 @@ async function renderSettings() {
           : `<div class="v">—</div>`}
       </div>
       <button class="ghost sm" id="setAddFolder">${t('setAdd')}</button></div>
+    <div class="set-row"><div><div class="k">${t('setHidden')}</div>
+        ${(info.hidden || []).length
+          ? `<div class="paths">${info.hidden.map((f) => `
+              <div class="path-row"><span>${esc(f)}</span>
+                <button class="ghost sm" data-unhide="${esc(f)}">${t('setUnhide')}</button>
+              </div>`).join('')}</div>`
+          : `<div class="v">${t('setHiddenNone')}</div>`}
+      </div>
+      <span class="d">${(info.hidden || []).length}</span></div>
     <div class="set-row"><div><div class="k">${t('setLibrary')}</div><div class="v">${esc(info.stateFile)}</div></div>
       <button class="ghost sm" id="setReset">${t('setReset')}</button></div>
     <div class="set-row"><div><div class="k">${t('setPosters')}</div><div class="v">${esc(info.posterDir)}</div></div>
-      <span class="d">${t('setSaved', info.posterCount)}</span></div>
-    <div class="set-row"><div><div class="k">${t('setAutoCheckUpdates')}</div>
-      <div class="v" id="setAutoCheckUpdatesHint">${t('setAutoCheckUpdatesHint')}</div></div>
-      <button class="setting-switch" id="setAutoCheckUpdates" type="button" role="switch"
-        aria-checked="${info.autoCheckUpdates !== false}" aria-label="${t('setAutoCheckUpdates')}" aria-describedby="setAutoCheckUpdatesHint">
-        <span class="knob"></span>
-      </button></div>
-    <div class="set-row"><div><div class="k">${t('checkForUpdates')}</div>
-      <div class="v" id="settingUpdateStatus">${t('ready')}</div></div>
-      <button class="ghost sm" id="settingCheckUpdate">${t('checkForUpdates')}</button></div>`;
+      <span class="d">${t('setSaved', info.posterCount)}</span></div>`;
+  // Turning these off stops the asking as well as the showing: the poll in
+  // the main process reads the same setting.
+  $('setNotices').onclick = async () => {
+    const toggle = $('setNotices');
+    const on = toggle.getAttribute('aria-checked') !== 'true';
+    toggle.disabled = true;
+    try {
+      const answer = await window.lab.communityNoticeSettings(on);
+      toggle.setAttribute('aria-checked', String(answer.on));
+    } finally { toggle.disabled = false; }
+  };
+  $('setTray').onclick = async () => {
+    const toggle = $('setTray');
+    const on = toggle.getAttribute('aria-checked') !== 'true';
+    toggle.disabled = true;
+    try {
+      toggle.setAttribute('aria-checked', String(await window.lab.setCloseToTray(on)));
+    } catch (error) {
+      log(error.message);
+    } finally { toggle.disabled = false; }
+  };
   $('setGroupGames').onclick = async () => {
     const toggle = $('setGroupGames');
     const enabled = toggle.getAttribute('aria-checked') !== 'true';
@@ -656,6 +693,17 @@ async function renderSettings() {
       load();
     };
   }
+  // Hiding a game is only about the list, so it has to be reversible.
+  for (const b of $('settings').querySelectorAll('[data-unhide]')) {
+    b.onclick = async () => {
+      b.disabled = true;
+      try {
+        await window.lab.unhide(b.dataset.unhide);
+        renderSettings();
+        load();
+      } catch (error) { log(error.message); b.disabled = false; }
+    };
+  }
   // A folder added for a quick look has to be removable, or the library is
   // stuck with it.
   for (const b of $('settings').querySelectorAll('[data-unfolder]')) {
@@ -667,6 +715,7 @@ async function renderSettings() {
     };
   }
   $('setReset').onclick = async () => { await window.lab.reset(); load(); };
+  await window.communityUi.renderProfile($('settings'));
 }
 
 // ---------------- loading ----------------
@@ -766,7 +815,9 @@ function dlssValue(have, next, upToDate) {
     `<span class="arrow">→</span><span class="on">${esc(next)}</span>`;
 }
 
-const exeLine = (e) => `${e.rel}  —  ${e.apiLabel}  —  ${e.bitness || '?'}-bit  —  ${MB(e.size)}`;
+// An executable whose renderer could not be read says so, rather than showing
+// the word null where an API belongs.
+const exeLine = (e) => `${e.rel}  —  ${e.apiLabel || t('unknownApi')}  —  ${e.bitness || '?'}-bit  —  ${MB(e.size)}`;
 
 function chosenExe(d, dir) {
   const want = exeChoice.get(dir);
@@ -792,7 +843,7 @@ function exePicker(d, dir) {
                     data-path="${esc(e.path)}" role="option" title="${esc(e.rel)}">
               <span class="tick">${e.path === chosen.path ? '✓' : ''}</span>
               <span class="exe-name">${esc(e.rel)}</span>
-              <span class="exe-meta"><span>${esc(e.apiLabel)}</span><span>${e.bitness || '?'}-bit · ${MB(e.size)}</span></span>
+              <span class="exe-meta"><span>${esc(e.apiLabel || t('unknownApi'))}</span><span>${e.bitness || '?'}-bit · ${MB(e.size)}</span></span>
             </button>`).join('')}
         </div>
       </div>
@@ -821,6 +872,41 @@ function installLabel(d, pick, dir) {
   return route === 'optiscaler' ? t('installOpti') : t('install');
 }
 
+// Every note about this game in one box that can be put away. A warning still
+// says so on the outside, because something that can cost an account must not
+// be hidden behind a closed lid - only the reading of it is optional.
+const NOTES_OPEN = 'sheet-notes-open';
+const notesOpen = () => { try { return localStorage.getItem(NOTES_OPEN) === '1'; } catch { return false; } };
+
+function notesBox(blocks, hasWarning) {
+  const notes = blocks.filter(Boolean);
+  if (!notes.length) return '';
+  const open = notesOpen() || hasWarning;
+  return `<div class="sheet-notes${hasWarning ? ' has-warning' : ''}" id="sheetNotes">
+    <button type="button" class="sheet-notes-head" id="sheetNotesToggle" aria-expanded="${open}" aria-controls="sheetNotesBody">
+      <svg viewBox="0 0 24 24" aria-hidden="true">${hasWarning
+        ? '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>'
+        : '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'}</svg>
+      <span>${t(hasWarning ? 'notesWarning' : 'notesTitle')}</span>
+      <i class="sheet-notes-count">${notes.length}</i>
+      <svg class="sheet-notes-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div class="sheet-notes-body" id="sheetNotesBody"${open ? '' : ' hidden'}>${notes.join('')}</div>
+  </div>`;
+}
+
+// Wired after the sheet is painted; the choice is remembered for next time.
+function wireNotes() {
+  const toggle = $('sheetNotesToggle'), body = $('sheetNotesBody');
+  if (!toggle || !body) return;
+  toggle.onclick = () => {
+    const open = body.hidden;
+    body.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+    try { localStorage.setItem(NOTES_OPEN, open ? '1' : '0'); } catch { /* storage off */ }
+  };
+}
+
 function installOptions(d, pick, dir) {
   const warning = (d.antiCheatWarning || pick?.antiCheatWarning)
     ? `<div class="emu-note anti-cheat-warning" role="alert"><b>${t('antiCheatWarningTitle')}</b><span>${t('antiCheatWarning')}</span></div>` : '';
@@ -837,7 +923,7 @@ function installOptions(d, pick, dir) {
   const apiHint = `<div class="emu-note" id="apiHint"><span>${t('apiOverrideHint')}</span>${api.api === 'vulkan' && !opti ? `<span>${t('apiVulkanHint')}</span>` : ''}</div>`;
   // Keep the picker available even when automatic detection yields DX10 or an
   // unsupported renderer. Otherwise the user cannot correct that detection.
-  if (!routes.length) return `<div class="install-options">${apiField}</div>${apiHint}<div class="emu-note">${t('unsupportedRendererHint')}</div>${warning}`;
+  if (!routes.length) return `<div class="install-options">${apiField}</div>${notesBox([apiHint, `<div class="emu-note">${t('unsupportedRendererHint')}</div>`, warning], Boolean(warning))}`;
   return `
     <div class="install-options">
       ${apiField}
@@ -846,20 +932,47 @@ function installOptions(d, pick, dir) {
         <option value="optiscaler"${opti ? ' selected' : ''}${optiReason ? ' disabled' : ''}>OptiScaler DLSS-NR</option>
       </select></label>
       ${!opti ? `<label><span>${t('fRoute')}</span><select id="routeChoice">${routes.filter(item => item !== 'optiscaler').map((item) =>
-        `<option value="${item}"${item === route ? ' selected' : ''}>${t(item === 'feeder' ? 'routeFeeder' : 'routeNative')}</option>`).join('')}</select></label>
+        `<option value="${item}"${item === route ? ' selected' : ''}>${t(item === 'feeder' ? 'routeFeeder' : item === 'renodx' ? 'routeRenodx' : 'routeNative')}</option>`).join('')}</select></label>
       ` : ''}
+      ${opti ? `<label><span>${t('fOptiBuild')}</span><select id="optiBuild"></select></label>` : ''}
     </div>
-    ${apiHint}
-    <div class="emu-note backend-note" id="backendHint"><span>${t(opti ? 'optiHint' : 'backendHint')}</span>
-      ${optiReason ? `<span>${t(optiReason)}</span>` : ''}
-      ${route === 'native' ? `<span>${t('nativeEffectsHint')}</span>` : ''}
-      ${opti && (api.api === 'vulkan' || api.label === 'DirectX 11') ? `<span>${t('optiBridgeHint')}</span>` : ''}
-      ${opti && api.api === 'vulkan' ? `<span>${t('optiVulkanHint')}</span>` : ''}
-    </div>
-    ${pick.installIssue ? `<div class="emu-note compatibility-warning" role="alert">${t(pick.installIssue)}</div>` : ''}
-    ${warning}
-    ${['d3d8', 'd3d9'].includes(api.api) ? `<div class="emu-note">${t('legacyRendererHint')}</div>` : ''}
-    ${pick.emulator ? `<div class="emu-note"><b>${esc(pick.emulator.name)} · ${esc(pick.emulator.system)}</b><span>${esc(pick.emulator.hint)}</span><span>${t('emulatorDepthHint')}</span>${pick.emulator.key === 'xenia' ? `<span>${t('xeniaUiHint')}</span>` : ''}</div>` : ''}`;
+    ${notesBox([
+      `<div class="emu-note" id="apiHint"><span>${t('apiOverrideHint')}</span>${api.api === 'vulkan' && !opti ? `<span>${t('apiVulkanHint')}</span>` : ''}</div>`,
+      `<div class="emu-note backend-note" id="backendHint"><span>${t(opti ? 'optiHint' : 'backendHint')}</span>
+        ${optiReason ? `<span>${t(optiReason)}</span>` : ''}
+        ${route === 'native' ? `<span>${t('nativeEffectsHint')}</span>` : ''}
+        ${route === 'renodx' ? `<span>${t('routeRenodxHint')}</span>` : ''}
+        ${opti && (api.api === 'vulkan' || api.label === 'DirectX 11') ? `<span>${t('optiBridgeHint')}</span>` : ''}
+        ${opti && api.api === 'vulkan' ? `<span>${t('optiVulkanHint')}</span>` : ''}
+      </div>`,
+      pick.installIssue ? `<div class="emu-note compatibility-warning" role="alert">${t(pick.installIssue)}</div>` : '',
+      warning,
+      ['ddraw', 'd3d8', 'd3d9'].includes(api.api) ? `<div class="emu-note">${t('legacyRendererHint')}</div>` : '',
+      pick.emulator ? `<div class="emu-note"><b>${esc(pick.emulator.name)} · ${esc(pick.emulator.system)}</b><span>${esc(pick.emulator.hint)}</span><span>${t('emulatorDepthHint')}</span>${pick.emulator.key === 'xenia' ? `<span>${t('xeniaUiHint')}</span>` : ''}</div>` : ''
+    ], Boolean(warning || pick.installIssue))}`;
+}
+
+// A newer release exists, said once, in the corner. The link is the same
+// allowlisted releases page the About view uses; nothing downloads itself.
+async function showUpdateNotice() {
+  const link = $('statusUpdate');
+  if (!link || !window.lab.checkUpdate) return;
+  let answer = null;
+  try { answer = await window.lab.checkUpdate(); } catch { return; }
+  if (!answer) return;
+  // A failed lookup used to look exactly like "nothing new", so someone on an
+  // old build whose check never completed was told nothing at all and had no
+  // reason to go and look. Say which of the two it was.
+  if (!answer.latest) {
+    link.textContent = t('updateCheckFailed');
+    link.classList.add('muted');
+    link.classList.remove('hidden');
+    return;
+  }
+  if (!answer.newer) return;
+  link.textContent = t('updateAvailable', answer.latest);
+  link.classList.remove('muted');
+  link.classList.remove('hidden');
 }
 
 function jobLog(line) {
@@ -868,6 +981,10 @@ function jobLog(line) {
   if (box) { box.textContent = jobLines.join('\n'); box.scrollTop = box.scrollHeight; }
   if ($('copyJob')) $('copyJob').disabled = jobLines.length === 0;
 }
+
+// The community dialog lives in another file and cannot reach in here; after
+// it files or deletes a report the sheet behind it is out of date.
+window.refreshSheet = dir => { if (sheetGame && sheetGame.dir === dir) openSheet(dir, true); };
 
 async function openSheet(dir, keepLog = false) {
   if (jobRunning) return;
@@ -942,12 +1059,27 @@ async function openSheet(dir, keepLog = false) {
         <button class="btn-install" id="doInstall"${d.ok && pick && !pick.installIssue && routesFor(pick).length ? '' : ' disabled'}>${installLabel(d, pick, dir)}</button>
         <button class="btn-restore" id="doRestore"${d.hasBackup ? '' : ' disabled'}>${t('restore')}</button>
       </div>
-      <div class="job-toolbar"><button class="ghost sm" id="copyJob"${jobLines.length ? '' : ' disabled'}>${t('copyLog')}</button></div>
+      <div class="job-toolbar"><button class="ghost sm ${window.communityUi?.reportFor?.(dir) ? 'shared' : 'accent'}" id="shareResult">${window.communityUi?.reportFor?.(dir) ? t('menuCommunityEdit') : t('menuCommunity')}</button><button class="ghost sm" id="copyJob"${jobLines.length ? '' : ' disabled'}>${t('copyLog')}</button><button class="ghost sm" id="saveDiag">${t('saveDiagnostics')}</button></div>
       <div class="job" id="job" role="status" aria-live="polite">${esc(jobLines.join('\n') || t('jobReady'))}</div>
     </div>`;
 
   $('sheetClose').onclick = closeSheet;
+  // The same thing the right-click menu offers, put where somebody who has
+  // just installed into a game is already looking.
+  $('shareResult').onclick = () => window.communityUi.openReport(sheetGame.dir);
   $('copyJob').onclick = () => copyText([sheetGame.name, sheetGame.dir, '', ...jobLines].join('\n'));
+  // Everything an issue report needs, in one file, instead of four asked for
+  // one at a time.
+  $('saveDiag').onclick = async () => {
+    const button = $('saveDiag');
+    button.disabled = true;
+    try {
+      const r = await window.lab.saveDiagnostics(sheetGame.dir, jobLines.join('\n'));
+      if (r && r.ok) $('statusText').textContent = t('diagnosticsSaved', r.count);
+      else if (r && r.message) $('statusText').textContent = r.message;
+    } catch (e) { $('statusText').textContent = e.message; } finally { button.disabled = false; }
+  };
+  wireNotes();
   wireExePicker(dir);
   const apiSelect = $('apiChoice');
   if (apiSelect) apiSelect.onchange = async () => {
@@ -962,6 +1094,24 @@ async function openSheet(dir, keepLog = false) {
       $('apiChoice')?.focus();
     }
   };
+  // Filled in after the sheet exists - it was being written before, when
+  // $('optiBuild') was still null, so the select rendered and stayed empty.
+  // Only one game at a time is ever pinned to an older build, and only to one
+  // the app already carries, so the list comes from the main process (#238).
+  const buildSelect = $('optiBuild');
+  if (buildSelect) {
+    window.lab.optiscalerBuilds(dir).then(({ builds, current }) => {
+      if ($('optiBuild') !== buildSelect) return;   // the sheet moved on
+      buildSelect.innerHTML = builds.map((v, i) =>
+        `<option value="${esc(v)}"${v === current ? ' selected' : ''}>${esc(v)}${i === 0 ? ` · ${t('optiBuildCurrent')}` : ''}</option>`).join('');
+      buildSelect.onchange = async () => {
+        buildSelect.disabled = true;
+        try { await window.lab.setOptiscalerBuild(dir, buildSelect.value); }
+        catch (error) { log(error.message); }
+        finally { buildSelect.disabled = false; }
+      };
+    }).catch(() => buildSelect.closest('label')?.remove());
+  }
   const routeSelect = $('routeChoice');
   if (routeSelect) routeSelect.onchange = () => { routeChoice.set(dir, routeSelect.value); openSheet(dir, true); };
   const backendSelect = $('backendChoice');
@@ -1008,6 +1158,31 @@ async function runJob(kind, dir) {
   jobLog(kind === 'install' ? '--- installing ---' : '--- restoring ---');
 
   const pick = sheetDetails ? chosenExe(sheetDetails, dir) : null;
+
+  // The driver that cannot run the neural pass is worth one question rather
+  // than a line in a log nobody reads (#229, #258, #104). Asked once per
+  // driver version, and never a refusal - the install still works, and people
+  // do install deliberately on these drivers.
+  if (kind === 'install') {
+    let driver = { fault: false };
+    try { driver = await window.lab.driverNeuralFault(); } catch { /* no nvidia-smi is not a reason to stop */ }
+    if (driver.fault && !driver.acknowledged) {
+      const go = await ask({
+        icon: 'warning', title: t('driverFaultTitle'), body: t('driverFaultBody', driver.names),
+        confirm: t('driverFaultGo'), cancel: t('cancel')
+      });
+      if (!go) {
+        jobLog(t('driverFaultStopped'));
+        jobRunning = false;
+        install.textContent = t('install');
+        install.disabled = restoreBtn.disabled = false;
+        document.querySelectorAll('#sheet select, #exeSelect, #sheetClose').forEach(e => { e.disabled = false; });
+        return;
+      }
+      try { await window.lab.acknowledgeDriver(driver.names); } catch { /* asking twice is not a failure */ }
+    }
+  }
+
   let res;
   try { res = kind === 'install'
     ? await window.lab.install(
@@ -1086,6 +1261,8 @@ function applyLang(code) {
   if (view && view.id === 'view-settings') renderSettings();
   if (view && view.id === 'view-addons') renderAddons();
   if (view && view.id === 'view-overlays') window.overlayLab.render();
+  if (view && view.id === 'view-community') window.communityUi.render();
+  window.communityUi.applyLanguage();
   if (sheetGame) openSheet(sheetGame.dir, true);
 }
 
@@ -1138,6 +1315,8 @@ $('langMenu').onclick = async (e) => {
   $('langMenu').classList.add('hidden');
   applyLang(item.dataset.lang);
   await window.lab.setLang(state.lang);
+  // The main process has no translations, so the tray menu is told what to say.
+  window.lab.setTrayLabels({ show: t('trayShow'), quit: t('trayQuit') });
 };
 
 document.addEventListener('click', () => {
@@ -1180,7 +1359,7 @@ const cardActionsBusy = new Set();
 let contextMenuOpen = false;
 
 async function performGameAction(action, dir) {
-  if (!['details', 'open', 'copy', 'restore', 'scan', 'poster', 'hide'].includes(action)) return;
+  if (!['details', 'open', 'copy', 'restore', 'scan', 'poster', 'community', 'communityRemove', 'hide'].includes(action)) return;
   const game = state.games.find(g => g.dir === dir);
   if (!game) return;
   if (!['open', 'copy'].includes(action) && (jobRunning || cardActionsBusy.size)) return;
@@ -1213,7 +1392,19 @@ async function performGameAction(action, dir) {
         renderGames();
         renderRecent();
       }
+    } else if (action === 'community') {
+      await window.communityUi.openReport(dir);
+    } else if (action === 'communityRemove') {
+      if (await window.communityUi.removeReportFor(dir)) {
+        log(t('menuCommunityRemoved', game.name));
+        if (document.querySelector('.view.active')?.id === 'view-community') await window.communityUi.render();
+        if (sheetGame === game) await openSheet(dir);
+      }
     } else if (action === 'hide') {
+      if (!await ask({
+        icon: 'hide', title: t('hideTitle'), body: t('hideConfirm', game.name),
+        confirm: t('menuHide'), cancel: t('cancel')
+      })) return;
       await window.lab.hide(dir);
       state.games = state.games.filter(g => g.dir !== dir);
       renderGames();
@@ -1226,18 +1417,111 @@ async function performGameAction(action, dir) {
   }
 }
 
+// The right-click menu, drawn here rather than by the operating system: a
+// native menu cannot carry the game's own art, an icon per line, or the app's
+// own edges. It resolves to the same action names the native one returned, so
+// nothing that acts on the result had to change.
+const MENU_ICON = {
+  details: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h4M9 17h3"/>',
+  open: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  copy: '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>',
+  scan: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v5h-5"/>',
+  poster: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 4 4 3-3 4 4"/>',
+  restore: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>',
+  community: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+  communityRemove: '<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/>',
+  hide: '<path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.4 5.2A9.6 9.6 0 0 1 12 5c5 0 9 4.5 9 7a11 11 0 0 1-2.4 3.6M6.3 6.4A11.6 11.6 0 0 0 3 12c0 2.5 4 7 9 7a9.7 9.7 0 0 0 3.3-.6"/>'
+};
+// Order, and where a rule falls between groups.
+// The community line changes with what this install has already said about
+// the game: adding it, or correcting and taking back what was added.
+const MENU_ITEMS = [['details'], ['open', 'copy'], ['scan', 'poster', 'restore'], ['community', 'communityRemove'], ['hide']];
+
+// Two letters when a game has no art, so the head is never an empty square.
+const menuInitials = name => String(name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+
+function closeGameMenu() {
+  const menu = $('gameMenu');
+  menu.classList.add('hidden');
+  menu.setAttribute('aria-hidden', 'true');
+  menu.innerHTML = '';
+}
+
+// Resolves to an action name, or null when it is dismissed.
+function showGameMenu(game, position, { busy = false } = {}) {
+  return new Promise(resolve => {
+    const menu = $('gameMenu');
+    const labels = {
+      details: t('menuDetails'), open: t('menuOpen'), copy: t('menuCopyPath'), scan: t('menuScan'),
+      poster: t('menuPoster'), restore: t('restore'), community: t('menuCommunity'), hide: t('menuHide'),
+      communityRemove: t('menuCommunityRemove')
+    };
+    const mine = window.communityUi?.reportFor?.(game.dir) || null;
+    if (mine) labels.community = t('menuCommunityEdit');
+    const disabled = new Set(busy ? ['scan', 'poster', 'restore', 'hide'] : []);
+    // Nothing to delete until something has been filed.
+    const hidden = new Set(mine ? [] : ['communityRemove']);
+
+    const art = game.poster && game.poster.url;
+    menu.innerHTML = `
+      <div class="ctx-head">
+        <span class="ctx-art">${art ? `<img src="${esc(art)}" alt="">` : `<i>${esc(menuInitials(game.name))}</i>`}</span>
+        <span class="ctx-name"><b>${esc(game.name)}</b>${game.summary ? `<small>${esc(game.summary)}</small>` : ''}</span>
+      </div>
+      ${MENU_ITEMS.map(group => `<div class="ctx-group">${group.filter(id => !hidden.has(id)).map(id => `
+        <button type="button" role="menuitem" data-menu="${id}"${disabled.has(id) ? ' disabled' : ''}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">${MENU_ICON[id]}</svg>
+          <span>${esc(labels[id])}</span>
+          ${id === 'details' ? '<svg class="ctx-go" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>' : ''}
+        </button>`).join('')}</div>`).join('')}`;
+
+    menu.classList.remove('hidden');
+    menu.setAttribute('aria-hidden', 'false');
+    // Placed after it is measurable, and never off the edge of the window.
+    const box = menu.getBoundingClientRect();
+    const x = Math.max(8, Math.min(position.x, window.innerWidth - box.width - 8));
+    const y = Math.max(8, Math.min(position.y, window.innerHeight - box.height - 8));
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+    const first = menu.querySelector('button:not([disabled])');
+    if (first) first.focus({ preventScroll: true });
+
+    const finish = (action) => {
+      document.removeEventListener('pointerdown', onOutside, true);
+      document.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('blur', onBlur);
+      closeGameMenu();
+      resolve(action);
+    };
+    const onOutside = (event) => { if (!menu.contains(event.target)) finish(null); };
+    const onKey = (event) => { if (event.key === 'Escape') { event.preventDefault(); finish(null); } };
+    const onBlur = () => finish(null);
+    menu.onclick = (event) => {
+      const item = event.target.closest('[data-menu]');
+      if (item && !item.disabled) finish(item.dataset.menu);
+    };
+    document.addEventListener('pointerdown', onOutside, true);
+    document.addEventListener('keydown', onKey, true);
+    window.addEventListener('blur', onBlur);
+  });
+}
+
 async function openGameMenu(card, position) {
   if (contextMenuOpen) return;
   const dir = card.dataset.dir;
   if (!state.games.some(game => game.dir === dir)) return;
   contextMenuOpen = true;
-  const labels = {
-    details: t('menuDetails'), open: t('menuOpen'), copy: t('menuCopyPath'),
-    scan: t('menuScan'), poster: t('menuPoster'), restore: t('restore'), hide: t('menuHide'),
-    cancel: t('cancel'), confirmRestore: t('menuConfirmRestore'), restoreHint: t('menuRestoreHint')
-  };
+  const game = state.games.find(item => item.dir === dir);
   try {
-    const action = await window.lab.gameMenu(dir, { labels, position, busy: jobRunning || cardActionsBusy.size > 0 });
+    // The admin may have permanently removed this install's report while the
+    // desktop was open. Reconcile before choosing Add versus Edit/Delete.
+    await window.communityUi?.syncOwnReports?.();
+    const action = await showGameMenu(game, position, { busy: jobRunning || cardActionsBusy.size > 0 });
+    // The native menu used to ask before a restore. It still gets asked.
+    if (action === 'restore' && !await ask({
+      icon: 'restore', tone: 'accent', title: t('menuConfirmRestore'),
+      body: t('menuRestoreHint'), confirm: t('restore'), cancel: t('cancel')
+    })) return;
     if (action) await performGameAction(action, dir);
   } catch (error) {
     log(t('menuActionFailed', card.getAttribute('aria-label'), error.message));
@@ -1245,6 +1529,18 @@ async function openGameMenu(card, position) {
     contextMenuOpen = false;
     // Avoid stealing focus from the game sheet or a confirmation dialog.
     if ($('overlay').classList.contains('hidden') && card.isConnected) card.focus({ preventScroll: true });
+  }
+}
+
+// The pinned games heading grows a hairline only once something has scrolled
+// under it, so a page that fits on screen has no stray line across it.
+{
+  const view = $('view-games');
+  const head = view && view.querySelector('.games-heading');
+  if (view && head) {
+    const mark = () => head.classList.toggle('stuck', view.scrollTop > 4);
+    view.addEventListener('scroll', mark, { passive: true });
+    mark();
   }
 }
 
@@ -1295,7 +1591,12 @@ document.addEventListener('keydown', (e) => {
   else if (!$('dlgOverlay').classList.contains('hidden')) closeDialog();
   else closeSheet();
 });
-window.lab.onJob((e) => jobLog(`${e.code === 'historySaveWarning' ? t(e.code) : e.code} ${JSON.stringify(e.params)}`));
+// Most job events are progress markers read as codes. The few that are
+// advice for the person are shown in their language instead.
+const SPOKEN_JOB_CODES = new Set(['historySaveWarning', 'driverNeuralFault', 'oldShaderCompiler', 'overlaySkipped', 'feedVkLayerReady', 'neuralModelKept']);
+window.lab.onJob((e) => jobLog(SPOKEN_JOB_CODES.has(e.code)
+  ? t(e.code, ...Object.values(e.params || {}))
+  : `${e.code} ${JSON.stringify(e.params)}`));
 
 // Update UI bindings
 $('statusUpdateBadge').onclick = () => {
@@ -1373,6 +1674,10 @@ document.addEventListener('drop', (e) => e.preventDefault());
   document.documentElement.dataset.theme = state.theme;
   applyLang(boot.lang || 'en');
   $('statusVersion').textContent = `v${boot.version}`;
+  // Nothing this app installs is on disk. Saying so now beats letting somebody
+  // pick a game, choose a route and press Install before finding out (#220).
+  if (boot.payloadMissing) log(boot.payloadMissing);
+  showUpdateNotice();
   state.logo = boot;
   paintBrand();
   state.art = (await window.lab.artStatus()).available;

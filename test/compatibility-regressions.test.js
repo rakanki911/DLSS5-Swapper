@@ -24,7 +24,8 @@ test('small Source, GoldSrc, UE2 and Ubisoft dispatchers use actual engine-modul
     ['hl.exe', 'hw.dll', 32, 'wglCreateContext', 'opengl'],
     ['KillingFloor.exe', 'System/D3D9Drv.dll', 32, 'Direct3DCreate9', 'd3d9'],
     ['FarCry5.exe', 'bin/FC_m64.dll', 64, 'D3D11CreateDevice', 'dxgi'],
-    ['Watch_Dogs.exe', 'bin/Disrupt_b64.dll', 64, 'D3D11CreateDevice', 'dxgi']
+    ['Watch_Dogs.exe', 'bin/Disrupt_b64.dll', 64, 'D3D11CreateDevice', 'dxgi'],
+    ['KingdomCome.exe', 'WHGame.dll', 64, 'D3D12CreateDevice', 'dxgi']
   ]) {
     const dir = path.join(root, name);
     const nested = /Killing|FarCry|Watch/.test(name) ? path.dirname(module) : '';
@@ -169,4 +170,37 @@ test('native Unreal install preserves Streamline/FG/RR/x86 runtime and restores 
   assert.equal(fs.existsSync(path.join(path.dirname(exePath), 'nvngx_dlss.dll')), false, 'no duplicate SR beside an existing nested runtime');
   await core.restore(dir);
   for (const [file, bytes] of snapshots) assert.deepEqual(fs.readFileSync(file), bytes, file);
+});
+
+// #232, #217: engines that pick a renderer at startup and load it with
+// LoadLibrary leave nothing in the executable's import table, so the scanner
+// found no 3D in them and refused the game. Each of these is named evidence,
+// not a sweep of the folder - a stray DLL beside a tool still proves nothing.
+test('engines that load their renderer dynamically are recognised by it', async t => {
+  const root = temp(t);
+  for (const [name, module, bitness, marker, api] of [
+    ['xrEngine.exe', 'xrRender_R2.dll', 32, 'Direct3DCreate9', 'd3d9'],
+    ['xrEngine.exe', 'xrRender_R4.dll', 64, 'D3D11CreateDevice', 'dxgi'],
+    ['portal2.exe', 'bin/shaderapidx9.dll', 32, 'Direct3DCreate9', 'd3d9'],
+    ['garrysmod.exe', 'bin/win64/shaderapidx9.dll', 64, 'D3D11CreateDevice', 'dxgi']
+  ]) {
+    const dir = path.join(root, name + bitness);
+    const exe = writePe(path.join(dir, name), { bitness });
+    writePe(path.join(dir, module), { bitness, text: marker });
+    const scan = await scanGame(dir);
+    assert.equal(scan.chosen && scan.chosen.path, exe, `${name} via ${module}`);
+    assert.equal(scan.chosen.api, api);
+  }
+});
+
+test('a renderer of the wrong architecture, or none at all, still proves nothing', async t => {
+  const wrongArch = temp(t);
+  writePe(path.join(wrongArch, 'xrEngine.exe'), { bitness: 32 });
+  writePe(path.join(wrongArch, 'xrRender_R2.dll'), { bitness: 64, text: 'Direct3DCreate9' });
+  assert.equal((await scanGame(wrongArch)).chosen, null);
+
+  const bare = temp(t);
+  writePe(path.join(bare, 'xrEngine.exe'), { bitness: 32 });
+  writePe(path.join(bare, 'xrRender_R2.dll'), { bitness: 32 });
+  assert.equal((await scanGame(bare)).chosen, null, 'a renderer with no API evidence is not evidence');
 });
