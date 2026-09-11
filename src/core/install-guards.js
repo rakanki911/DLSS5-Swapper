@@ -73,14 +73,11 @@ const driverNumber = row => {
   const [major, minor] = String(row.driver).split('.');
   return Number(major) * 100 + Number(minor);
 };
-// Measured upstream by the Feeder author across three machines: with the
-// RenoDX DLSS 5 consumer (v4.6 and v4.7), every neural evaluate faults inside
-// NVIDIA's own NGX runtime on 616.64 and 616.86, while 616.56 completes.
-// Reported as DLSS5-Feeder issue #54. This only warns - the install is the
-// person's to make, and a later driver may well fix it.
-const NEURAL_FAULT_DRIVER = 61664;
+// These are the driver builds reproduced in DLSS5-Feeder issue #54 with the
+// RenoDX v4.6/v4.7 consumer. Do not extend the warning to untested releases.
+const NEURAL_FAULT_DRIVERS = new Set([61664, 61686]);
 function driverNeuralFault(rows) {
-  return (rows || []).some(row => /nvidia|rtx|gtx/i.test(row.name) && driverNumber(row) >= NEURAL_FAULT_DRIVER);
+  return (rows || []).some(row => /nvidia|rtx|gtx/i.test(row.name) && NEURAL_FAULT_DRIVERS.has(driverNumber(row)));
 }
 function driverNames(rows) { return (rows || []).map(row => `${row.name} - ${row.driver}`).join(', '); }
 function gpuModelSupported(rows) { return rows.some(blackwell); }

@@ -52,6 +52,8 @@ test('GPU requirements and process guards reject known unsupported/running targe
   assert.equal(guards.driverNeuralFault([{ name: 'NVIDIA GeForce RTX 5090', driver: '616.56' }]), false);
   assert.equal(guards.driverNeuralFault([{ name: 'NVIDIA GeForce RTX 5090', driver: '616.64' }]), true);
   assert.equal(guards.driverNeuralFault([{ name: 'NVIDIA GeForce RTX 4070', driver: '616.86' }]), true);
+  assert.equal(guards.driverNeuralFault([{ name: 'NVIDIA GeForce RTX 5060 Ti', driver: '616.92' }]), false);
+  assert.equal(guards.driverNeuralFault([{ name: 'NVIDIA GeForce RTX 5090', driver: '617.10' }]), false);
   assert.equal(guards.driverNeuralFault([{ name: 'NVIDIA GeForce RTX 5090', driver: '610.00' }]), false);
   assert.equal(guards.driverNeuralFault(null), false);
   assert.equal(guards.driverNames([{ name: 'RTX 5090', driver: '616.64' }]), 'RTX 5090 - 616.64');
