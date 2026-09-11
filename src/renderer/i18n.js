@@ -119,12 +119,12 @@ const S = {
     errMultipassMissing: 'This build does not carry the RenoDX DLSS Tool add-on.',
     multipassConfigured: 'DLSS Tool set to hook on Present, DLSS not required',
     multipassHint: 'The multipass consumer runs the neural pass more than once per frame. It replaces the ordinary one - the two cannot both be loaded, and this install swaps the file for you.',
-    driverFaultTitle: 'Your driver cannot run the neural pass',
+    driverFaultTitle: 'This driver has a reported RenoDX issue',
     driverFaultBody: (names) => `${names}
 
-Drivers 616.64 and newer fault inside NVIDIA's own neural runtime on every evaluate. 616.56 is the last one measured to complete one.
+The RenoDX DLSS 5 add-on was measured failing on drivers 616.64 and 616.86. This warning only appears for those tested versions; newer drivers are not assumed to be affected.
 
-The install will work. The neural pass will not appear in game until you roll the driver back.`,
+The install will work. If the neural pass does not appear in game, use a compatible consumer or driver 616.56.`,
     driverFaultGo: 'Install anyway',
     driverFaultStopped: 'stopped - driver not accepted',
     setTray: 'Keep running in the system tray', setTrayHint: 'Closing the window hides it to the tray instead of quitting. Use Quit in the tray menu to exit.',
@@ -240,12 +240,12 @@ The install will work. The neural pass will not appear in game until you roll th
     errMultipassMissing: 'هذه النسخة لا تحمل ملحق RenoDX DLSS Tool.',
     multipassConfigured: 'ضُبطت أداة DLSS على الاعتراض عند Present، دون اشتراط DLSS',
     multipassHint: 'المستهلك متعدد التمريرات يشغّل المعالجة العصبية أكثر من مرة في الإطار. وهو يحلّ محلّ العادي — لا يمكن تحميل الاثنين معاً، والتثبيت يبدّل الملف نيابة عنك.',
-    driverFaultTitle: 'تعريفك لا يستطيع تشغيل المعالجة العصبية',
+    driverFaultTitle: 'توجد مشكلة مُبلّغ عنها بين هذا التعريف وRenoDX',
     driverFaultBody: (names) => `${names}
 
-التعريفات 616.64 وما بعدها تتعطّل داخل منظومة NVIDIA العصبية نفسها في كل عملية، و616.56 آخر إصدار قِيس وهو يكملها.
+قِيس فشل إضافة RenoDX DLSS 5 مع التعريفين 616.64 و616.86. يظهر هذا التنبيه لهذين الإصدارين المختبرين فقط، ولا يفترض أن الإصدارات الأحدث متأثرة.
 
-التثبيت سينجح. لكن المعالجة العصبية لن تظهر في اللعبة حتى تُرجع التعريف.`,
+سينجح التثبيت. إذا لم تظهر المعالجة العصبية داخل اللعبة، فاستخدم إضافة متوافقة أو التعريف 616.56.`,
     driverFaultGo: 'ثبّت على أي حال',
     driverFaultStopped: 'أُوقف - لم يُقبل التعريف',
     setTray: 'الإبقاء عليه في شريط النظام', setTrayHint: 'إغلاق النافذة يخفيها في شريط النظام بدل إنهاء البرنامج. استخدم «إنهاء» من قائمة الأيقونة للخروج.',
