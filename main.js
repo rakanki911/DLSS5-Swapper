@@ -445,6 +445,23 @@ app.whenReady().then(async () => {
   } catch (error) {
     if (!quitting) console.error('Overlay bridge:', error.message);
   }
+  setTimeout(async () => {
+    try {
+      const state = loadState();
+      if (state.autoCheckUpdates !== false && (!updaterState.status || updaterState.status === 'idle')) {
+        const curVer = app.getVersion ? app.getVersion() : require('./package.json').version;
+        const res = await updater.checkForUpdates({
+          currentVersion: curVer,
+          isPortable: isPortableRunning()
+        });
+        if (res.available) {
+          broadcastUpdater('available', { info: res, error: null });
+        }
+      }
+    } catch {
+      // Startup background check is non-fatal
+    }
+  }, 4000);
 });
 // The overlay bridge keeps an offscreen window of its own, so closing the
 // visible one no longer emptied the window list and window-all-closed never
@@ -452,6 +469,31 @@ app.whenReady().then(async () => {
 // follows the window the person actually closed.
 app.on('window-all-closed', () => app.quit());
 app.on('before-quit', () => { quitting = true; overlayBridge?.close(); });
+
+// ---------- in-app updater helpers ----------
+function isPortableRunning() {
+  return Boolean(
+    process.env.PORTABLE_EXECUTABLE_DIR ||
+    process.env.PORTABLE_EXECUTABLE_FILE ||
+    (process.execPath && path.basename(process.execPath).toLowerCase().includes('portable'))
+  );
+}
+
+let updaterState = {
+  status: 'idle',
+  info: null,
+  progress: null,
+  error: null,
+  downloadedFile: null
+};
+let downloadAbortController = null;
+
+function broadcastUpdater(status, extra = {}) {
+  updaterState = { ...updaterState, status, ...extra };
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('updater-event', { status, ...updaterState });
+  }
+}
 
 // ---------- library ----------
 
@@ -886,6 +928,107 @@ ipcMain.handle('set-auto-scan-drives', (_event, enabled) => {
   return state.autoScanDrives;
 });
 
+ipcMain.handle('set-auto-check-updates', (_event, enabled) => {
+  const state = loadState();
+  state.autoCheckUpdates = enabled === true;
+  saveState(state);
+  return state.autoCheckUpdates;
+});
+
+ipcMain.handle('updater-status', () => updaterState);
+
+ipcMain.handle('updater-check', async () => {
+  if (updaterState.status === 'downloading') {
+    return { ok: true, status: updaterState.status, ...updaterState.info };
+  }
+  broadcastUpdater('checking');
+  try {
+    const curVer = app.getVersion ? app.getVersion() : require('./package.json').version;
+    const res = await updater.checkForUpdates({
+      currentVersion: curVer,
+      isPortable: isPortableRunning()
+    });
+    if (res.available) {
+      broadcastUpdater('available', { info: res, error: null });
+    } else {
+      broadcastUpdater('not-available', { info: res, error: null });
+    }
+    return { ok: true, ...res };
+  } catch (err) {
+    broadcastUpdater('error', { error: err.message });
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('updater-download', async () => {
+  if (!updaterState.info?.asset) {
+    return { ok: false, error: 'No update asset available' };
+  }
+  if (updaterState.status === 'downloading') {
+    return { ok: true, downloading: true };
+  }
+
+  downloadAbortController = new AbortController();
+  broadcastUpdater('downloading', {
+    progress: { percent: 0, transferred: 0, total: updaterState.info.asset.size || 0, speed: 0 }
+  });
+
+  const updatesDir = path.join(app.getPath('userData'), 'updates');
+  try {
+    const res = await updater.downloadUpdate({
+      asset: updaterState.info.asset,
+      updatesDir,
+      abortSignal: downloadAbortController.signal,
+      onProgress: (p) => {
+        updaterState.progress = p;
+        if (win && !win.isDestroyed()) {
+          win.webContents.send('updater-progress', p);
+        }
+      }
+    });
+    broadcastUpdater('downloaded', { downloadedFile: res.filePath, error: null });
+    return { ok: true, filePath: res.filePath };
+  } catch (err) {
+    if (downloadAbortController?.signal?.aborted) {
+      broadcastUpdater('available', { error: 'Download cancelled' });
+      return { ok: false, cancelled: true };
+    }
+    broadcastUpdater('error', { error: err.message });
+    return { ok: false, error: err.message };
+  } finally {
+    downloadAbortController = null;
+  }
+});
+
+ipcMain.handle('updater-cancel', () => {
+  if (downloadAbortController) {
+    downloadAbortController.abort();
+    downloadAbortController = null;
+    return { ok: true };
+  }
+  return { ok: false };
+});
+
+ipcMain.handle('updater-install', () => {
+  if (!updaterState.downloadedFile) {
+    return { ok: false, error: 'No downloaded update found' };
+  }
+  try {
+    broadcastUpdater('installing');
+    const res = updater.applyUpdate({
+      filePath: updaterState.downloadedFile,
+      isPortable: isPortableRunning(),
+      isPackaged: app.isPackaged,
+      quitFn: () => app.quit(),
+      showInFolderFn: (f) => shell.showItemInFolder(f)
+    });
+    return res;
+  } catch (err) {
+    broadcastUpdater('error', { error: err.message });
+    return { ok: false, error: err.message };
+  }
+});
+
 // Used when a folder arrives by drop rather than through the picker.
 ipcMain.handle('add-game-path', (_event, dir) => {
   const state = loadState();
@@ -1313,7 +1456,7 @@ const onDisk = url => {
 // twelve by twelve is enough to say what a poster is mostly made of, and small
 // enough that doing it is free.
 function paletteOf(fileUrl) {
-  if (!fileUrl) return null;
+if (!fileUrl) return null;
   try {
     const image = nativeImage.createFromPath(fileURLToPath(fileUrl));
     if (image.isEmpty()) return null;
