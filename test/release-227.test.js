@@ -29,7 +29,7 @@ test('the driver warning says "may", because it is a warning (#300, #278, #270)'
 test('a game folder Windows will not let us write to is refused in words, up front (#301)', () => {
   assert.match(read('src', 'core', 'backend-manager.js'),
     /if \(!core\.canWrite\(config\.gameDir\)\) throw Object\.assign\(new Error\('errNoWriteAccess'\), \{ code: 'errNoWriteAccess' \}\);/);
-  assert.equal((read('src', 'renderer', 'i18n.js').match(/errNoWriteAccess: '/g) || []).length, 2, 'in English and Arabic');
+  assert.equal((read('src', 'renderer', 'i18n.js').match(/errNoWriteAccess: '/g) || []).length, 3, 'in the three languages i18n.js carries: English, Arabic and Simplified Chinese');
 });
 
 test('every installed game has its read-only ReShade.ini cleared once per start (#155)', () => {
@@ -87,7 +87,7 @@ test('the game sheet shows what the community found, before installing', () => {
   assert.match(renderer, /<div class="sheet-community" id="sheetCommunity" hidden><\/div>/);
   assert.match(renderer, /queueMicrotask\(\(\) => fillSheetCommunity\(g, dir\)\);/);
   assert.match(read('main.js'), /ipcMain\.handle\('community-for-game'/);
-  assert.equal((read('src', 'renderer', 'i18n.js').match(/sheetCommunityTitle: '/g) || []).length, 2, 'in English and Arabic');
+  assert.equal((read('src', 'renderer', 'i18n.js').match(/sheetCommunityTitle: '/g) || []).length, 3, 'in the three languages i18n.js carries: English, Arabic and Simplified Chinese');
 });
 
 // Somebody names you in the chat, answers you there, or likes what you wrote:
