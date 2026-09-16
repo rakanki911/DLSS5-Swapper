@@ -226,7 +226,7 @@
       <!-- SETTINGS -->
       <section class="view" id="view-overlays" aria-label="Overlay">
         <div class="section-head">
-          <div><h3>Overlay <span class="ol-badge">BETA</span></h3><p class="hint" id="olSubtitle"></p></div>
+          <div><h3 id="olTitle">Overlay <span class="ol-badge">BETA</span></h3><p class="hint" id="olSubtitle"></p></div>
           <div class="row ol-toolbar"><label class="ol-install-switch"><input type="checkbox" role="switch" id="olEnabled"><span id="olEnabledLabel">Install with DLSS</span></label><button class="ghost sm" id="olSource">Developer files</button><button class="ghost sm" id="olHotkey">Hotkey · F8</button><button class="ghost sm" id="olCustom">Create theme</button><button class="glass-btn sm" id="olAdd">＋ Add</button></div>
         </div>
         <p id="olStatus" role="status" aria-live="polite"></p>
@@ -245,7 +245,7 @@
           <p id="olCustomError" role="status"></p>
           <div class="row"><button id="olCustomCancel" class="ghost">Cancel</button><button id="olCustomSave" class="glass-btn">Save</button></div>
         </dialog>
-        <dialog id="olHotkeyDialog" class="ol-dialog ol-hotkey-dialog"><h3>Overlay hotkey</h3><p id="olKeyHelp">Click the field, then press your shortcut. Ctrl, Alt and Shift are supported. Home / Escape stay reserved for ReShade.</p><button id="olKeyCapture" class="ghost">F8</button><p id="olKeyError" role="status"></p><div class="row"><button id="olKeyCancel" class="ghost">Cancel</button><button id="olKeySave" class="glass-btn">Save</button></div></dialog>
+        <dialog id="olHotkeyDialog" class="ol-dialog ol-hotkey-dialog"><h3 id="olKeyTitle">Overlay hotkey</h3><p id="olKeyHelp">Click the field, then press your shortcut. Ctrl, Alt and Shift are supported. Home / Escape stay reserved for ReShade.</p><button id="olKeyCapture" class="ghost">F8</button><p id="olKeyError" role="status"></p><div class="row"><button id="olKeyCancel" class="ghost">Cancel</button><button id="olKeySave" class="glass-btn">Save</button></div></dialog>
       </section>
 
       <section class="view" id="view-settings">
