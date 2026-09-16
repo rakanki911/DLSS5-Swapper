@@ -2,6 +2,7 @@
 // The same connected-panel renderer powers the isolated preview. Sample
 // edits stay in this closure and never call IPC or alter a game's settings.
 window.mountOverlayLive = (root, { designOnly = false } = {}) => {
+  const zhText=(en,zh)=>document.documentElement.lang==='zh'?zh:en;
   root._overlayDispose?.();
   const lifetime = new AbortController();
   const runtime = designOnly ? null : window.overlayRuntime;
@@ -19,8 +20,8 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
   let status = sample, epoch = 0, preview = true, connectedOnce = false, autoEpoch = 0;
   // Only reasons worth reading. While the bridge works the badge in the
   // header already says CONNECTED, so the line below it stays out of sight.
-  const nrNote = () => !status ? 'Waiting for game connection'
-    : status.nrAvailable ? '' : status.nrReason || 'RenoDX controls unavailable.';
+  const nrNote = () => !status ? zhText('Waiting for game connection','正在等待游戏连接')
+    : status.nrAvailable ? '' : status.nrReason || zhText('RenoDX controls unavailable.','RenoDX 控件不可用。');
   const observer = new ResizeObserver(() => runtime?.resize(Math.ceil(root.getBoundingClientRect().height)));
   observer.observe(root);
   root._overlayDispose = () => { lifetime.abort(); observer.disconnect(); };
@@ -40,7 +41,7 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
     const close=()=>{menu.hidden=true;trigger.setAttribute('aria-expanded','false');};
     trigger.updateChoice = tool => {
       const options=tool.options||t.options||[];
-      trigger.textContent=options[tool.value-t.min]||'Unavailable';
+      trigger.textContent=options[tool.value-t.min]||zhText('Unavailable','不可用');
       if(JSON.stringify(options)!==menu.dataset.options) {
         menu.dataset.options=JSON.stringify(options);menu.replaceChildren(...options.map((text,i)=>{
           const option=el('button','ol-dropdown-option',text);option.type='button';option.dataset.value=i+t.min;option.setAttribute('role','option');
@@ -103,10 +104,14 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
   }
   function bindNr(panel) {
     for (const control of panel.querySelectorAll('input, button')) control.disabled = true;
-    panel.querySelector('.ol-master small').textContent = status===sample?'Preview only':status?.nrAvailable ? 'RenoDX live' : 'Waiting for RenoDX';
+    panel.querySelector('.ol-master small').textContent = status===sample?zhText('Preview only','仅预览'):status?.nrAvailable ? zhText('RenoDX live','RenoDX 实时') : zhText('Waiting for RenoDX','正在等待 RenoDX');
     const badgeNote = panel.querySelector('.ol-badge small');
-    if (badgeNote) badgeNote.textContent = status===sample ? 'Preview only' : 'Shows DLSS 5 On/Off over the game';
-    panel.querySelector('.ol-prototype').textContent = status===sample?'PREVIEW':status?.nrAvailable ? 'CONNECTED' : 'NOT CONNECTED';
+    if (badgeNote) badgeNote.textContent = status===sample ? zhText('Preview only','仅预览') : zhText('Shows DLSS 5 On/Off over the game','在游戏画面上显示 DLSS 5 开/关状态');
+    const masterLabel = panel.querySelector('.ol-master');
+    for (const node of masterLabel.childNodes) if (node.nodeType === Node.TEXT_NODE && node.textContent.includes('DLSS ON')) node.textContent = ` ${zhText('DLSS ON','DLSS 开')} `;
+    const badgeLabel = panel.querySelector('.ol-badge');
+    for (const node of badgeLabel.childNodes) if (node.nodeType === Node.TEXT_NODE && node.textContent.includes('ON-SCREEN STATUS')) node.textContent = ` ${zhText('ON-SCREEN STATUS','屏幕状态')} `;
+    panel.querySelector('.ol-prototype').textContent = status===sample?zhText('PREVIEW','预览'):status?.nrAvailable ? zhText('CONNECTED','已连接') : zhText('NOT CONNECTED','未连接');
     const mapping = [[panel.querySelector('#olStructure'), 101], [panel.querySelector('#olTone'), 102],
       [panel.querySelector('.ol-master input'), 103], [panel.querySelector('.ol-badge input'), 50],
       [panel.querySelector('.ol-muted input[type=checkbox]'), 104],
@@ -116,18 +121,20 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
       input.addEventListener('input', () => send(id, input.type === 'range' ? 0 : 1, input.type === 'range' ? Number(input.value) : Number(input.checked)));
       if (input.type === 'range') editable(input);
     }
-    panel.querySelector('.ol-muted .ol-check small').textContent = 'RenoDX character mask';
+    panel.querySelector('.ol-muted .ol-check small').textContent = zhText('RenoDX character mask','RenoDX 角色蒙版');
     const maskLabel = panel.querySelector('.ol-muted .ol-check');
-    for (const node of maskLabel.childNodes) if (node.nodeType === Node.TEXT_NODE && node.textContent.includes('MODEL AUTOMASK')) node.textContent = ' CHARACTER MASK ';
+    for (const node of maskLabel.childNodes) if (node.nodeType === Node.TEXT_NODE && node.textContent.includes('MODEL AUTOMASK')) node.textContent = zhText(' CHARACTER MASK ',' 角色蒙版 ');
     panel.querySelector('.ol-muted').classList.toggle('ol-muted', !status?.nrAvailable);
     panel.querySelector('#olMaskStructure').previousElementSibling.textContent = 'Character/Skin Structure';
+    const globalSection = panel.querySelector('.ol-group').parentElement.previousElementSibling;
+    if (globalSection) { const h = globalSection.querySelector('h4'); if (h) h.textContent = zhText('GLOBAL CONTROLS','全局控件'); }
     const extra = panel.querySelector('.ol-group').parentElement;
-    extra.replaceChildren(el('h4', '', 'MORE RENODX CONTROLS'));
+    extra.replaceChildren(el('h4', '', zhText('MORE RENODX CONTROLS','更多 RENODX 控件')));
     const tools = el('div', 'ol-additional'); extra.append(tools);
     for (const t of status?.nrTools || []) if (![101, 102, 103, 104, 105, 114].includes(t.id)) addTool(tools, t);
-    if (!status?.nrTools) tools.append(el('p', 'ol-live-note', 'Restart DLSS 5 Swapper and connect the updated overlay to load RenoDX controls.'));
+    if (!status?.nrTools) tools.append(el('p', 'ol-live-note', zhText('Restart DLSS 5 Swapper and connect the updated overlay to load RenoDX controls.','请重启 DLSS 5 Swapper 并连接更新后的叠加层，以加载 RenoDX 控件。')));
     const models = panel.querySelector('.ol-models');
-    models.parentElement.querySelector('h4').textContent = 'NR STYLE';
+    models.parentElement.querySelector('h4').textContent = zhText('NR STYLE','NR 风格');
     for (const [i, model] of [...models.children].entries()) {
       model.textContent = `Model ${['A', 'B', 'C'][i]} · ${['Default', 'Natural', 'Cinematic'][i]}`;
       model.dataset.styleValue = i;
@@ -137,25 +144,25 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
     // The style buttons stay above the scrollable advanced controls.
     extra.before(models.parentElement);
     if(status?.feedPresent){
-      const section=el('section','ol-feed-section');section.append(el('h4','','FEEDER CONTROLS'));
+      const section=el('section','ol-feed-section');section.append(el('h4','',zhText('FEEDER CONTROLS','FEEDER 控件')));
       const feed=el('div','ol-additional');for(const t of status.feedTools||[])addTool(feed,t);
       section.append(feed,el('p','ol-live-note ol-feed-status',status.feedReason));
       extra.after(section);
       // Keep the compact panel bounded: choose a backend section instead of
       // stacking two tall scroll areas. NR remains accessible above.
-      const toggle=el('button','ol-model','Show RenoDX extras');extra.before(toggle);extra.hidden=true;
-      toggle.onclick=()=>{extra.hidden=!extra.hidden;section.hidden=!extra.hidden;toggle.textContent=extra.hidden?'Show RenoDX extras':'Show Feeder controls';};
+      const toggle=el('button','ol-model',zhText('Show RenoDX extras','显示 RenoDX 额外项'));extra.before(toggle);extra.hidden=true;
+      toggle.onclick=()=>{extra.hidden=!extra.hidden;section.hidden=!extra.hidden;toggle.textContent=extra.hidden?zhText('Show RenoDX extras','显示 RenoDX 额外项'):zhText('Show Feeder controls','显示 Feeder 控件');};
     }
-    panel.querySelector('footer').textContent = status===sample?'Interactive design preview only. Changes here do not affect a game. The installed overlay connects automatically to the verified RenoDX v4.7 build.':status?.nrAvailable
-      ? 'Live RenoDX v4.7 settings. A/B/C select NR Style, not AI models. Scroll More Controls; click a number to type. Home keeps the original tools available.'
-      : 'Waiting for the verified RenoDX v4.7 build. Connection is automatic; unsupported builds are refused. Original tools remain available.';
+    panel.querySelector('footer').textContent = status===sample?zhText('Interactive design preview only. Changes here do not affect a game. The installed overlay connects automatically to the verified RenoDX v4.7 build.','仅为交互式设计预览。这里的改动不会影响游戏。已安装的叠加层会自动连接到经过验证的 RenoDX v4.7 构建。'):status?.nrAvailable
+      ? zhText('Live RenoDX v4.7 settings. A/B/C select NR Style, not AI models. Scroll More Controls; click a number to type. Home keeps the original tools available.','实时 RenoDX v4.7 设置。A/B/C 选择的是 NR 风格，不是 AI 模型。滚动到更多控件；点击数字即可输入。Home 键仍可打开原始工具。')
+      : zhText('Waiting for the verified RenoDX v4.7 build. Connection is automatic; unsupported builds are refused. Original tools remain available.','正在等待经过验证的 RenoDX v4.7 构建。连接是自动的；不支持的构建会被拒绝。原有的工具窗口仍然可用。');
   }
   function build() {
     window.mountOverlayPanel(root);
     const panel = root.querySelector('.ol-panel');
     panel.classList.add('ol-connected');
     const modes = el('div', 'ol-models ol-live-modes');
-    for (const [label, design] of [['Live tools', false], ['DLSS controls', true]]) {
+    for (const [label, design] of [[zhText('Live tools','实时工具'), false], [zhText('DLSS controls','DLSS 控件'), true]]) {
       const b = el('button', `ol-model ${preview === design ? 'selected' : ''}`, label);
       b.onclick = () => { preview = design; build(); update(); }; modes.append(b);
     }
@@ -163,10 +170,10 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
     // automatically and are not presented as a RenoDX connection.
     panel.after(modes);
     if(designOnly){
-      const backend=el('button','ol-preview-backend',sample.feedPresent?'Preview: Feeder + RenoDX':'Preview: RenoDX');
+      const backend=el('button','ol-preview-backend',sample.feedPresent?zhText('Preview: Feeder + RenoDX','预览：Feeder + RenoDX'):zhText('Preview: RenoDX','预览：RenoDX'));
       backend.onclick=()=>{
         sample.feedPresent=!sample.feedPresent;
-        sample.feedReason='Design preview only. Feeder cfg controls; work resolution, filter and sharpness require DX11.';
+        sample.feedReason=zhText('Design preview only. Feeder cfg controls; work resolution, filter and sharpness require DX11.','仅为设计预览。Feeder 配置项；工作分辨率、滤镜和锐化需要 DX11。');
         sample.badge=false;
         sample.feedTools=[['Feeder enabled (original panel)',1,1,0,1],['Work resolution (%)',0,100,50,100],['Work sharpness',0,.3,0,1],['Motion scale X',0,1,-2,2],['Motion scale Y',0,1,-2,2],['HDR contract',0,-1,-1,1],['Depth convention',0,-1,-1,1],['Work upscale',0,0,0,2],['HDR10 bridge',0,-1,-1,1],['HDR paper white (nits)',0,203,50,1000]].map(([name,kind,value,min,max],i)=>({id:301+i,name,kind,value,min,max,step:[0,1,5,6,7,8,9].includes(i)?1:.01,available:i!==0,effect:'Feeder 0.15.1'}));
         build();update();
@@ -175,21 +182,21 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
     }
     if(status!==sample){const note=el('p','ol-live-note ol-nr-status',nrNote());note.hidden=!note.textContent;modes.after(note);}
     if (preview) { bindNr(panel); return; }
-    panel.querySelector('.ol-prototype').textContent = status ? 'LIVE RESHADE' : 'DISCONNECTED';
-    panel.querySelector('.ol-eyebrow').textContent = 'DLSS 5 SWAPPER · INJECTED TOOLS';
+    panel.querySelector('.ol-prototype').textContent = status ? zhText('LIVE RESHADE','ReShade 实时') : zhText('DISCONNECTED','未连接');
+    panel.querySelector('.ol-eyebrow').textContent = zhText('DLSS 5 SWAPPER · INJECTED TOOLS','DLSS 5 SWAPPER · 注入工具');
     for (const element of [...panel.children]) if (element !== modes && element.tagName !== 'HEADER') element.remove();
-    const info = el('p', 'ol-live-note', status===sample?'Design preview; no game connection.':status?.nrAvailable ? 'RenoDX v4.7 controls use its original callback. FX controls below are separate. Experimental adapter; original tool windows remain available.' : 'Waiting for compatible RenoDX. FX controls do not control DLSS.');
+    const info = el('p', 'ol-live-note', status===sample?zhText('Design preview; no game connection.','设计预览；未连接游戏。'):status?.nrAvailable ? zhText('RenoDX v4.7 controls use its original callback. FX controls below are separate. Experimental adapter; original tool windows remain available.','RenoDX v4.7 控件走它原本的回调。下方的 FX 控件是独立的。这是实验性适配层；原有的工具窗口仍然可用。') : zhText('Waiting for compatible RenoDX. FX controls do not control DLSS.','正在等待兼容的 RenoDX。FX 控件不会控制 DLSS。'));
     panel.append(info);
     const tools = el('div', 'ol-live-tools'); panel.append(tools);
     const add = t => addTool(tools, t);
-    add({ id: 0, kind: 3, name: 'ReShade shader effects' });
+    add({ id: 0, kind: 3, name: zhText('ReShade shader effects','ReShade 着色器效果') });
     let previousEffect = '';
     for (const t of [...(status?.nrAvailable ? status.nrTools : []), ...(status?.feedPresent ? status.feedTools : []), ...(status?.tools || [])]) {
       if (t.effect !== previousEffect) { tools.append(el('h4', 'ol-live-effect', t.effect)); previousEffect = t.effect; }
       add(t);
     }
-    if (!status?.tools.length) tools.append(el('p', 'ol-live-note', 'No separate .fx shader controls found. RenoDX controls above do not require .fx shaders.'));
-    panel.append(el('footer', 'ol-live-hotkey', `${root.dataset.overlayHotkey||'F8'}: show/hide · Drag header: move · Esc: close · Home: original tools`));
+    if (!status?.tools.length) tools.append(el('p', 'ol-live-note', zhText('No separate .fx shader controls found. RenoDX controls above do not require .fx shaders.','未找到独立的 .fx 着色器控件。上方的 RenoDX 控件不需要 .fx 着色器。')));
+    panel.append(el('footer', 'ol-live-hotkey', `${root.dataset.overlayHotkey||'F8'}: ${zhText('show/hide','显示/隐藏')} · ${zhText('Drag header: move','拖动标题栏：移动')} · ${zhText('Esc: close','Esc：关闭')} · ${zhText('Home: original tools','Home：原始工具')}`));
   }
   function update() {
     const note = root.querySelector('.ol-nr-status'); if (note) { note.textContent = nrNote(); note.hidden = !note.textContent; }
@@ -199,7 +206,7 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
       const t = id >= 301 ? status?.feedPresent&&status.feedTools?.find(t=>t.id===id) : id === 0 ? { kind: 3, value: status?.effects ? 1 : 0, available: !!status } :
         // The on-screen status card is the add-on's own, so it is available
         // as soon as the overlay is connected - with or without a consumer.
-        id === 50 ? { kind: 1, value: status?.badge ? 1 : 0, available: !!status, effect: 'DLSS 5 Swapper', name: 'On-screen status card' } :
+        id === 50 ? { kind: 1, value: status?.badge ? 1 : 0, available: !!status, effect: 'DLSS 5 Swapper', name: zhText('On-screen status card','屏幕状态卡片') } :
         id >= 101 ? status?.nrAvailable && status.nrTools?.find(t => t.id === id) : status?.tools.find(t => t.id === id);
       input.disabled = !t?.available;
       if (!t || input.dataset.dragging || (document.activeElement === input && input.type === 'number')) continue;
