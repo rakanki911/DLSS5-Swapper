@@ -47,7 +47,7 @@ async function showBridge(){
   box.textContent=text(
    `The overlay add-on is missing from this app, so no game can load it: ${state.addonFile||''}. Antivirus software removes this file - restore it from your antivirus quarantine and add an exclusion, or reinstall DLSS 5 Swapper.`,
    `ملف الأوفرلاي مفقود من البرنامج، فلا تستطيع أي لعبة تحميله: ${state.addonFile||''}. برامج الحماية تحذف هذا الملف - استعده من الحجر الصحي وأضف استثناءً، أو أعد تثبيت البرنامج.`,
-   `此程序缺少叠加层附加组件，因此任何游戏都无法加载它：${state.addonFile||''}。杀毒软件会删除这个文件 — 请从隔离区恢复并添加排除项，或重新安装 DLSS 5 Swapper。`);
+   `此程序缺少叠加层插件，因此任何游戏都无法加载它：${state.addonFile||''}。杀毒软件会删除这个文件 — 请从隔离区恢复并添加排除项，或重新安装 DLSS 5 Swapper。`);
   return;
  }
  if(!state||!state.listening){
