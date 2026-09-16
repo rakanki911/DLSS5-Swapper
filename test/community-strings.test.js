@@ -36,12 +36,13 @@ function keysUsed() {
   return used;
 }
 
-test('both languages carry exactly the same keys', () => {
+test('every language carries exactly the same keys', () => {
   const L = dictionary();
   const en = Object.keys(L.en).sort();
-  const ar = Object.keys(L.ar).sort();
-  assert.deepEqual(ar, en, 'a key exists in one language and not the other');
-  assert.deepEqual(Object.keys(L.ar.facts).sort(), Object.keys(L.en.facts).sort());
+  for (const lang of Object.keys(L)) {
+    assert.deepEqual(Object.keys(L[lang]).sort(), en, `${lang} carries a different key set than en`);
+    assert.deepEqual(Object.keys(L[lang].facts).sort(), Object.keys(L.en.facts).sort(), `${lang}.facts`);
+  }
 });
 
 test('every word the page asks for is a word the dictionary has', () => {
@@ -57,7 +58,7 @@ test('every word the page asks for is a word the dictionary has', () => {
 // verdict, and the pill on it has to say something.
 test('a card with no verdict has a word for that', () => {
   const L = dictionary();
-  for (const lang of ['en', 'ar']) {
+  for (const lang of ['en', 'ar', 'zh']) {
     for (const key of ['working', 'broken', 'mixed', 'unknown']) {
       assert.equal(typeof L[lang][key], 'string', `${lang}.${key}`);
       assert.ok(L[lang][key].trim(), `${lang}.${key} is empty`);

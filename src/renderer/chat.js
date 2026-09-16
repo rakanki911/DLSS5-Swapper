@@ -51,9 +51,33 @@
       badImage: 'تعذر قراءة هذه الصورة.', profile: 'اختر اسمًا للمجتمع من الإعدادات لاستخدام المنشن.',
       noGames: 'لا توجد ألعاب مطابقة.', label: 'اكتب تاق', chooseLabel: 'اختر تاق للصورة', clearLabel: 'بدون تاق', dlssOn: 'DLSS 5 ON', dlssOff: 'DLSS 5 OFF',
       fit: 'ملاءمة', copied: 'تم النسخ.', saved: 'تم حفظ الصورة.', online: 'التحديث المباشر متصل'
+    },
+    zh: {
+      nav: '聊天', title: '社区聊天', subtitle: '与大家分享结果、截图和游戏发现。',
+      retention: '图片 24 小时后过期', refresh: '刷新', older: '加载更早的消息',
+      emptyTitle: '开始对话', emptyBody: '分享一条技巧、一张截图或一张游戏卡片。',
+      placeholder: '给社区发消息…', hint: '回车发送 · Shift+回车换行 · 可粘贴或拖入图片',
+      newMessages: '新消息 ↓', addTo: '添加到消息', share: '分享点什么', photos: '图片',
+      photosSub: '最多 4 张图片', game: '游戏卡片', gameSub: '搜索社区结果', findGame: '查找游戏',
+      findPlaceholder: '输入游戏名称…', reports: n => `${n} 条报告`,
+      comments: n => `${n} 条评论`, working: '可用', broken: '不可用', mixed: '参差不齐', unknown: '无结果',
+      replying: '正在回复', editing: '正在编辑你的消息', imageExpired: '这张图片已在 24 小时后过期。',
+      edited: '已编辑', reply: '回复并提及', copy: '复制消息', edit: '编辑消息', remove: '删除消息',
+      saveImage: '保存图片', hide: '隐藏消息', block: '屏蔽作者', adminDelete: '永久删除',
+      deleteTitle: '删除这条消息？', deleteBody: '它会从所有人的聊天中消失。',
+      moderateTitle: '执行管理操作？', cancel: '取消', confirm: '确认', compression: '正在优化图片…',
+      sending: '正在发送…', uploadFailed: '消息未发送成功。你的草稿还在。',
+      tooMany: '最多可以附加 4 张图片。', tooLarge: '每张原图最大 15 MB。',
+      badImage: '无法读取这张图片。', profile: '使用提及时，请先在设置里选择社区名称。',
+      noGames: '没有匹配的社区游戏。', label: '添加标签', chooseLabel: '选择标签', clearLabel: '无标签', dlssOn: 'DLSS 5 开', dlssOff: 'DLSS 5 关',
+      fit: '适应', copied: '已复制。', saved: '图片已保存。', online: '已连接实时更新'
     }
   };
-  const words = () => L[(window.i18n?.getLang?.() || 'en').startsWith('ar') ? 'ar' : 'en'];
+  const words = () => {
+    const lang = window.i18n?.getLang?.() || 'en';
+    if (lang === 'zh') return L.zh;
+    return lang.startsWith('ar') ? L.ar : L.en;
+  };
   const readJson = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; } };
   const state = {
     messages: [], etag: null, version: 0, hasMore: false, timer: null, busy: false, initial: true,
@@ -144,7 +168,7 @@
   function updateUnread(count) {
     state.unread = Math.max(0, count || 0);
     $('chatNew').classList.toggle('hidden', !state.unread);
-    $('chatNew').textContent = state.unread > 1 ? `${state.unread} ${words().newMessages}` : words().newMessages;
+    $('chatNew').textContent = state.unread > 1 ? `${state.unread} 条${words().newMessages}` : words().newMessages;
     const badge = $('chatNavUnread');
     badge.textContent = state.unread > 99 ? '99+' : String(state.unread || '');
     badge.classList.toggle('hidden', !state.unread);

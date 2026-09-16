@@ -5,7 +5,7 @@
   const L = {
     en: {
       title: 'Community-tested games', subtitle: 'Real results from DLSS 5 Swapper users.', refresh: 'Refresh', search: 'Search games', route: 'Route', api: 'Rendering API', result: 'Result',
-      scopeAll: 'Everyone', scopeMine: 'My games', scopeReports: 'My comments', mineHint: 'Only the games installed on this PC', reportsHint: 'The games you reported on', reportsTotal: n => `You reported on ${n} game${n === 1 ? '' : 's'}`, reportsEmpty: 'You have not reported on any game yet.', showingMine: n => `Your ${n} report${n === 1 ? '' : 's'}`, sortLabel: 'Sort', sortRecent: 'Most recent', sortReports: 'Most reports', sortTitle: 'A–Z', noReportsYet: n => `On this PC, no reports yet · ${n}`, noReportsHint: 'Open one to install it - then be the first to say how it went.', installedBadge: 'DLSS 5 installed', onPc: 'On this PC', gpuLabel: 'Graphics card', allGpus: 'All graphics cards', myGpu: model => `My card · ${model}`, mineEmpty: 'None of the games on this PC have community reports yet.', mineTotal: n => `${n} of your games have reports`, showingGpu: (model, n) => `${n} report${n === 1 ? '' : 's'} on ${model}`, allRoutes: 'All routes', allApis: 'All APIs', allResults: 'All results', working: 'Working', issues: 'Works with issues', broken: 'Not working', mixed: 'Mixed', clear: 'Clear filters', loading: 'Loading community results…', empty: 'No matching community reports yet.', offline: 'Community service is unavailable. Check your connection and try again.',
+      scopeAll: 'Everyone', scopeMine: 'My games', scopeReports: 'My comments', mineHint: 'Only the games installed on this PC', reportsHint: 'The games you reported on', reportsTotal: n => `You reported on ${n} game${n === 1 ? '' : 's'}`, reportsEmpty: 'You have not reported on any game yet.', showingMine: n => `Your ${n} report${n === 1 ? '' : 's'}`, sortLabel: 'Sort', sortRecent: 'Most recent', sortReports: 'Most reports', sortTitle: 'A–Z', noReportsYet: n => `On this PC, no reports yet · ${n}`, noReportsHint: 'Open one to install it - then be the first to say how it went.', installedBadge: 'DLSS 5 installed', onPc: 'On this PC', gpuLabel: 'Graphics card', allGpus: 'All graphics cards', myGpu: model => `My card · ${model}`, mineEmpty: 'None of the games on this PC have community reports yet.', mineTotal: n => `${n} of your games have reports`, showingGpu: (model, n) => `${n} report${n === 1 ? '' : 's'} on ${model}`, allRoutes: 'All routes', allApis: 'All APIs', allResults: 'All results', working: 'Working', issues: 'Works with issues', broken: 'Not working', verdictGreat: 'Game runs great', verdictIssues: 'Minor or major issues', verdictBroken: 'Doesn’t run or crashes', mixed: 'Mixed', clear: 'Clear filters', loading: 'Loading community results…', empty: 'No matching community reports yet.', offline: 'Community service is unavailable. Check your connection and try again.',
       reports: n => `${n} report${n === 1 ? '' : 's'}`, comments: n => `${n} comment${n === 1 ? '' : 's'}`, noComments: 'No comments yet.', updated: 'Live updates are on while this card is open.',
       share: 'Share your result', shareHint: 'Share your result and help the community.', why: 'Your report helps improve compatibility for everyone.', routeUsed: 'Route used', choose: 'Choose…', unknown: 'No results yet', yourResult: 'Your result', optionalComment: 'Optional comment', sent: 'Data that will be sent', cancel: 'Cancel', submit: 'Submit report', submitting: 'Submitting…', chooseRoute: 'Choose the route you actually used.', chooseVerdict: 'Choose your result.', sentOk: 'Your report was added to the community.',
       profile: 'Community profile', profileHint: 'Your fixed avatar and display name appear beside your comments. A name can change once a week.', displayName: 'Display name', chooseIcon: 'Choose an avatar', save: 'Save profile', saved: 'Profile saved.', adminMode: 'Administrator mode', adminModeHint: 'Your replies are sent with your official name, avatar and ADMIN badge.', adminLogout: 'Sign out of administrator mode', adminLoggedOut: 'Administrator mode signed out.', unnamed: 'Anonymous', addGame: 'Add to community-tested games', reactionFailed: 'Could not save that reaction.',
@@ -39,7 +39,7 @@
     },
     ar: {
       title: 'ألعاب اختبرها المجتمع', subtitle: 'نتائج حقيقية من مستخدمي DLSS 5 Swapper.', refresh: 'تحديث', search: 'بحث عن لعبة', route: 'طريقة التثبيت', api: 'واجهة الرسوم', result: 'النتيجة',
-      scopeAll: 'الجميع', scopeMine: 'ألعابي', scopeReports: 'تعليقاتي', mineHint: 'الألعاب المثبّتة على جهازك فقط', reportsHint: 'الألعاب التي كتبت عنها تقريرًا', reportsTotal: n => `كتبت عن ${n} لعبة`, reportsEmpty: 'لم تكتب تقريرًا عن أي لعبة بعد.', showingMine: n => `تقاريرك: ${n}`, sortLabel: 'الترتيب', sortRecent: 'الأحدث', sortReports: 'الأكثر تقارير', sortTitle: 'أبجديًا', noReportsYet: n => `على جهازك، بلا تقارير بعد · ${n}`, noReportsHint: 'افتح أيًّا منها لتثبّت عليه، ثم كن أول من يكتب النتيجة.', installedBadge: 'DLSS 5 مثبّت', onPc: 'على جهازك', gpuLabel: 'كرت الشاشة', allGpus: 'كل كروت الشاشة', myGpu: model => `كرتي · ${model}`, mineEmpty: 'لا توجد تقارير من المجتمع لأي لعبة على جهازك حتى الآن.', mineTotal: n => `${n} من ألعابك عليها تقارير`, showingGpu: (model, n) => `${n} تقرير على ${model}`, allRoutes: 'كل الطرق', allApis: 'كل الواجهات', allResults: 'كل النتائج', working: 'تعمل', issues: 'تعمل مع مشاكل', broken: 'لا تعمل', mixed: 'نتائج مختلطة', clear: 'مسح الفلاتر', loading: 'جاري تحميل نتائج المجتمع…', empty: 'لا توجد تقارير مطابقة حتى الآن.', offline: 'خدمة المجتمع غير متاحة. تحقق من اتصالك وحاول مجددًا.',
+      scopeAll: 'الجميع', scopeMine: 'ألعابي', scopeReports: 'تعليقاتي', mineHint: 'الألعاب المثبّتة على جهازك فقط', reportsHint: 'الألعاب التي كتبت عنها تقريرًا', reportsTotal: n => `كتبت عن ${n} لعبة`, reportsEmpty: 'لم تكتب تقريرًا عن أي لعبة بعد.', showingMine: n => `تقاريرك: ${n}`, sortLabel: 'الترتيب', sortRecent: 'الأحدث', sortReports: 'الأكثر تقارير', sortTitle: 'أبجديًا', noReportsYet: n => `على جهازك، بلا تقارير بعد · ${n}`, noReportsHint: 'افتح أيًّا منها لتثبّت عليه، ثم كن أول من يكتب النتيجة.', installedBadge: 'DLSS 5 مثبّت', onPc: 'على جهازك', gpuLabel: 'كرت الشاشة', allGpus: 'كل كروت الشاشة', myGpu: model => `كرتي · ${model}`, mineEmpty: 'لا توجد تقارير من المجتمع لأي لعبة على جهازك حتى الآن.', mineTotal: n => `${n} من ألعابك عليها تقارير`, showingGpu: (model, n) => `${n} تقرير على ${model}`, allRoutes: 'كل الطرق', allApis: 'كل الواجهات', allResults: 'كل النتائج', working: 'تعمل', issues: 'تعمل مع مشاكل', broken: 'لا تعمل', verdictGreat: 'اللعبة تعمل بامتياز', verdictIssues: 'مشاكل بسيطة أو كبيرة', verdictBroken: 'لا تعمل أو تنهار', mixed: 'نتائج مختلطة', clear: 'مسح الفلاتر', loading: 'جاري تحميل نتائج المجتمع…', empty: 'لا توجد تقارير مطابقة حتى الآن.', offline: 'خدمة المجتمع غير متاحة. تحقق من اتصالك وحاول مجددًا.',
       reports: n => `${n} تقرير`, comments: n => `${n} تعليق`, noComments: 'لا توجد تعليقات بعد.', updated: 'التحديث المباشر يعمل أثناء فتح هذه البطاقة.',
       share: 'شارك نتيجتك', shareHint: 'شارك نتيجتك وساعد المجتمع.', why: 'بلاغك يحسّن التوافق للجميع.', routeUsed: 'طريقة التثبيت المستخدمة', choose: 'اختر…', unknown: 'لا نتائج بعد', yourResult: 'نتيجتك', optionalComment: 'تعليق اختياري', sent: 'البيانات التي سيتم إرسالها', cancel: 'إلغاء', submit: 'إرسال التقرير', submitting: 'جاري الإرسال…', chooseRoute: 'اختر طريقة التثبيت التي استخدمتها فعليًا.', chooseVerdict: 'اختر نتيجتك.', sentOk: 'تمت إضافة تقريرك إلى المجتمع.',
       profile: 'ملف المجتمع', profileHint: 'تظهر صورتك الثابتة واسمك بجانب تعليقاتك. يمكن تغيير الاسم مرة كل أسبوع.', displayName: 'اسم العرض', chooseIcon: 'اختر صورة', save: 'حفظ الملف', saved: 'تم حفظ الملف.', adminMode: 'وضع الإدارة', adminModeHint: 'ستُرسل ردودك باسمك وصورتك الرسمية مع شارة ADMIN.', adminLogout: 'تسجيل الخروج من وضع الإدارة', adminLoggedOut: 'تم تسجيل الخروج من وضع الإدارة.', unnamed: 'مجهول', addGame: 'إضافة إلى الألعاب المختبرة من المجتمع', reactionFailed: 'تعذر حفظ التفاعل.',
@@ -70,6 +70,40 @@
       hideMessage: 'إخفاء الرسالة', blockAuthor: 'حظر الكاتب', copied: 'تم نسخ الرسالة.', moderationDone: 'تم تنفيذ الإجراء.',
       gameTotal: n => `${n.toLocaleString('ar')} لعبة`,
       facts: { title: 'اللعبة', route: 'الطريقة', api: 'الواجهة', gpu: 'كرت الشاشة', driver: 'التعريف', cpu: 'المعالج', os: 'النظام', app: 'إصدار البرنامج' }
+    },
+    zh: {
+      title: '社区实测游戏', subtitle: '来自 DLSS 5 Swapper 用户的真实结果。', refresh: '刷新', search: '搜索游戏', route: '安装方式', api: '渲染 API', result: '结果',
+      scopeAll: '所有人', scopeMine: '我的游戏', scopeReports: '我的评论', mineHint: '仅显示这台电脑上已安装的游戏', reportsHint: '你提交过报告的游戏', reportsTotal: n => `你报告了 ${n} 个游戏`, reportsEmpty: '你还没有报告过任何游戏。', showingMine: n => `你的 ${n} 条报告`, sortLabel: '排序', sortRecent: '最新', sortReports: '报告最多', sortTitle: 'A–Z', noReportsYet: n => `这台电脑上还没有报告 · ${n}`, noReportsHint: '打开一个游戏装上它 — 然后第一个来说说效果如何。', installedBadge: 'DLSS 5 已安装', onPc: '本机已有', gpuLabel: '显卡', allGpus: '所有显卡', myGpu: model => `我的显卡 · ${model}`, mineEmpty: '这台电脑上的游戏都还没有社区报告。', mineTotal: n => `你的游戏中有 ${n} 个已有报告`, showingGpu: (model, n) => `${model} 上有 ${n} 条报告`, allRoutes: '所有安装方式', allApis: '所有 API', allResults: '所有结果', working: '可用', issues: '可用但有问题', broken: '不可用', verdictGreat: '运行良好', verdictIssues: '有轻微或严重问题', verdictBroken: '无法运行或崩溃', mixed: '参差不齐', clear: '清除筛选', loading: '正在加载社区结果…', empty: '还没有匹配的社区报告。', offline: '社区服务不可用。请检查网络后重试。',
+      reports: n => `${n} 条报告`, comments: n => `${n} 条评论`, noComments: '还没有评论。', updated: '打开此卡片期间会实时更新。',
+      share: '分享你的结果', shareHint: '分享你的结果，帮助整个社区。', why: '你的报告能帮助改善所有人的兼容性。', routeUsed: '使用的安装方式', choose: '请选择…', unknown: '还没有结果', yourResult: '你的结果', optionalComment: '可选评论', sent: '将要发送的数据', cancel: '取消', submit: '提交报告', submitting: '正在提交…', chooseRoute: '选择你实际使用的安装方式。', chooseVerdict: '选择你的结果。', sentOk: '你的报告已添加到社区。',
+      profile: '社区资料', profileHint: '你固定的头像和显示名会出现在你的评论旁。显示名每周可修改一次。', displayName: '显示名', chooseIcon: '选择头像', save: '保存资料', saved: '资料已保存。', adminMode: '管理员模式', adminModeHint: '你的回复会带上官方名称、头像和 ADMIN 标记。', adminLogout: '退出管理员模式', adminLoggedOut: '已退出管理员模式。', unnamed: '匿名', addGame: '添加到社区实测游戏', reactionFailed: '无法保存该回应。',
+      liveCount: '服务只在内存中保留实时连接数，不存储任何连接标识。', removeMine: '移除我的社区活动', removeConfirm: '隐藏你所有的报告和回复，并重置你的公开社区资料？此操作无法在应用内撤销。', removing: '正在移除…', removedMine: (reports, replies) => `已从公开视图中移除 ${reports} 条报告和 ${replies} 条回复。`,
+      reply: '回复', back: '返回全部结果', noReplies: '还没有回复。来做第一个。',
+      edit: '编辑', remove: '删除', mine: '你', saveEdit: '保存', cancelEdit: '取消',
+      removeReport: '删除我的报告', editReport: '编辑我的报告', shareAgain: '编辑你的结果',
+      removeReportTitle: '删除报告？', removeReplyTitle: '删除回复？', removeMineTitle: '移除你写过的全部内容？',
+      removeReportAsk: '删除你对这个游戏的报告？如果没有其他人报告过，这个游戏会从社区列表中消失。',
+      removeReplyAsk: '删除这条回复？', removed: '已删除。', follow: '通知我这个游戏',
+      unfollow: '不要再通知我', following: '通知已开启', mention: '提及某人',
+      noticeReplied: (who, game) => `${who} 在 ${game} 回复了你`,
+      noticeMentioned: (who, game) => `${who} 在 ${game} 提到了你`,
+      noticeOnGame: (who, game) => `${who} 评论了 ${game}`,
+      noticeReacted: (who, emoji, game) => `${who} 用 ${emoji} 回应了你在 ${game} 的报告`,
+      noticeChatMention: who => `${who} 在聊天中提到了你`,
+      noticeChatReply: who => `${who} 在聊天中回复了你`,
+      noticeChatReaction: (who, emoji) => `${who} 用 ${emoji} 回应了你在聊天中的消息`,
+      noticeMany: n => `${n} 条新的社区消息`, noticeSomeone: '有人',
+      sentTitle: '报告已发送', sentNote: '你的结果已出现在这个游戏的社区页面上。谢谢！',
+      sentGo: '转到我的评论', sentStay: '完成',
+      failTitle: '未发送', failNote: '没有保存任何内容。你的文字仍在表单里，可以再试一次。',
+      failGo: '重试', failStay: '关闭', silentReport: '没有评论 — 只发送了你的结果。',
+      replyingTo: '正在回复',
+      showing: (route, n) => `${route} · ${n} 条结果`, showAll: '显示所有安装方式',
+      replyPlaceholder: '回复这条结果…', send: '发送',
+      pinnedAnnouncement: '置顶公告', copyMessage: '复制消息', replyMention: '回复并提及',
+      hideMessage: '隐藏消息', blockAuthor: '屏蔽作者', copied: '消息已复制。', moderationDone: '已执行管理操作。',
+      gameTotal: n => `${n.toLocaleString('zh')} 个游戏`,
+      facts: { title: '游戏', route: '安装方式', api: 'API', gpu: 'GPU', driver: '驱动', cpu: 'CPU', os: '系统', app: '应用版本' }
     }
   };
   const avatars = ['🎮','🚀','⚡','🛡️','🔥','⭐','🎯','🕹️','👾','🤖','🐉','🦊','🐺','🦁','🦅','🐙','🌌','🌙','☀️','💎','🔧','🧪','🏁','🎧'];
@@ -127,7 +161,13 @@
   }
 
   const saveMine = () => { try { localStorage.setItem(MINE_KEY, JSON.stringify(state.mine)); } catch { /* private window, or storage off */ } };
-  const text = () => L[(window.i18n?.getLang?.() || 'en').startsWith('ar') ? 'ar' : 'en'];
+  // Simplified Chinese is the third dictionary this page carries. Every language
+  // without one still reads English, which is what this page has always done.
+  const text = () => {
+    const lang = window.i18n?.getLang?.() || 'en';
+    if (lang === 'zh') return L.zh;
+    return lang.startsWith('ar') ? L.ar : L.en;
+  };
   const totals = verdicts => Object.values(verdicts || {}).reduce((sum, row) => ({ green: sum.green + (row.green || 0), yellow: sum.yellow + (row.yellow || 0), red: sum.red + (row.red || 0) }), { green: 0, yellow: 0, red: 0 });
   const statusClass = status => ['working', 'mixed', 'broken'].includes(status) ? status : 'unknown';
   const statusText = status => status === 'working' ? text().working : status === 'broken' ? text().broken : status === 'mixed' ? text().mixed : text().unknown;
@@ -290,7 +330,12 @@
     paintGpuOptions();
     setOption('communityReportRoute', '', s.choose); setOption('communityReportApi', '', s.choose);
     const verdictLabels = [s.working, s.issues, s.broken];
-    document.querySelectorAll('.community-verdicts button span').forEach((node, index) => { node.textContent = verdictLabels[index]; });
+    const verdictHints = [s.verdictGreat, s.verdictIssues, s.verdictBroken];
+    document.querySelectorAll('.community-verdicts button').forEach((button, index) => {
+      const label = button.querySelector('b'), hint = button.querySelector('small');
+      if (label) label.textContent = verdictLabels[index];
+      if (hint) hint.textContent = verdictHints[index];
+    });
   }
 
   function cardMarkup(card) {
