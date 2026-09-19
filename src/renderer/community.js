@@ -70,6 +70,40 @@
       hideMessage: 'إخفاء الرسالة', blockAuthor: 'حظر الكاتب', copied: 'تم نسخ الرسالة.', moderationDone: 'تم تنفيذ الإجراء.',
       gameTotal: n => `${n.toLocaleString('ar')} لعبة`,
       facts: { title: 'اللعبة', route: 'الطريقة', api: 'الواجهة', gpu: 'كرت الشاشة', driver: 'التعريف', cpu: 'المعالج', os: 'النظام', app: 'إصدار البرنامج' }
+    },
+    it: {
+      title: 'Giochi testati dalla community', subtitle: 'Risultati reali dagli utenti di DLSS 5 Swapper.', refresh: 'Aggiorna', search: 'Cerca giochi', route: 'Percorso', api: 'API di rendering', result: 'Risultato',
+      scopeAll: 'Tutti', scopeMine: 'I miei giochi', scopeReports: 'I miei commenti', mineHint: 'Solo i giochi installati su questo PC', reportsHint: 'I giochi su cui hai lasciato un report', reportsTotal: n => `Hai lasciato un report su ${n} gioc${n === 1 ? 'o' : 'hi'}`, reportsEmpty: 'Non hai ancora lasciato un report su nessun gioco.', showingMine: n => `${n === 1 ? 'Il tuo report' : `I tuoi ${n} report`}`, sortLabel: 'Ordina', sortRecent: 'Più recenti', sortReports: 'Più report', sortTitle: 'A–Z', noReportsYet: n => `Su questo PC, ancora nessun report · ${n}`, noReportsHint: 'Aprine uno per installarlo, poi sii il primo a dire com’è andata.', installedBadge: 'DLSS 5 installato', onPc: 'Su questo PC', gpuLabel: 'Scheda grafica', allGpus: 'Tutte le schede grafiche', myGpu: model => `La mia scheda · ${model}`, mineEmpty: 'Nessuno dei giochi su questo PC ha ancora report della community.', mineTotal: n => `${n} dei tuoi giochi hanno report`, showingGpu: (model, n) => `${n} report su ${model}`, allRoutes: 'Tutti i percorsi', allApis: 'Tutte le API', allResults: 'Tutti i risultati', working: 'Funziona', issues: 'Funziona con problemi', broken: 'Non funziona', mixed: 'Misto', clear: 'Cancella filtri', loading: 'Caricamento risultati community…', empty: 'Nessun report della community corrispondente.', offline: 'Il servizio community non è disponibile. Controlla la connessione e riprova.',
+      reports: n => `${n} report`, comments: n => `${n} comment${n === 1 ? 'o' : 'i'}`, noComments: 'Ancora nessun commento.', updated: 'Gli aggiornamenti in tempo reale sono attivi mentre questa scheda è aperta.',
+      share: 'Condividi il tuo risultato', shareHint: 'Condividi il tuo risultato e aiuta la community.', why: 'Il tuo report aiuta a migliorare la compatibilità per tutti.', routeUsed: 'Percorso usato', choose: 'Scegli…', unknown: 'Ancora nessun risultato', yourResult: 'Il tuo risultato', optionalComment: 'Commento facoltativo', sent: 'Dati che verranno inviati', cancel: 'Annulla', submit: 'Invia report', submitting: 'Invio in corso…', chooseRoute: 'Scegli il percorso che hai usato davvero.', chooseVerdict: 'Scegli il tuo risultato.', sentOk: 'Il tuo report è stato aggiunto alla community.',
+      profile: 'Profilo community', profileHint: 'Il tuo avatar fisso e il nome visualizzato compaiono accanto ai tuoi commenti. Il nome si può cambiare una volta a settimana.', displayName: 'Nome visualizzato', chooseIcon: 'Scegli un avatar', save: 'Salva profilo', saved: 'Profilo salvato.', adminMode: 'Modalità amministratore', adminModeHint: 'Le tue risposte vengono inviate con il nome ufficiale, l’avatar e il badge ADMIN.', adminLogout: 'Esci dalla modalità amministratore', adminLoggedOut: 'Modalità amministratore disattivata.', unnamed: 'Anonimo', addGame: 'Aggiungi ai giochi testati dalla community', reactionFailed: 'Impossibile salvare quella reazione.',
+      liveCount: 'Il servizio tiene in memoria solo il conteggio delle connessioni attive; non memorizza identificatori di connessione.', removeMine: 'Rimuovi la mia attività community', removeConfirm: 'Nascondere tutti i tuoi report e le tue risposte e reimpostare il profilo pubblico community? Non si può annullare dall’app.', removing: 'Rimozione…', removedMine: (reports, replies) => `Rimossi ${reports} report e ${replies} rispost${replies === 1 ? 'a' : 'e'} dalla vista pubblica.`,
+      reply: 'Rispondi', back: 'Torna a tutti i risultati', noReplies: 'Ancora nessuna risposta. Sii il primo.',
+      edit: 'Modifica', remove: 'Elimina', mine: 'Tu', saveEdit: 'Salva', cancelEdit: 'Annulla',
+      removeReport: 'Elimina il mio report', editReport: 'Modifica il mio report', shareAgain: 'Modifica il tuo risultato',
+      removeReportTitle: 'Eliminare il report?', removeReplyTitle: 'Eliminare la risposta?', removeMineTitle: 'Rimuovere tutto ciò che hai scritto?',
+      removeReportAsk: 'Eliminare il tuo report su questo gioco? Se nessun altro lo ha segnalato, il gioco esce dall’elenco community.',
+      removeReplyAsk: 'Eliminare questa risposta?', removed: 'Eliminato.', follow: 'Avvisami su questo gioco',
+      unfollow: 'Smetti di avvisarmi', following: 'Notifiche attive', mention: 'Menziona qualcuno',
+      noticeReplied: (who, game) => `${who} ti ha risposto su ${game}`,
+      noticeMentioned: (who, game) => `${who} ti ha menzionato su ${game}`,
+      noticeOnGame: (who, game) => `${who} ha commentato su ${game}`,
+      noticeReacted: (who, emoji, game) => `${who} ha reagito ${emoji} al tuo report su ${game}`,
+      noticeChatMention: who => `${who} ti ha menzionato in chat`,
+      noticeChatReply: who => `${who} ti ha risposto in chat`,
+      noticeChatReaction: (who, emoji) => `${who} ha reagito ${emoji} al tuo messaggio in chat`,
+      noticeMany: n => `${n} nuovi messaggi community`, noticeSomeone: 'Qualcuno',
+      sentTitle: 'Report inviato', sentNote: 'Il tuo risultato è nella pagina community di questo gioco. Grazie.',
+      sentGo: 'Vai al mio commento', sentStay: 'Fatto',
+      failTitle: 'Non inviato', failNote: 'Non è stato salvato nulla. Il testo è ancora nel modulo, puoi riprovare.',
+      failGo: 'Riprova', failStay: 'Chiudi', silentReport: 'Nessun commento: è stato inviato solo il risultato.',
+      replyingTo: 'In risposta a',
+      showing: (route, n) => `${route} · ${n} risultat${n === 1 ? 'o' : 'i'}`, showAll: 'Mostra tutti i percorsi',
+      replyPlaceholder: 'Rispondi a questo risultato…', send: 'Invia',
+      pinnedAnnouncement: 'Annuncio in evidenza', copyMessage: 'Copia messaggio', replyMention: 'Rispondi con menzione',
+      hideMessage: 'Nascondi messaggio', blockAuthor: 'Blocca autore', copied: 'Messaggio copiato.', moderationDone: 'Moderazione applicata.',
+      gameTotal: n => `${n.toLocaleString('it')} gioc${n === 1 ? 'o' : 'hi'}`,
+      facts: { title: 'Gioco', route: 'Percorso', api: 'API', gpu: 'GPU', driver: 'Driver', cpu: 'CPU', os: 'OS', app: 'Versione app' }
     }
   };
   const avatars = ['🎮','🚀','⚡','🛡️','🔥','⭐','🎯','🕹️','👾','🤖','🐉','🦊','🐺','🦁','🦅','🐙','🌌','🌙','☀️','💎','🔧','🧪','🏁','🎧'];
@@ -127,7 +161,10 @@
   }
 
   const saveMine = () => { try { localStorage.setItem(MINE_KEY, JSON.stringify(state.mine)); } catch { /* private window, or storage off */ } };
-  const text = () => L[(window.i18n?.getLang?.() || 'en').startsWith('ar') ? 'ar' : 'en'];
+  const text = () => {
+    const lang = (window.i18n?.getLang?.() || 'en').slice(0, 2);
+    return L[lang] || L.en;
+  };
   const totals = verdicts => Object.values(verdicts || {}).reduce((sum, row) => ({ green: sum.green + (row.green || 0), yellow: sum.yellow + (row.yellow || 0), red: sum.red + (row.red || 0) }), { green: 0, yellow: 0, red: 0 });
   const statusClass = status => ['working', 'mixed', 'broken'].includes(status) ? status : 'unknown';
   const statusText = status => status === 'working' ? text().working : status === 'broken' ? text().broken : status === 'mixed' ? text().mixed : text().unknown;
@@ -1129,7 +1166,7 @@
   // ------------------------------------------------------- being told about it
 
   // The main process finds out; this page decides what it says, because the
-  // community feature speaks two languages and the installer speaks thirty-eight.
+  // community feature speaks a few languages and the installer speaks thirty-eight.
   function wireNotices() {
     if (!window.lab.onCommunityNotices) return;
     window.lab.onCommunityNotices(async list => {
@@ -1332,7 +1369,7 @@
       if (!chip || !state.active) return;
       // Pressing the chip that is already on takes the filter off again.
       state.route = state.route === chip.dataset.route ? null : chip.dataset.route;
-      state.thread = null;
+      state.thread = null;      
       paintCard(state.active);
     };
     $('communityFollow').onclick = toggleFollow;
@@ -1343,6 +1380,10 @@
       if (!message) return;
       event.preventDefault();
       openMessageMenu(event, message);
+    });
+    // Backdrop click: close the card dialog modal when clicking outside the dialog box.
+    $('communityCardDialog').addEventListener('click', event => {
+      if (event.target === event.currentTarget) closeCard();
     });
     $('communityCardBody').onclick = async event => {
       // Your own words first: edit, delete, and the two buttons an open editor
@@ -1416,7 +1457,7 @@
   // Who this install is, and what it follows. Asked for once at start rather
   // than on every card, and quietly - being offline is not an error here.
   loadMe().catch(() => {});
-  window.communityUi = {
+  window.communityUi = {    
     render, renderProfile, openReport, openCard, applyLanguage, stopPolling, syncOwnReports,
     // The games view asks these: whether this install already reported a game,
     // and how to take that report back from outside the community page.

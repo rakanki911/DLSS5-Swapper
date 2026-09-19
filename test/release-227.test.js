@@ -72,7 +72,7 @@ test('the community page carries its new controls, hidden until the server offer
 // table silently replaced the first. One name, one meaning.
 test('no label on the community page is defined twice', () => {
   const page = read('src', 'renderer', 'community.js');
-  for (const lang of ['en', 'ar']) {
+  for (const lang of ['en', 'ar', 'it']) {
     const start = page.indexOf(`    ${lang}: {`);
     const end = page.indexOf('\n    }', start);
     const block = page.slice(start, end).replace(/facts: \{[^}]*\}/, '');
@@ -101,7 +101,7 @@ test('reactions and chat reach you as notifications', () => {
     assert.match(page, new RegExp(`notice\\.kind === '${kind}'`), kind);
   }
   for (const key of ['noticeReacted', 'noticeChatMention', 'noticeChatReply', 'noticeChatReaction']) {
-    assert.equal((page.match(new RegExp(`${key}: `, 'g')) || []).length, 2, `${key} in English and Arabic`);
+    assert.equal((page.match(new RegExp(`${key}: `, 'g')) || []).length, 3, `${key} in English, Arabic and Italian`);
   }
   assert.match(page, /if \(notice\?\.chat\) \{\s*document\.querySelector\('\[data-view="chat"\]'\)\?\.click\(\);\s*await window\.chatUi\?\.focusMessage\?\.\(notice\.chat\);/);
   assert.match(read('src', 'renderer', 'chat.js'), /window\.chatUi = \{ render, stopPolling, applyLanguage, focusMessage \};/);
