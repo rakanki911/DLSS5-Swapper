@@ -858,8 +858,8 @@ function installOptions(d, pick, dir) {
     ], Boolean(warning || pick.installIssue))}`;
 }
 
-// A newer release exists, said once, in the corner. The link is the same
-// allowlisted releases page the About view uses; nothing downloads itself.
+// A newer release exists, said once, in the corner. Packaged Windows copies
+// download the matching installer here; everyone else still gets the releases page.
 async function showUpdateNotice() {
   const link = $('statusUpdate');
   if (!link || !window.lab.checkUpdate) return;
@@ -876,9 +876,48 @@ async function showUpdateNotice() {
     return;
   }
   if (!answer.newer) return;
-  link.textContent = t('updateAvailable', answer.latest);
+  const version = answer.latest;
+  const install = Boolean(answer.canInstall);
+  link.textContent = t(install ? 'updateDownload' : 'updateAvailable', version);
   link.classList.remove('muted');
   link.classList.remove('hidden');
+  let phase = install ? 'offer' : 'link';
+  if (window.lab.onUpdateProgress) {
+    window.lab.onUpdateProgress((info) => {
+      if (phase !== 'downloading') return;
+      if (info.total) {
+        link.textContent = t('updateDownloading', version, Math.min(100, Math.round((info.received / info.total) * 100)));
+      } else {
+        link.textContent = t('updateDownloadingSize', version, Math.max(1, Math.round(info.received / 1048576)));
+      }
+    });
+  }
+  link.onclick = async (event) => {
+    event.preventDefault();
+    if (phase === 'link' || phase === 'failed') {
+      try { await window.lab.openProject('releases'); } catch {}
+      return;
+    }
+    if (phase === 'downloading') return;
+    if (phase === 'ready') {
+      const applied = await window.lab.applyUpdate().catch(() => ({ ok: false }));
+      if (!applied || !applied.ok) {
+        phase = 'failed';
+        link.textContent = t('updateFailed');
+      }
+      return;
+    }
+    phase = 'downloading';
+    link.textContent = t('updateDownloading', version, 0);
+    const result = await window.lab.downloadUpdate().catch(() => ({ ok: false }));
+    if (result && result.ok) {
+      phase = 'ready';
+      link.textContent = t('updateReady', version);
+      return;
+    }
+    phase = 'failed';
+    link.textContent = t('updateFailed');
+  };
 }
 
 function jobLog(line) {

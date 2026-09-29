@@ -51,6 +51,11 @@ const S = {
     errJobBusy: 'Another installation or restore is in progress. Wait for it to finish.',
     errBackendRecovery: 'An interrupted switch needs recovery. Close the game, then click Restore originals. Keep the backup folder intact.',
     updateAvailable: (version) => `Update available: v${version} ↗`,
+    updateDownload: (version) => `Update available: v${version}`,
+    updateDownloading: (version, pct) => `Downloading v${version} — ${pct}%`,
+    updateDownloadingSize: (version, mb) => `Downloading v${version} — ${mb} MB`,
+    updateReady: (version) => `Restart to install v${version}`,
+    updateFailed: () => 'Update failed — open the releases page ↗',
     updateCheckFailed: () => 'Update check unavailable — this is not “you are up to date”.',
     feedVkLayerReady: (rel) => `Vulkan interop layer installed. If DLSS 5 does not appear in game, launch it through ${rel}.`,
     neuralModelKept: (rel) => `Kept your existing ${rel}; the bundled model was not copied over it.`,
@@ -232,6 +237,11 @@ The install will go through. If the neural pass never appears in game, 616.56 is
     errJobBusy: 'توجد عملية تثبيت أو استعادة قيد التنفيذ. انتظر اكتمالها.',
     errBackendRecovery: 'تبديل سابق انقطع ويحتاج استردادًا. أغلق اللعبة واضغط استعادة الأصل، ولا تحذف مجلد النسخة الاحتياطية.',
     updateAvailable: (version) => `يتوفر تحديث: v${version} ↗`,
+    updateDownload: (version) => `يتوفر تحديث: v${version}`,
+    updateDownloading: (version, pct) => `جارٍ تنزيل v${version} — ${pct}%`,
+    updateDownloadingSize: (version, mb) => `جارٍ تنزيل v${version} — ${mb} MB`,
+    updateReady: (version) => `أعد التشغيل لتثبيت v${version}`,
+    updateFailed: () => 'تعذّر التحديث — افتح صفحة الإصدارات ↗',
     updateCheckFailed: () => 'تعذّر فحص التحديث — وهذا لا يعني أن نسختك أحدث.',
     feedVkLayerReady: (rel) => `تم تثبيت طبقة Vulkan للتوافق. إن لم يظهر DLSS 5 داخل اللعبة فشغّلها عبر ${rel}.`,
     neuralModelKept: (rel) => `أُبقي على ${rel} الموجود لديك ولم يُستبدل بالنموذج المرفق.`,
@@ -411,7 +421,14 @@ The install will go through. If the neural pass never appears in game, 616.56 is
     setPosters: '封面', setSaved: (n) => `已保存 ${n} 个`, setLang: '语言',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: '为你的游戏装上 DLSS 5，也能随时还原。', aboutBy: '由 Rakan Alkhaldi 开发',
     agoNow: '刚刚', agoMin: (n) => `${n} 分钟前`, agoHour: (n) => `${n} 小时前`, agoDay: (n) => `${n} 天前`,
-    artFound: (a, b) => `封面：${b} 个中找到 ${a} 个`, libReady: (n, d) => `库已就绪 — ${n} 个游戏，${d} 个使用 DirectX 12`
+    artFound: (a, b) => `封面：${b} 个中找到 ${a} 个`, libReady: (n, d) => `库已就绪 — ${n} 个游戏，${d} 个使用 DirectX 12`,
+    updateAvailable: (version) => `有可用更新：v${version} ↗`,
+    updateDownload: (version) => `有可用更新：v${version}`,
+    updateDownloading: (version, pct) => `正在下载 v${version} — ${pct}%`,
+    updateDownloadingSize: (version, mb) => `正在下载 v${version} — ${mb} MB`,
+    updateReady: (version) => `重启以安装 v${version}`,
+    updateFailed: () => '更新失败 — 打开发布页面 ↗',
+    updateCheckFailed: () => '无法检查更新 — 这并不表示你已是最新版。'
   },
   es: {
     navHome: 'Inicio', navGames: 'Juegos', navHistory: 'Historial', navSettings: 'Ajustes', navAbout: 'Acerca de',
@@ -441,7 +458,14 @@ The install will go through. If the neural pass never appears in game, 616.56 is
     setPosters: 'Carátulas', setSaved: (n) => `${n} guardadas`, setLang: 'Idioma',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Instala DLSS 5 en tus juegos y devuelve los originales cuando quieras.', aboutBy: 'Creado por Rakan Alkhaldi',
     agoNow: 'ahora mismo', agoMin: (n) => `hace ${n} min`, agoHour: (n) => `hace ${n} h`, agoDay: (n) => `hace ${n} d`,
-    artFound: (a, b) => `Carátulas: ${a} de ${b}`, libReady: (n, d) => `Biblioteca lista — ${n} juegos, ${d} en DirectX 12`
+    artFound: (a, b) => `Carátulas: ${a} de ${b}`, libReady: (n, d) => `Biblioteca lista — ${n} juegos, ${d} en DirectX 12`,
+    updateAvailable: (version) => `Actualización disponible: v${version} ↗`,
+    updateDownload: (version) => `Actualización disponible: v${version}`,
+    updateDownloading: (version, pct) => `Descargando v${version} — ${pct}%`,
+    updateDownloadingSize: (version, mb) => `Descargando v${version} — ${mb} MB`,
+    updateReady: (version) => `Reinicia para instalar v${version}`,
+    updateFailed: () => 'Error al actualizar — abrir la página de versiones ↗',
+    updateCheckFailed: () => 'No se pudo comprobar actualizaciones — esto no significa que esté al día.'
   },
   pt: {
     navHome: 'Início', navGames: 'Jogos', navHistory: 'Histórico', navSettings: 'Configurações', navAbout: 'Sobre',
@@ -471,7 +495,14 @@ The install will go through. If the neural pass never appears in game, 616.56 is
     setPosters: 'Capas', setSaved: (n) => `${n} salvas`, setLang: 'Idioma',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Instala o DLSS 5 nos seus jogos e restaura os originais quando você quiser.', aboutBy: 'Feito por Rakan Alkhaldi',
     agoNow: 'agora mesmo', agoMin: (n) => `há ${n} min`, agoHour: (n) => `há ${n} h`, agoDay: (n) => `há ${n} d`,
-    artFound: (a, b) => `Capas: ${a} de ${b}`, libReady: (n, d) => `Biblioteca pronta — ${n} jogos, ${d} em DirectX 12`
+    artFound: (a, b) => `Capas: ${a} de ${b}`, libReady: (n, d) => `Biblioteca pronta — ${n} jogos, ${d} em DirectX 12`,
+    updateAvailable: (version) => `Atualização disponível: v${version} ↗`,
+    updateDownload: (version) => `Atualização disponível: v${version}`,
+    updateDownloading: (version, pct) => `A transferir v${version} — ${pct}%`,
+    updateDownloadingSize: (version, mb) => `A transferir v${version} — ${mb} MB`,
+    updateReady: (version) => `Reinicie para instalar v${version}`,
+    updateFailed: () => 'Falha na atualização — abrir a página de versões ↗',
+    updateCheckFailed: () => 'Não foi possível verificar atualizações — isto não significa que está em dia.'
   },
   ru: {
     navHome: 'Главная', navGames: 'Игры', navHistory: 'История', navSettings: 'Настройки', navAbout: 'О программе',
@@ -501,7 +532,14 @@ The install will go through. If the neural pass never appears in game, 616.56 is
     setPosters: 'Обложки', setSaved: (n) => `сохранено ${n}`, setLang: 'Язык',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Ставит DLSS 5 в ваши игры и в любой момент возвращает всё как было.', aboutBy: 'Автор — Rakan Alkhaldi',
     agoNow: 'только что', agoMin: (n) => `${n} мин назад`, agoHour: (n) => `${n} ч назад`, agoDay: (n) => `${n} дн назад`,
-    artFound: (a, b) => `Обложки: ${a} из ${b}`, libReady: (n, d) => `Библиотека готова — ${n} игр, ${d} на DirectX 12`
+    artFound: (a, b) => `Обложки: ${a} из ${b}`, libReady: (n, d) => `Библиотека готова — ${n} игр, ${d} на DirectX 12`,
+    updateAvailable: (version) => `Доступно обновление: v${version} ↗`,
+    updateDownload: (version) => `Доступно обновление: v${version}`,
+    updateDownloading: (version, pct) => `Загрузка v${version} — ${pct}%`,
+    updateDownloadingSize: (version, mb) => `Загрузка v${version} — ${mb} MB`,
+    updateReady: (version) => `Перезапустите, чтобы установить v${version}`,
+    updateFailed: () => 'Не удалось обновить — откройте страницу релизов ↗',
+    updateCheckFailed: () => 'Проверка обновлений недоступна — это не значит, что у вас последняя версия.'
   },
   de: {
     navHome: 'Start', navGames: 'Spiele', navHistory: 'Verlauf', navSettings: 'Einstellungen', navAbout: 'Über',
@@ -531,7 +569,14 @@ The install will go through. If the neural pass never appears in game, 616.56 is
     setPosters: 'Cover', setSaved: (n) => `${n} gespeichert`, setLang: 'Sprache',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Bringt DLSS 5 in deine Spiele - und jederzeit wieder heraus.', aboutBy: 'Von Rakan Alkhaldi',
     agoNow: 'gerade eben', agoMin: (n) => `vor ${n} Min.`, agoHour: (n) => `vor ${n} Std.`, agoDay: (n) => `vor ${n} T.`,
-    artFound: (a, b) => `Cover: ${a} von ${b}`, libReady: (n, d) => `Bibliothek bereit — ${n} Spiele, ${d} mit DirectX 12`
+    artFound: (a, b) => `Cover: ${a} von ${b}`, libReady: (n, d) => `Bibliothek bereit — ${n} Spiele, ${d} mit DirectX 12`,
+    updateAvailable: (version) => `Update verfügbar: v${version} ↗`,
+    updateDownload: (version) => `Update verfügbar: v${version}`,
+    updateDownloading: (version, pct) => `v${version} wird heruntergeladen — ${pct}%`,
+    updateDownloadingSize: (version, mb) => `v${version} wird heruntergeladen — ${mb} MB`,
+    updateReady: (version) => `Neu starten, um v${version} zu installieren`,
+    updateFailed: () => 'Update fehlgeschlagen — Releases-Seite öffnen ↗',
+    updateCheckFailed: () => 'Updateprüfung nicht verfügbar — das heißt nicht, dass Sie auf dem neuesten Stand sind.'
   },
   fr: {
     navHome: 'Accueil', navGames: 'Jeux', navHistory: 'Historique', navSettings: 'Paramètres', navAbout: 'À propos',
@@ -561,7 +606,14 @@ The install will go through. If the neural pass never appears in game, 616.56 is
     setPosters: 'Jaquettes', setSaved: (n) => `${n} enregistrées`, setLang: 'Langue',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Installe DLSS 5 dans vos jeux, et remet les originaux quand vous voulez.', aboutBy: 'Par Rakan Alkhaldi',
     agoNow: 'à l’instant', agoMin: (n) => `il y a ${n} min`, agoHour: (n) => `il y a ${n} h`, agoDay: (n) => `il y a ${n} j`,
-    artFound: (a, b) => `Jaquettes : ${a} sur ${b}`, libReady: (n, d) => `Bibliothèque prête — ${n} jeux, ${d} en DirectX 12`
+    artFound: (a, b) => `Jaquettes : ${a} sur ${b}`, libReady: (n, d) => `Bibliothèque prête — ${n} jeux, ${d} en DirectX 12`,
+    updateAvailable: (version) => `Mise à jour disponible : v${version} ↗`,
+    updateDownload: (version) => `Mise à jour disponible : v${version}`,
+    updateDownloading: (version, pct) => `Téléchargement de v${version} — ${pct}%`,
+    updateDownloadingSize: (version, mb) => `Téléchargement de v${version} — ${mb} MB`,
+    updateReady: (version) => `Redémarrez pour installer v${version}`,
+    updateFailed: () => 'Échec de la mise à jour — ouvrir la page des versions ↗',
+    updateCheckFailed: () => 'Vérification des mises à jour indisponible — cela ne signifie pas que vous êtes à jour.'
   },
   ja: {
     navHome: 'ホーム', navGames: 'ゲーム', navHistory: '履歴', navSettings: '設定', navAbout: '情報',
@@ -591,7 +643,14 @@ The install will go through. If the neural pass never appears in game, 616.56 is
     setPosters: '画像', setSaved: (n) => `${n} 件保存`, setLang: '言語',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'ゲームに DLSS 5 を導入し、いつでも元に戻せます。', aboutBy: '制作: Rakan Alkhaldi',
     agoNow: 'たった今', agoMin: (n) => `${n} 分前`, agoHour: (n) => `${n} 時間前`, agoDay: (n) => `${n} 日前`,
-    artFound: (a, b) => `画像: ${b} 件中 ${a} 件`, libReady: (n, d) => `ライブラリ準備完了 — ${n} 件、${d} 件が DirectX 12`
+    artFound: (a, b) => `画像: ${b} 件中 ${a} 件`, libReady: (n, d) => `ライブラリ準備完了 — ${n} 件、${d} 件が DirectX 12`,
+    updateAvailable: (version) => `更新があります: v${version} ↗`,
+    updateDownload: (version) => `更新があります: v${version}`,
+    updateDownloading: (version, pct) => `v${version} をダウンロード中 — ${pct}%`,
+    updateDownloadingSize: (version, mb) => `v${version} をダウンロード中 — ${mb} MB`,
+    updateReady: (version) => `再起動して v${version} をインストール`,
+    updateFailed: () => '更新に失敗しました — リリースページを開く ↗',
+    updateCheckFailed: () => '更新を確認できません — 最新版であるという意味ではありません。'
   },
   ko: {
     navHome: '홈', navGames: '게임', navHistory: '기록', navSettings: '설정', navAbout: '정보',
@@ -621,7 +680,14 @@ The install will go through. If the neural pass never appears in game, 616.56 is
     setPosters: '이미지', setSaved: (n) => `${n}개 저장됨`, setLang: '언어',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: '게임에 DLSS 5를 설치하고, 언제든 원래대로 되돌립니다.', aboutBy: '제작: Rakan Alkhaldi',
     agoNow: '방금', agoMin: (n) => `${n}분 전`, agoHour: (n) => `${n}시간 전`, agoDay: (n) => `${n}일 전`,
-    artFound: (a, b) => `이미지: ${b}개 중 ${a}개`, libReady: (n, d) => `라이브러리 준비됨 — ${n}개, ${d}개는 DirectX 12`
+    artFound: (a, b) => `이미지: ${b}개 중 ${a}개`, libReady: (n, d) => `라이브러리 준비됨 — ${n}개, ${d}개는 DirectX 12`,
+    updateAvailable: (version) => `업데이트 있음: v${version} ↗`,
+    updateDownload: (version) => `업데이트 있음: v${version}`,
+    updateDownloading: (version, pct) => `v${version} 다운로드 중 — ${pct}%`,
+    updateDownloadingSize: (version, mb) => `v${version} 다운로드 중 — ${mb} MB`,
+    updateReady: (version) => `다시 시작하여 v${version} 설치`,
+    updateFailed: () => '업데이트 실패 — 릴리스 페이지 열기 ↗',
+    updateCheckFailed: () => '업데이트 확인 불가 — 최신 버전이라는 뜻이 아닙니다.'
   },
   it: {
     navHome: 'Home', navGames: 'Giochi', navHistory: 'Cronologia', navSettings: 'Impostazioni', navAbout: 'Informazioni',
@@ -651,7 +717,14 @@ The install will go through. If the neural pass never appears in game, 616.56 is
     setPosters: 'Copertine', setSaved: (n) => `${n} salvate`, setLang: 'Lingua',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Installa DLSS 5 nei tuoi giochi e ripristina gli originali quando vuoi.', aboutBy: 'Creato da Rakan Alkhaldi',
     agoNow: 'adesso', agoMin: (n) => `${n} min fa`, agoHour: (n) => `${n} h fa`, agoDay: (n) => `${n} g fa`,
-    artFound: (a, b) => `Copertine: ${a} su ${b}`, libReady: (n, d) => `Libreria pronta — ${n} giochi, ${d} con DirectX 12`
+    artFound: (a, b) => `Copertine: ${a} su ${b}`, libReady: (n, d) => `Libreria pronta — ${n} giochi, ${d} con DirectX 12`,
+    updateAvailable: (version) => `Aggiornamento disponibile: v${version} ↗`,
+    updateDownload: (version) => `Aggiornamento disponibile: v${version}`,
+    updateDownloading: (version, pct) => `Download di v${version} — ${pct}%`,
+    updateDownloadingSize: (version, mb) => `Download di v${version} — ${mb} MB`,
+    updateReady: (version) => `Riavvia per installare v${version}`,
+    updateFailed: () => 'Aggiornamento non riuscito — apri la pagina delle versioni ↗',
+    updateCheckFailed: () => 'Controllo aggiornamenti non disponibile — non significa che sia già aggiornato.'
   },
   tr: {
     navHome: 'Ana sayfa', navGames: 'Oyunlar', navHistory: 'Geçmiş', navSettings: 'Ayarlar', navAbout: 'Hakkında',
@@ -681,7 +754,14 @@ The install will go through. If the neural pass never appears in game, 616.56 is
     setPosters: 'Görseller', setSaved: (n) => `${n} kayıtlı`, setLang: 'Dil',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Oyunlarınıza DLSS 5 kurar, istediğiniz an geri alır.', aboutBy: 'Geliştiren: Rakan Alkhaldi',
     agoNow: 'az önce', agoMin: (n) => `${n} dk önce`, agoHour: (n) => `${n} sa önce`, agoDay: (n) => `${n} gün önce`,
-    artFound: (a, b) => `Görseller: ${b} içinden ${a}`, libReady: (n, d) => `Kitaplık hazır — ${n} oyun, ${d} tanesi DirectX 12`
+    artFound: (a, b) => `Görseller: ${b} içinden ${a}`, libReady: (n, d) => `Kitaplık hazır — ${n} oyun, ${d} tanesi DirectX 12`,
+    updateAvailable: (version) => `Güncelleme var: v${version} ↗`,
+    updateDownload: (version) => `Güncelleme var: v${version}`,
+    updateDownloading: (version, pct) => `v${version} indiriliyor — ${pct}%`,
+    updateDownloadingSize: (version, mb) => `v${version} indiriliyor — ${mb} MB`,
+    updateReady: (version) => `v${version} yüklemek için yeniden başlat`,
+    updateFailed: () => 'Güncelleme başarısız — sürümler sayfasını aç ↗',
+    updateCheckFailed: () => 'Güncelleme denetimi yapılamadı — bu, güncel olduğunuz anlamına gelmez.'
   },
   pl: {
     navHome: 'Start', navGames: 'Gry', navHistory: 'Historia', navSettings: 'Ustawienia', navAbout: 'O programie',
@@ -711,7 +791,14 @@ The install will go through. If the neural pass never appears in game, 616.56 is
     setPosters: 'Okładki', setSaved: (n) => `zapisano ${n}`, setLang: 'Język',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Instaluje DLSS 5 w twoich grach i w każdej chwili przywraca oryginały.', aboutBy: 'Autor: Rakan Alkhaldi',
     agoNow: 'przed chwilą', agoMin: (n) => `${n} min temu`, agoHour: (n) => `${n} godz. temu`, agoDay: (n) => `${n} dni temu`,
-    artFound: (a, b) => `Okładki: ${a} z ${b}`, libReady: (n, d) => `Biblioteka gotowa — ${n} gier, ${d} na DirectX 12`
+    artFound: (a, b) => `Okładki: ${a} z ${b}`, libReady: (n, d) => `Biblioteka gotowa — ${n} gier, ${d} na DirectX 12`,
+    updateAvailable: (version) => `Dostępna aktualizacja: v${version} ↗`,
+    updateDownload: (version) => `Dostępna aktualizacja: v${version}`,
+    updateDownloading: (version, pct) => `Pobieranie v${version} — ${pct}%`,
+    updateDownloadingSize: (version, mb) => `Pobieranie v${version} — ${mb} MB`,
+    updateReady: (version) => `Uruchom ponownie, aby zainstalować v${version}`,
+    updateFailed: () => 'Aktualizacja nie powiodła się — otwórz stronę wydań ↗',
+    updateCheckFailed: () => 'Nie można sprawdzić aktualizacji — to nie znaczy, że masz najnowszą wersję.'
   }
 };
 

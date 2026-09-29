@@ -22,7 +22,7 @@ function load(root) {
     on: (name, fn) => windowEvents.set(name, fn),
     once() {}, loadFile() {}, show() {}, focus() {}, restore() {},
     isMinimized: () => false, isDestroyed: () => false, hide() { win.hidden = true; },
-    hidden: false, webContents: { on() {}, send() {} }
+    hidden: false, webContents: { on() {}, send() {}, setWindowOpenHandler() {} }
   };
   const tray = {
     made: 0, destroyed: false, tip: null,

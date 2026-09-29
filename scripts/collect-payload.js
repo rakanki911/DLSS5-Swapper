@@ -92,9 +92,14 @@ function findSource() {
 }
 
 // Only an "Addon" build can load the DLSS 5 add-on; pick the newest one.
-function findReShadeSetup() {
+// Extra dirs (the DLSS source / --payload path) are searched first so a setup
+// kept beside the Streamline files is enough for a build.
+function findReShadeSetup(extraDirs = []) {
   const found = [];
-  for (const dir of RESHADE_DIRS) {
+  const seen = new Set();
+  for (const dir of [...extraDirs, ...RESHADE_DIRS]) {
+    if (!dir || seen.has(dir)) continue;
+    seen.add(dir);
     let entries = [];
     try { entries = fs.readdirSync(dir); } catch { continue; }
     for (const name of entries) {
@@ -349,12 +354,12 @@ const overlayBuild = overlayBuilds.find((f) => fs.existsSync(f));
 if (overlayBuild) copyFile(overlayBuild, path.join(OVERLAY_BIN, 'dlss5-lab-overlay.addon64'));
 else console.warn('  ! overlay add-on not built - the Overlay page will offer no built-in entry');
 
-const reshade = findReShadeSetup();
+const reshade = findReShadeSetup([source.dir]);
 if (!reshade) {
   // Warning-and-continue here once shipped a build that silently could not
   // install ReShade, which is half of what the app does. Stop instead.
-  console.error('\nReShade_Setup_*_Addon.exe not found in Downloads or Desktop.');
-  console.error('Get the Addon build from https://reshade.me, put it in Downloads, and run again.');
+  console.error('\nReShade_Setup_*_Addon.exe not found beside the DLSS source, in vendor/, Downloads, or Desktop.');
+  console.error('Get the Addon build from https://reshade.me, put it next to the folder you passed (or in Downloads/Desktop), and run again.');
   process.exit(1);
 }
 copyFile(reshade.file, path.join(PAYLOAD, reshade.name));

@@ -30,6 +30,8 @@ const renderingApi = require('./src/shared/rendering-api');
 const { projectUrl } = require('./src/core/project-links');
 const optiscaler = require('./src/core/optiscaler');
 const { missingPayload } = require('./src/core/payload-guidance');
+const appUpdate = require('./src/core/app-update');
+const { spawn } = require('child_process');
 const backends = require('./src/core/backend-manager');
 const journal = require('./src/core/file-journal');
 const guards = require('./src/core/install-guards');
@@ -345,8 +347,8 @@ function ensureTray() {
 // an installed copy runs from where it was installed. Which one is speaking
 // changes what the person should do about a missing payload.
 const runningPortable = () =>
-  Boolean(process.env.PORTABLE_EXECUTABLE_DIR) ||
-  /[\/]Temp[\/]/i.test(process.resourcesPath || '');
+  Boolean(process.env.PORTABLE_EXECUTABLE_DIR || process.env.PORTABLE_EXECUTABLE_FILE) ||
+  /(?:^|[\\/])Temp[\\/]/i.test(process.resourcesPath || '');
 
 const payloadMissing = () => missingPayload({
   packaged: app.isPackaged,
@@ -375,6 +377,10 @@ function createWindow() {
     }
   });
   win.loadFile(path.join(__dirname, 'src', 'renderer', 'index.html'));
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', (event, url) => {
+    if (/^https?:/i.test(url)) event.preventDefault();
+  });
   win.once('ready-to-show', () => win.show());
   // Close hides to the tray unless the person turned that off, or unless the
   // app is genuinely quitting - Quit in the tray menu, or the OS asking.
@@ -1565,11 +1571,11 @@ ipcMain.handle('art-fetch', async (_event, dir, name, appid) => {
 
 // ---------- installing ----------
 
-// Releases move quickly and nothing here updates itself, so someone can sit
-// on a build for weeks without knowing. One lookup per launch, no identifiers
-// sent, no download started: the answer is a version number and a link the
-// person may click. Any failure is silence - this must never delay a start.
+// Releases move quickly. One lookup per launch, no identifiers sent, and no
+// download until the person clicks: the payload is hundreds of megabytes.
 let updateAnswer = null;
+let pendingRelease = null;
+let updateJob = null;
 // Nothing wrote the app's own failures down anywhere, so a crash left the
 // person with nothing to report but a description. Keep the last few in
 // userData, bounded, and let the diagnostics file carry them.
@@ -1591,17 +1597,34 @@ if (typeof process !== 'undefined' && typeof process.on === 'function') {
   process.on('unhandledRejection', (reason) => recordCrash('unhandledRejection', reason));
 }
 
-const releaseTag = /^v?(\d+)\.(\d+)\.(\d+)/;
-function newerRelease(current, latest) {
-  const a = releaseTag.exec(current), b = releaseTag.exec(latest);
-  if (!a || !b) return false;
-  for (let i = 1; i <= 3; i++) {
-    if (Number(b[i]) > Number(a[i])) return true;
-    if (Number(b[i]) < Number(a[i])) return false;
-  }
-  return false;
+function updateChannelNow() {
+  return appUpdate.updateChannel({
+    packaged: app.isPackaged,
+    portable: runningPortable(),
+    platform: process.platform
+  });
 }
-ipcMain.handle('update-check', async () => {
+
+function publicUpdateAnswer({ current, latest, newer, canInstall }) {
+  return {
+    current,
+    latest,
+    newer: Boolean(newer),
+    channel: updateChannelNow(),
+    canInstall: Boolean(canInstall)
+  };
+}
+
+function sendUpdateProgress(info) {
+  if (win && !win.isDestroyed()) win.webContents.send('update-progress', info);
+}
+
+function launchDownloadedUpdate(file, args) {
+  spawn(file, args, { detached: true, stdio: 'ignore' }).unref();
+  app.quit();
+}
+
+async function lookupUpdate() {
   if (updateAnswer) return updateAnswer;
   const current = app.getVersion();
   try {
@@ -1612,13 +1635,56 @@ ipcMain.handle('update-check', async () => {
     if (!response.ok) throw Error(String(response.status));
     const release = await response.json();
     const latest = String(release.tag_name || '').replace(/^v/, '');
-    updateAnswer = { current, latest, newer: newerRelease(current, latest) };
+    const newer = appUpdate.newerRelease(current, latest);
+    const asset = newer ? appUpdate.pickAsset(release, updateChannelNow()) : null;
+    pendingRelease = asset ? release : null;
+    updateAnswer = publicUpdateAnswer({ current, latest, newer, canInstall: Boolean(asset) });
   } catch {
     // Offline, rate-limited or blocked: say nothing rather than worry anyone.
-    updateAnswer = { current, latest: null, newer: false };
+    pendingRelease = null;
+    updateAnswer = publicUpdateAnswer({ current, latest: null, newer: false, canInstall: false });
   }
   return updateAnswer;
+}
+
+ipcMain.handle('update-check', lookupUpdate);
+
+ipcMain.handle('update-download', async () => {
+  if (updateJob && updateJob.file && fs.existsSync(updateJob.file)) return { ok: true };
+  if (updateJob && updateJob.downloading) return { ok: false, code: 'updateBusy' };
+  const answer = await lookupUpdate();
+  const channel = updateChannelNow();
+  const asset = pendingRelease ? appUpdate.pickAsset(pendingRelease, channel) : null;
+  if (!answer.canInstall || !asset || !asset.browser_download_url) return { ok: false, code: 'updateUnavailable' };
+  const current = app.getVersion();
+  const headers = { 'User-Agent': `DLSS5-Swapper/${current}` };
+  const dest = channel === 'portable'
+    ? path.join(process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(app.getPath('exe')), asset.name)
+    : path.join(app.getPath('userData'), 'updates', asset.name);
+  updateJob = { downloading: true, file: null, channel };
+  try {
+    const sidecars = await appUpdate.loadSidecars(pendingRelease.assets, fetch, headers);
+    const got = await appUpdate.downloadTo(asset.browser_download_url, dest, {
+      headers,
+      onProgress: (info) => sendUpdateProgress(info)
+    });
+    appUpdate.verifyDownload(got, asset, sidecars);
+    updateJob = { downloading: false, file: dest, channel };
+    return { ok: true };
+  } catch (error) {
+    updateJob = null;
+    try { fs.unlinkSync(dest); } catch { /* a failed file must not be offered as ready */ }
+    return { ok: false, code: error.code || 'updateFailed', message: error.message };
+  }
 });
+
+ipcMain.handle('update-apply', async () => {
+  if (!updateJob || !updateJob.file || !fs.existsSync(updateJob.file)) return { ok: false, code: 'updateUnavailable' };
+  const args = updateJob.channel === 'nsis' ? ['/S', '--updated'] : [];
+  launchDownloadedUpdate(updateJob.file, args);
+  return { ok: true };
+});
+
 ipcMain.handle('details', async (_event, dir) => {
   const detailsPayload = payload();
   const scan = await scanGame(dir);

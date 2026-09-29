@@ -569,7 +569,8 @@ select option { background: var(--panel); color: var(--text); }
 /* Only there when a newer release exists; it is a link, never a nag. */
 .status-update {
   display: block; margin: 6px 0 2px; font-size: 11.5px; font-weight: 600;
-  color: var(--accent); text-decoration: none;
+  color: var(--accent); text-decoration: none; cursor: pointer;
+  background: none; border: 0; padding: 0; font-family: inherit; text-align: inherit; width: 100%;
 }
 .status-update:hover { text-decoration: underline; }
 /* A check that could not run is worth saying, but quietly: it is not news. */

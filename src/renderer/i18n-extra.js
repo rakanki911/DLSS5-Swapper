@@ -31,7 +31,14 @@ add({ code: 'zh-TW', label: 'Chinese (Traditional)', native: '繁體中文', dir
   setPosters: '封面', setSaved: (n) => `已儲存 ${n} 個`, setLang: '語言',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: '為你的遊戲裝上 DLSS 5，也能隨時還原。', aboutBy: '由 Rakan Alkhaldi 開發',
   agoNow: '剛剛', agoMin: (n) => `${n} 分鐘前`, agoHour: (n) => `${n} 小時前`, agoDay: (n) => `${n} 天前`,
-  artFound: (a, b) => `封面：${b} 個中找到 ${a} 個`, libReady: (n, d) => `程式庫就緒 — ${n} 個遊戲，${d} 個使用 DirectX 12`
+  artFound: (a, b) => `封面：${b} 個中找到 ${a} 個`, libReady: (n, d) => `程式庫就緒 — ${n} 個遊戲，${d} 個使用 DirectX 12`,
+  updateAvailable: (version) => `有可用更新：v${version} ↗`,
+  updateDownload: (version) => `有可用更新：v${version}`,
+  updateDownloading: (version, pct) => `正在下載 v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `正在下載 v${version} — ${mb} MB`,
+  updateReady: (version) => `重新啟動以安裝 v${version}`,
+  updateFailed: () => '更新失敗 — 開啟發行頁面 ↗',
+  updateCheckFailed: () => '無法檢查更新 — 這並不表示你已是最新版。'
 });
 
 add({ code: 'uk', label: 'Ukrainian', native: 'Українська', dir: 'ltr' }, {
@@ -62,7 +69,14 @@ add({ code: 'uk', label: 'Ukrainian', native: 'Українська', dir: 'ltr'
   setPosters: 'Обкладинки', setSaved: (n) => `збережено ${n}`, setLang: 'Мова',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Встановлює DLSS 5 у ваші ігри й будь-коли повертає все як було.', aboutBy: 'Автор — Rakan Alkhaldi',
   agoNow: 'щойно', agoMin: (n) => `${n} хв тому`, agoHour: (n) => `${n} год тому`, agoDay: (n) => `${n} дн тому`,
-  artFound: (a, b) => `Обкладинки: ${a} з ${b}`, libReady: (n, d) => `Бібліотека готова — ${n} ігор, ${d} на DirectX 12`
+  artFound: (a, b) => `Обкладинки: ${a} з ${b}`, libReady: (n, d) => `Бібліотека готова — ${n} ігор, ${d} на DirectX 12`,
+  updateAvailable: (version) => `Доступне оновлення: v${version} ↗`,
+  updateDownload: (version) => `Доступне оновлення: v${version}`,
+  updateDownloading: (version, pct) => `Завантаження v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Завантаження v${version} — ${mb} MB`,
+  updateReady: (version) => `Перезапустіть, щоб установити v${version}`,
+  updateFailed: () => 'Не вдалося оновити — відкрийте сторінку випусків ↗',
+  updateCheckFailed: () => 'Перевірка оновлень недоступна — це не означає, що у вас остання версія.'
 });
 
 add({ code: 'nl', label: 'Dutch', native: 'Nederlands', dir: 'ltr' }, {
@@ -93,7 +107,14 @@ add({ code: 'nl', label: 'Dutch', native: 'Nederlands', dir: 'ltr' }, {
   setPosters: 'Covers', setSaved: (n) => `${n} opgeslagen`, setLang: 'Taal',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Zet DLSS 5 in je games en zet de originelen terug wanneer je wilt.', aboutBy: 'Gemaakt door Rakan Alkhaldi',
   agoNow: 'zojuist', agoMin: (n) => `${n} min geleden`, agoHour: (n) => `${n} u geleden`, agoDay: (n) => `${n} d geleden`,
-  artFound: (a, b) => `Covers: ${a} van ${b}`, libReady: (n, d) => `Bibliotheek klaar — ${n} games, ${d} met DirectX 12`
+  artFound: (a, b) => `Covers: ${a} van ${b}`, libReady: (n, d) => `Bibliotheek klaar — ${n} games, ${d} met DirectX 12`,
+  updateAvailable: (version) => `Update beschikbaar: v${version} ↗`,
+  updateDownload: (version) => `Update beschikbaar: v${version}`,
+  updateDownloading: (version, pct) => `v${version} downloaden — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `v${version} downloaden — ${mb} MB`,
+  updateReady: (version) => `Opnieuw starten om v${version} te installeren`,
+  updateFailed: () => 'Update mislukt — open de releases-pagina ↗',
+  updateCheckFailed: () => 'Updatecontrole niet beschikbaar — dit betekent niet dat je up-to-date bent.'
 });
 
 add({ code: 'cs', label: 'Czech', native: 'Čeština', dir: 'ltr' }, {
@@ -124,7 +145,14 @@ add({ code: 'cs', label: 'Czech', native: 'Čeština', dir: 'ltr' }, {
   setPosters: 'Obaly', setSaved: (n) => `uloženo ${n}`, setLang: 'Jazyk',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Nainstaluje DLSS 5 do vašich her a kdykoli vrátí původní soubory.', aboutBy: 'Vytvořil Rakan Alkhaldi',
   agoNow: 'právě teď', agoMin: (n) => `před ${n} min`, agoHour: (n) => `před ${n} h`, agoDay: (n) => `před ${n} d`,
-  artFound: (a, b) => `Obaly: ${a} z ${b}`, libReady: (n, d) => `Knihovna připravena — ${n} her, ${d} na DirectX 12`
+  artFound: (a, b) => `Obaly: ${a} z ${b}`, libReady: (n, d) => `Knihovna připravena — ${n} her, ${d} na DirectX 12`,
+  updateAvailable: (version) => `Je k dispozici aktualizace: v${version} ↗`,
+  updateDownload: (version) => `Je k dispozici aktualizace: v${version}`,
+  updateDownloading: (version, pct) => `Stahování v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Stahování v${version} — ${mb} MB`,
+  updateReady: (version) => `Restartujte pro instalaci v${version}`,
+  updateFailed: () => 'Aktualizace se nezdařila — otevřít stránku vydání ↗',
+  updateCheckFailed: () => 'Kontrolu aktualizací nelze spustit — to neznamená, že máte aktuální verzi.'
 });
 
 add({ code: 'hu', label: 'Hungarian', native: 'Magyar', dir: 'ltr' }, {
@@ -155,7 +183,14 @@ add({ code: 'hu', label: 'Hungarian', native: 'Magyar', dir: 'ltr' }, {
   setPosters: 'Borítók', setSaved: (n) => `${n} mentve`, setLang: 'Nyelv',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Telepíti a DLSS 5-öt a játékaidba, és bármikor visszaállít mindent.', aboutBy: 'Készítette: Rakan Alkhaldi',
   agoNow: 'az imént', agoMin: (n) => `${n} perce`, agoHour: (n) => `${n} órája`, agoDay: (n) => `${n} napja`,
-  artFound: (a, b) => `Borítók: ${b} közül ${a}`, libReady: (n, d) => `Könyvtár kész — ${n} játék, ${d} DirectX 12-vel`
+  artFound: (a, b) => `Borítók: ${b} közül ${a}`, libReady: (n, d) => `Könyvtár kész — ${n} játék, ${d} DirectX 12-vel`,
+  updateAvailable: (version) => `Frissítés érhető el: v${version} ↗`,
+  updateDownload: (version) => `Frissítés érhető el: v${version}`,
+  updateDownloading: (version, pct) => `v${version} letöltése — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `v${version} letöltése — ${mb} MB`,
+  updateReady: (version) => `Indítsa újra a v${version} telepítéséhez`,
+  updateFailed: () => 'A frissítés sikertelen — nyissa meg a kiadások oldalát ↗',
+  updateCheckFailed: () => 'A frissítésellenőrzés nem érhető el — ez nem azt jelenti, hogy naprakész.'
 });
 
 add({ code: 'ro', label: 'Romanian', native: 'Română', dir: 'ltr' }, {
@@ -186,7 +221,14 @@ add({ code: 'ro', label: 'Romanian', native: 'Română', dir: 'ltr' }, {
   setPosters: 'Coperți', setSaved: (n) => `${n} salvate`, setLang: 'Limbă',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Instalează DLSS 5 în jocurile tale și restaurează originalele oricând.', aboutBy: 'Creat de Rakan Alkhaldi',
   agoNow: 'chiar acum', agoMin: (n) => `acum ${n} min`, agoHour: (n) => `acum ${n} h`, agoDay: (n) => `acum ${n} z`,
-  artFound: (a, b) => `Coperți: ${a} din ${b}`, libReady: (n, d) => `Bibliotecă gata — ${n} jocuri, ${d} pe DirectX 12`
+  artFound: (a, b) => `Coperți: ${a} din ${b}`, libReady: (n, d) => `Bibliotecă gata — ${n} jocuri, ${d} pe DirectX 12`,
+  updateAvailable: (version) => `Actualizare disponibilă: v${version} ↗`,
+  updateDownload: (version) => `Actualizare disponibilă: v${version}`,
+  updateDownloading: (version, pct) => `Se descarcă v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Se descarcă v${version} — ${mb} MB`,
+  updateReady: (version) => `Repornește pentru a instala v${version}`,
+  updateFailed: () => 'Actualizarea a eșuat — deschide pagina de versiuni ↗',
+  updateCheckFailed: () => 'Verificarea actualizărilor nu este disponibilă — asta nu înseamnă că ești la zi.'
 });
 
 add({ code: 'el', label: 'Greek', native: 'Ελληνικά', dir: 'ltr' }, {
@@ -217,7 +259,14 @@ add({ code: 'el', label: 'Greek', native: 'Ελληνικά', dir: 'ltr' }, {
   setPosters: 'Εξώφυλλα', setSaved: (n) => `${n} αποθηκευμένα`, setLang: 'Γλώσσα',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Βάζει το DLSS 5 στα παιχνίδια σας και επαναφέρει τα αρχικά όποτε θέλετε.', aboutBy: 'Από τον Rakan Alkhaldi',
   agoNow: 'μόλις τώρα', agoMin: (n) => `πριν ${n} λ`, agoHour: (n) => `πριν ${n} ώ`, agoDay: (n) => `πριν ${n} ημ`,
-  artFound: (a, b) => `Εξώφυλλα: ${a} από ${b}`, libReady: (n, d) => `Η βιβλιοθήκη είναι έτοιμη — ${n} παιχνίδια, ${d} σε DirectX 12`
+  artFound: (a, b) => `Εξώφυλλα: ${a} από ${b}`, libReady: (n, d) => `Η βιβλιοθήκη είναι έτοιμη — ${n} παιχνίδια, ${d} σε DirectX 12`,
+  updateAvailable: (version) => `Διαθέσιμη ενημέρωση: v${version} ↗`,
+  updateDownload: (version) => `Διαθέσιμη ενημέρωση: v${version}`,
+  updateDownloading: (version, pct) => `Λήψη του v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Λήψη του v${version} — ${mb} MB`,
+  updateReady: (version) => `Επανεκκίνηση για εγκατάσταση του v${version}`,
+  updateFailed: () => 'Αποτυχία ενημέρωσης — ανοίξτε τη σελίδα εκδόσεων ↗',
+  updateCheckFailed: () => 'Ο έλεγχος ενημερώσεων δεν είναι διαθέσιμος — αυτό δεν σημαίνει ότι είστε ενημερωμένοι.'
 });
 
 add({ code: 'sv', label: 'Swedish', native: 'Svenska', dir: 'ltr' }, {
@@ -248,7 +297,14 @@ add({ code: 'sv', label: 'Swedish', native: 'Svenska', dir: 'ltr' }, {
   setPosters: 'Omslag', setSaved: (n) => `${n} sparade`, setLang: 'Språk',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Lägger in DLSS 5 i dina spel och återställer originalen när du vill.', aboutBy: 'Byggd av Rakan Alkhaldi',
   agoNow: 'nyss', agoMin: (n) => `${n} min sedan`, agoHour: (n) => `${n} tim sedan`, agoDay: (n) => `${n} d sedan`,
-  artFound: (a, b) => `Omslag: ${a} av ${b}`, libReady: (n, d) => `Biblioteket klart — ${n} spel, ${d} med DirectX 12`
+  artFound: (a, b) => `Omslag: ${a} av ${b}`, libReady: (n, d) => `Biblioteket klart — ${n} spel, ${d} med DirectX 12`,
+  updateAvailable: (version) => `Uppdatering tillgänglig: v${version} ↗`,
+  updateDownload: (version) => `Uppdatering tillgänglig: v${version}`,
+  updateDownloading: (version, pct) => `Hämtar v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Hämtar v${version} — ${mb} MB`,
+  updateReady: (version) => `Starta om för att installera v${version}`,
+  updateFailed: () => 'Uppdateringen misslyckades — öppna utgåvesidan ↗',
+  updateCheckFailed: () => 'Uppdateringskontrollen är inte tillgänglig — det betyder inte att du är uppdaterad.'
 });
 
 add({ code: 'da', label: 'Danish', native: 'Dansk', dir: 'ltr' }, {
@@ -279,7 +335,14 @@ add({ code: 'da', label: 'Danish', native: 'Dansk', dir: 'ltr' }, {
   setPosters: 'Covers', setSaved: (n) => `${n} gemt`, setLang: 'Sprog',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Sætter DLSS 5 ind i dine spil og gendanner originalerne, når du vil.', aboutBy: 'Bygget af Rakan Alkhaldi',
   agoNow: 'lige nu', agoMin: (n) => `${n} min siden`, agoHour: (n) => `${n} t siden`, agoDay: (n) => `${n} d siden`,
-  artFound: (a, b) => `Covers: ${a} af ${b}`, libReady: (n, d) => `Bibliotek klar — ${n} spil, ${d} med DirectX 12`
+  artFound: (a, b) => `Covers: ${a} af ${b}`, libReady: (n, d) => `Bibliotek klar — ${n} spil, ${d} med DirectX 12`,
+  updateAvailable: (version) => `Opdatering tilgængelig: v${version} ↗`,
+  updateDownload: (version) => `Opdatering tilgængelig: v${version}`,
+  updateDownloading: (version, pct) => `Henter v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Henter v${version} — ${mb} MB`,
+  updateReady: (version) => `Genstart for at installere v${version}`,
+  updateFailed: () => 'Opdatering mislykkedes — åbn udgivelsessiden ↗',
+  updateCheckFailed: () => 'Opdateringstjek er ikke tilgængeligt — det betyder ikke, at du er opdateret.'
 });
 
 add({ code: 'nb', label: 'Norwegian', native: 'Norsk', dir: 'ltr' }, {
@@ -310,7 +373,14 @@ add({ code: 'nb', label: 'Norwegian', native: 'Norsk', dir: 'ltr' }, {
   setPosters: 'Omslag', setSaved: (n) => `${n} lagret`, setLang: 'Språk',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Setter DLSS 5 inn i spillene dine og gjenoppretter originalene når du vil.', aboutBy: 'Laget av Rakan Alkhaldi',
   agoNow: 'nettopp', agoMin: (n) => `${n} min siden`, agoHour: (n) => `${n} t siden`, agoDay: (n) => `${n} d siden`,
-  artFound: (a, b) => `Omslag: ${a} av ${b}`, libReady: (n, d) => `Biblioteket klart — ${n} spill, ${d} med DirectX 12`
+  artFound: (a, b) => `Omslag: ${a} av ${b}`, libReady: (n, d) => `Biblioteket klart — ${n} spill, ${d} med DirectX 12`,
+  updateAvailable: (version) => `Oppdatering tilgjengelig: v${version} ↗`,
+  updateDownload: (version) => `Oppdatering tilgjengelig: v${version}`,
+  updateDownloading: (version, pct) => `Laster ned v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Laster ned v${version} — ${mb} MB`,
+  updateReady: (version) => `Start på nytt for å installere v${version}`,
+  updateFailed: () => 'Oppdatering mislyktes — åpne utgivelsessiden ↗',
+  updateCheckFailed: () => 'Oppdateringssjekk er ikke tilgjengelig — det betyr ikke at du er oppdatert.'
 });
 
 add({ code: 'fi', label: 'Finnish', native: 'Suomi', dir: 'ltr' }, {
@@ -341,7 +411,14 @@ add({ code: 'fi', label: 'Finnish', native: 'Suomi', dir: 'ltr' }, {
   setPosters: 'Kansikuvat', setSaved: (n) => `${n} tallennettu`, setLang: 'Kieli',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Asentaa DLSS 5:n peleihisi ja palauttaa alkuperäiset milloin haluat.', aboutBy: 'Tekijä: Rakan Alkhaldi',
   agoNow: 'juuri nyt', agoMin: (n) => `${n} min sitten`, agoHour: (n) => `${n} t sitten`, agoDay: (n) => `${n} pv sitten`,
-  artFound: (a, b) => `Kansikuvat: ${a}/${b}`, libReady: (n, d) => `Kirjasto valmis — ${n} peliä, ${d} DirectX 12:lla`
+  artFound: (a, b) => `Kansikuvat: ${a}/${b}`, libReady: (n, d) => `Kirjasto valmis — ${n} peliä, ${d} DirectX 12:lla`,
+  updateAvailable: (version) => `Päivitys saatavilla: v${version} ↗`,
+  updateDownload: (version) => `Päivitys saatavilla: v${version}`,
+  updateDownloading: (version, pct) => `Ladataan v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Ladataan v${version} — ${mb} MB`,
+  updateReady: (version) => `Käynnistä uudelleen asentaaksesi v${version}`,
+  updateFailed: () => 'Päivitys epäonnistui — avaa julkaisusivu ↗',
+  updateCheckFailed: () => 'Päivitystarkistus ei ole käytettävissä — tämä ei tarkoita, että versiosi on ajan tasalla.'
 });
 
 add({ code: 'th', label: 'Thai', native: 'ไทย', dir: 'ltr' }, {
@@ -372,7 +449,14 @@ add({ code: 'th', label: 'Thai', native: 'ไทย', dir: 'ltr' }, {
   setPosters: 'ภาพปก', setSaved: (n) => `บันทึกแล้ว ${n}`, setLang: 'ภาษา',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'ติดตั้ง DLSS 5 ให้เกมของคุณ และคืนค่าไฟล์เดิมได้ทุกเมื่อ', aboutBy: 'สร้างโดย Rakan Alkhaldi',
   agoNow: 'เมื่อสักครู่', agoMin: (n) => `${n} นาทีที่แล้ว`, agoHour: (n) => `${n} ชม.ที่แล้ว`, agoDay: (n) => `${n} วันที่แล้ว`,
-  artFound: (a, b) => `ภาพปก: ${a} จาก ${b}`, libReady: (n, d) => `คลังพร้อมแล้ว — ${n} เกม, ${d} ใช้ DirectX 12`
+  artFound: (a, b) => `ภาพปก: ${a} จาก ${b}`, libReady: (n, d) => `คลังพร้อมแล้ว — ${n} เกม, ${d} ใช้ DirectX 12`,
+  updateAvailable: (version) => `มีอัปเดต: v${version} ↗`,
+  updateDownload: (version) => `มีอัปเดต: v${version}`,
+  updateDownloading: (version, pct) => `กำลังดาวน์โหลด v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `กำลังดาวน์โหลด v${version} — ${mb} MB`,
+  updateReady: (version) => `เริ่มใหม่เพื่อติดตั้ง v${version}`,
+  updateFailed: () => 'อัปเดตไม่สำเร็จ — เปิดหน้าเผยแพร่ ↗',
+  updateCheckFailed: () => 'ตรวจสอบอัปเดตไม่ได้ — ไม่ได้หมายความว่าคุณเป็นเวอร์ชันล่าสุด'
 });
 
 add({ code: 'vi', label: 'Vietnamese', native: 'Tiếng Việt', dir: 'ltr' }, {
@@ -403,7 +487,14 @@ add({ code: 'vi', label: 'Vietnamese', native: 'Tiếng Việt', dir: 'ltr' }, {
   setPosters: 'Ảnh bìa', setSaved: (n) => `đã lưu ${n}`, setLang: 'Ngôn ngữ',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Cài DLSS 5 vào trò chơi của bạn và khôi phục bản gốc bất cứ lúc nào.', aboutBy: 'Thực hiện bởi Rakan Alkhaldi',
   agoNow: 'vừa xong', agoMin: (n) => `${n} phút trước`, agoHour: (n) => `${n} giờ trước`, agoDay: (n) => `${n} ngày trước`,
-  artFound: (a, b) => `Ảnh bìa: ${a}/${b}`, libReady: (n, d) => `Thư viện sẵn sàng — ${n} trò chơi, ${d} dùng DirectX 12`
+  artFound: (a, b) => `Ảnh bìa: ${a}/${b}`, libReady: (n, d) => `Thư viện sẵn sàng — ${n} trò chơi, ${d} dùng DirectX 12`,
+  updateAvailable: (version) => `Có bản cập nhật: v${version} ↗`,
+  updateDownload: (version) => `Có bản cập nhật: v${version}`,
+  updateDownloading: (version, pct) => `Đang tải v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Đang tải v${version} — ${mb} MB`,
+  updateReady: (version) => `Khởi động lại để cài v${version}`,
+  updateFailed: () => 'Cập nhật thất bại — mở trang phát hành ↗',
+  updateCheckFailed: () => 'Không kiểm tra được cập nhật — điều này không có nghĩa là bạn đã dùng bản mới nhất.'
 });
 
 add({ code: 'id', label: 'Indonesian', native: 'Bahasa Indonesia', dir: 'ltr' }, {
@@ -434,7 +525,14 @@ add({ code: 'id', label: 'Indonesian', native: 'Bahasa Indonesia', dir: 'ltr' },
   setPosters: 'Sampul', setSaved: (n) => `${n} tersimpan`, setLang: 'Bahasa',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Memasang DLSS 5 di gim Anda dan mengembalikan berkas asli kapan saja.', aboutBy: 'Dibuat oleh Rakan Alkhaldi',
   agoNow: 'baru saja', agoMin: (n) => `${n} mnt lalu`, agoHour: (n) => `${n} jam lalu`, agoDay: (n) => `${n} hr lalu`,
-  artFound: (a, b) => `Sampul: ${a} dari ${b}`, libReady: (n, d) => `Pustaka siap — ${n} gim, ${d} pakai DirectX 12`
+  artFound: (a, b) => `Sampul: ${a} dari ${b}`, libReady: (n, d) => `Pustaka siap — ${n} gim, ${d} pakai DirectX 12`,
+  updateAvailable: (version) => `Pembaruan tersedia: v${version} ↗`,
+  updateDownload: (version) => `Pembaruan tersedia: v${version}`,
+  updateDownloading: (version, pct) => `Mengunduh v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Mengunduh v${version} — ${mb} MB`,
+  updateReady: (version) => `Mulai ulang untuk memasang v${version}`,
+  updateFailed: () => 'Pembaruan gagal — buka halaman rilis ↗',
+  updateCheckFailed: () => 'Pemeriksaan pembaruan tidak tersedia — ini tidak berarti Anda sudah yang terbaru.'
 });
 
 add({ code: 'ms', label: 'Malay', native: 'Bahasa Melayu', dir: 'ltr' }, {
@@ -465,7 +563,14 @@ add({ code: 'ms', label: 'Malay', native: 'Bahasa Melayu', dir: 'ltr' }, {
   setPosters: 'Kulit', setSaved: (n) => `${n} disimpan`, setLang: 'Bahasa',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Memasang DLSS 5 dalam permainan anda dan memulihkan fail asal bila-bila masa.', aboutBy: 'Dibina oleh Rakan Alkhaldi',
   agoNow: 'sebentar tadi', agoMin: (n) => `${n} min lalu`, agoHour: (n) => `${n} jam lalu`, agoDay: (n) => `${n} hari lalu`,
-  artFound: (a, b) => `Kulit: ${a} daripada ${b}`, libReady: (n, d) => `Pustaka sedia — ${n} permainan, ${d} guna DirectX 12`
+  artFound: (a, b) => `Kulit: ${a} daripada ${b}`, libReady: (n, d) => `Pustaka sedia — ${n} permainan, ${d} guna DirectX 12`,
+  updateAvailable: (version) => `Kemas kini tersedia: v${version} ↗`,
+  updateDownload: (version) => `Kemas kini tersedia: v${version}`,
+  updateDownloading: (version, pct) => `Memuat turun v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Memuat turun v${version} — ${mb} MB`,
+  updateReady: (version) => `Mulakan semula untuk memasang v${version}`,
+  updateFailed: () => 'Kemas kini gagal — buka halaman keluaran ↗',
+  updateCheckFailed: () => 'Semakan kemas kini tidak tersedia — ini tidak bermakna anda sudah terkini.'
 });
 
 add({ code: 'fil', label: 'Filipino', native: 'Filipino', dir: 'ltr' }, {
@@ -496,7 +601,14 @@ add({ code: 'fil', label: 'Filipino', native: 'Filipino', dir: 'ltr' }, {
   setPosters: 'Mga cover', setSaved: (n) => `${n} na-save`, setLang: 'Wika',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Naglalagay ng DLSS 5 sa mga laro mo, at ibinabalik ang orihinal anumang oras.', aboutBy: 'Ginawa ni Rakan Alkhaldi',
   agoNow: 'ngayon lang', agoMin: (n) => `${n} min ang nakaraan`, agoHour: (n) => `${n} oras ang nakaraan`, agoDay: (n) => `${n} araw ang nakaraan`,
-  artFound: (a, b) => `Mga cover: ${a} sa ${b}`, libReady: (n, d) => `Handa na ang library — ${n} laro, ${d} sa DirectX 12`
+  artFound: (a, b) => `Mga cover: ${a} sa ${b}`, libReady: (n, d) => `Handa na ang library — ${n} laro, ${d} sa DirectX 12`,
+  updateAvailable: (version) => `May available na update: v${version} ↗`,
+  updateDownload: (version) => `May available na update: v${version}`,
+  updateDownloading: (version, pct) => `Dina-download ang v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Dina-download ang v${version} — ${mb} MB`,
+  updateReady: (version) => `I-restart para i-install ang v${version}`,
+  updateFailed: () => 'Hindi na-update — buksan ang releases page ↗',
+  updateCheckFailed: () => 'Hindi available ang update check — hindi ibig sabihin na latest ka na.'
 });
 
 add({ code: 'hi', label: 'Hindi', native: 'हिन्दी', dir: 'ltr' }, {
@@ -527,7 +639,14 @@ add({ code: 'hi', label: 'Hindi', native: 'हिन्दी', dir: 'ltr' }, {
   setPosters: 'कवर', setSaved: (n) => `${n} सहेजे`, setLang: 'भाषा',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'आपके गेम में DLSS 5 इंस्टॉल करता है, और जब चाहें मूल फ़ाइलें लौटा देता है।', aboutBy: 'निर्माता: Rakan Alkhaldi',
   agoNow: 'अभी', agoMin: (n) => `${n} मिनट पहले`, agoHour: (n) => `${n} घंटे पहले`, agoDay: (n) => `${n} दिन पहले`,
-  artFound: (a, b) => `कवर: ${b} में से ${a}`, libReady: (n, d) => `लाइब्रेरी तैयार — ${n} गेम, ${d} DirectX 12 पर`
+  artFound: (a, b) => `कवर: ${b} में से ${a}`, libReady: (n, d) => `लाइब्रेरी तैयार — ${n} गेम, ${d} DirectX 12 पर`,
+  updateAvailable: (version) => `अपडेट उपलब्ध: v${version} ↗`,
+  updateDownload: (version) => `अपडेट उपलब्ध: v${version}`,
+  updateDownloading: (version, pct) => `v${version} डाउनलोड हो रहा है — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `v${version} डाउनलोड हो रहा है — ${mb} MB`,
+  updateReady: (version) => `v${version} इंस्टॉल करने के लिए फिर से शुरू करें`,
+  updateFailed: () => 'अपडेट विफल — रिलीज़ पृष्ठ खोलें ↗',
+  updateCheckFailed: () => 'अपडेट जाँच उपलब्ध नहीं — इसका मतलब यह नहीं कि आप अप टू डेट हैं।'
 });
 
 add({ code: 'bn', label: 'Bengali', native: 'বাংলা', dir: 'ltr' }, {
@@ -558,7 +677,14 @@ add({ code: 'bn', label: 'Bengali', native: 'বাংলা', dir: 'ltr' }, {
   setPosters: 'কভার', setSaved: (n) => `${n} সংরক্ষিত`, setLang: 'ভাষা',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'আপনার গেমে DLSS 5 ইনস্টল করে, আর যখন খুশি আসল ফাইল ফিরিয়ে দেয়।', aboutBy: 'তৈরি করেছেন Rakan Alkhaldi',
   agoNow: 'এইমাত্র', agoMin: (n) => `${n} মিনিট আগে`, agoHour: (n) => `${n} ঘণ্টা আগে`, agoDay: (n) => `${n} দিন আগে`,
-  artFound: (a, b) => `কভার: ${b}-এর মধ্যে ${a}`, libReady: (n, d) => `লাইব্রেরি প্রস্তুত — ${n} গেম, ${d} DirectX 12-এ`
+  artFound: (a, b) => `কভার: ${b}-এর মধ্যে ${a}`, libReady: (n, d) => `লাইব্রেরি প্রস্তুত — ${n} গেম, ${d} DirectX 12-এ`,
+  updateAvailable: (version) => `আপডেট পাওয়া যাচ্ছে: v${version} ↗`,
+  updateDownload: (version) => `আপডেট পাওয়া যাচ্ছে: v${version}`,
+  updateDownloading: (version, pct) => `v${version} ডাউনলোড হচ্ছে — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `v${version} ডাউনলোড হচ্ছে — ${mb} MB`,
+  updateReady: (version) => `v${version} ইনস্টল করতে আবার চালু করুন`,
+  updateFailed: () => 'আপডেট ব্যর্থ — রিলিজ পাতা খুলুন ↗',
+  updateCheckFailed: () => 'আপডেট যাচাই করা যায়নি — এর অর্থ এই নয় যে আপনি আপ টু ডেট।'
 });
 
 add({ code: 'fa', label: 'Persian', native: 'فارسی', dir: 'rtl' }, {
@@ -589,7 +715,14 @@ add({ code: 'fa', label: 'Persian', native: 'فارسی', dir: 'rtl' }, {
   setPosters: 'تصاویر', setSaved: (n) => `${n} ذخیره شد`, setLang: 'زبان',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'DLSS 5 را در بازی‌های شما نصب می‌کند و هر وقت بخواهید همه‌چیز را برمی‌گرداند.', aboutBy: 'ساختهٔ Rakan Alkhaldi',
   agoNow: 'همین حالا', agoMin: (n) => `${n} دقیقه پیش`, agoHour: (n) => `${n} ساعت پیش`, agoDay: (n) => `${n} روز پیش`,
-  artFound: (a, b) => `تصاویر: ${a} از ${b}`, libReady: (n, d) => `کتابخانه آماده است — ${n} بازی، ${d} روی DirectX 12`
+  artFound: (a, b) => `تصاویر: ${a} از ${b}`, libReady: (n, d) => `کتابخانه آماده است — ${n} بازی، ${d} روی DirectX 12`,
+  updateAvailable: (version) => `به‌روزرسانی موجود است: v${version} ↗`,
+  updateDownload: (version) => `به‌روزرسانی موجود است: v${version}`,
+  updateDownloading: (version, pct) => `در حال دانلود v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `در حال دانلود v${version} — ${mb} MB`,
+  updateReady: (version) => `برای نصب v${version} دوباره راه‌اندازی کنید`,
+  updateFailed: () => 'به‌روزرسانی ناموفق — صفحه انتشار را باز کنید ↗',
+  updateCheckFailed: () => 'بررسی به‌روزرسانی در دسترس نیست — این به معنای به‌روز بودن شما نیست.'
 });
 
 add({ code: 'ur', label: 'Urdu', native: 'اردو', dir: 'rtl' }, {
@@ -620,7 +753,14 @@ add({ code: 'ur', label: 'Urdu', native: 'اردو', dir: 'rtl' }, {
   setPosters: 'تصاویر', setSaved: (n) => `${n} محفوظ`, setLang: 'زبان',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'آپ کے گیمز میں DLSS 5 انسٹال کرتا ہے، اور جب چاہیں اصل فائلیں واپس لے آتا ہے۔', aboutBy: 'تخلیق: Rakan Alkhaldi',
   agoNow: 'ابھی', agoMin: (n) => `${n} منٹ پہلے`, agoHour: (n) => `${n} گھنٹے پہلے`, agoDay: (n) => `${n} دن پہلے`,
-  artFound: (a, b) => `تصاویر: ${b} میں سے ${a}`, libReady: (n, d) => `لائبریری تیار — ${n} گیمز، ${d} DirectX 12 پر`
+  artFound: (a, b) => `تصاویر: ${b} میں سے ${a}`, libReady: (n, d) => `لائبریری تیار — ${n} گیمز، ${d} DirectX 12 پر`,
+  updateAvailable: (version) => `اپ ڈیٹ دستیاب: v${version} ↗`,
+  updateDownload: (version) => `اپ ڈیٹ دستیاب: v${version}`,
+  updateDownloading: (version, pct) => `v${version} ڈاؤن لوڈ ہو رہا ہے — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `v${version} ڈاؤن لوڈ ہو رہا ہے — ${mb} MB`,
+  updateReady: (version) => `v${version} انسٹال کرنے کے لیے دوبارہ شروع کریں`,
+  updateFailed: () => 'اپ ڈیٹ ناکام — ریلیزز صفحہ کھولیں ↗',
+  updateCheckFailed: () => 'اپ ڈیٹ کی جانچ دستیاب نہیں — اس کا مطلب یہ نہیں کہ آپ تازہ ترین ہیں۔'
 });
 
 add({ code: 'bg', label: 'Bulgarian', native: 'Български', dir: 'ltr' }, {
@@ -651,7 +791,14 @@ add({ code: 'bg', label: 'Bulgarian', native: 'Български', dir: 'ltr' }
   setPosters: 'Корици', setSaved: (n) => `запазени ${n}`, setLang: 'Език',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Слага DLSS 5 в игрите ви и по всяко време връща оригиналите.', aboutBy: 'Създадено от Rakan Alkhaldi',
   agoNow: 'току-що', agoMin: (n) => `преди ${n} мин`, agoHour: (n) => `преди ${n} ч`, agoDay: (n) => `преди ${n} дни`,
-  artFound: (a, b) => `Корици: ${a} от ${b}`, libReady: (n, d) => `Библиотеката е готова — ${n} игри, ${d} на DirectX 12`
+  artFound: (a, b) => `Корици: ${a} от ${b}`, libReady: (n, d) => `Библиотеката е готова — ${n} игри, ${d} на DirectX 12`,
+  updateAvailable: (version) => `Налична е актуализация: v${version} ↗`,
+  updateDownload: (version) => `Налична е актуализация: v${version}`,
+  updateDownloading: (version, pct) => `Изтегляне на v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Изтегляне на v${version} — ${mb} MB`,
+  updateReady: (version) => `Рестартирайте, за да инсталирате v${version}`,
+  updateFailed: () => 'Неуспешна актуализация — отворете страницата с издания ↗',
+  updateCheckFailed: () => 'Проверката за актуализации не е налична — това не означава, че сте с най-новата версия.'
 });
 
 add({ code: 'sr', label: 'Serbian', native: 'Српски', dir: 'ltr' }, {
@@ -682,7 +829,14 @@ add({ code: 'sr', label: 'Serbian', native: 'Српски', dir: 'ltr' }, {
   setPosters: 'Омоти', setSaved: (n) => `сачувано ${n}`, setLang: 'Језик',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Поставља DLSS 5 у ваше игре и у сваком тренутку враћа оригинале.', aboutBy: 'Аутор: Rakan Alkhaldi',
   agoNow: 'управо сада', agoMin: (n) => `пре ${n} мин`, agoHour: (n) => `пре ${n} ч`, agoDay: (n) => `пре ${n} д`,
-  artFound: (a, b) => `Омоти: ${a} од ${b}`, libReady: (n, d) => `Библиотека спремна — ${n} игара, ${d} на DirectX 12`
+  artFound: (a, b) => `Омоти: ${a} од ${b}`, libReady: (n, d) => `Библиотека спремна — ${n} игара, ${d} на DirectX 12`,
+  updateAvailable: (version) => `Доступно је ажурирање: v${version} ↗`,
+  updateDownload: (version) => `Доступно је ажурирање: v${version}`,
+  updateDownloading: (version, pct) => `Преузимање v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Преузимање v${version} — ${mb} MB`,
+  updateReady: (version) => `Поново покрените да бисте инсталирали v${version}`,
+  updateFailed: () => 'Ажурирање није успело — отворите страницу издања ↗',
+  updateCheckFailed: () => 'Провера ажурирања није доступна — то не значи да имате најновију верзију.'
 });
 
 add({ code: 'hr', label: 'Croatian', native: 'Hrvatski', dir: 'ltr' }, {
@@ -713,7 +867,14 @@ add({ code: 'hr', label: 'Croatian', native: 'Hrvatski', dir: 'ltr' }, {
   setPosters: 'Omoti', setSaved: (n) => `spremljeno ${n}`, setLang: 'Jezik',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Postavlja DLSS 5 u vaše igre i u svakom trenutku vraća izvornike.', aboutBy: 'Izradio Rakan Alkhaldi',
   agoNow: 'upravo sada', agoMin: (n) => `prije ${n} min`, agoHour: (n) => `prije ${n} h`, agoDay: (n) => `prije ${n} d`,
-  artFound: (a, b) => `Omoti: ${a} od ${b}`, libReady: (n, d) => `Knjižnica spremna — ${n} igara, ${d} na DirectX 12`
+  artFound: (a, b) => `Omoti: ${a} od ${b}`, libReady: (n, d) => `Knjižnica spremna — ${n} igara, ${d} na DirectX 12`,
+  updateAvailable: (version) => `Dostupno je ažuriranje: v${version} ↗`,
+  updateDownload: (version) => `Dostupno je ažuriranje: v${version}`,
+  updateDownloading: (version, pct) => `Preuzimanje v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Preuzimanje v${version} — ${mb} MB`,
+  updateReady: (version) => `Ponovno pokrenite za instalaciju v${version}`,
+  updateFailed: () => 'Ažuriranje nije uspjelo — otvorite stranicu izdanja ↗',
+  updateCheckFailed: () => 'Provjera ažuriranja nije dostupna — to ne znači da imate najnoviju verziju.'
 });
 
 add({ code: 'sk', label: 'Slovak', native: 'Slovenčina', dir: 'ltr' }, {
@@ -744,7 +905,14 @@ add({ code: 'sk', label: 'Slovak', native: 'Slovenčina', dir: 'ltr' }, {
   setPosters: 'Obaly', setSaved: (n) => `uložené ${n}`, setLang: 'Jazyk',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Nainštaluje DLSS 5 do vašich hier a kedykoľvek vráti pôvodné súbory.', aboutBy: 'Vytvoril Rakan Alkhaldi',
   agoNow: 'práve teraz', agoMin: (n) => `pred ${n} min`, agoHour: (n) => `pred ${n} h`, agoDay: (n) => `pred ${n} d`,
-  artFound: (a, b) => `Obaly: ${a} z ${b}`, libReady: (n, d) => `Knižnica pripravená — ${n} hier, ${d} na DirectX 12`
+  artFound: (a, b) => `Obaly: ${a} z ${b}`, libReady: (n, d) => `Knižnica pripravená — ${n} hier, ${d} na DirectX 12`,
+  updateAvailable: (version) => `Je k dispozícii aktualizácia: v${version} ↗`,
+  updateDownload: (version) => `Je k dispozícii aktualizácia: v${version}`,
+  updateDownloading: (version, pct) => `Sťahovanie v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `Sťahovanie v${version} — ${mb} MB`,
+  updateReady: (version) => `Reštartujte pre inštaláciu v${version}`,
+  updateFailed: () => 'Aktualizácia zlyhala — otvoriť stránku vydaní ↗',
+  updateCheckFailed: () => 'Kontrolu aktualizácií nie je možné spustiť — to neznamená, že máte aktuálnu verziu.'
 });
 
 add({ code: 'ca', label: 'Catalan', native: 'Català', dir: 'ltr' }, {
@@ -775,7 +943,14 @@ add({ code: 'ca', label: 'Catalan', native: 'Català', dir: 'ltr' }, {
   setPosters: 'Caràtules', setSaved: (n) => `${n} desades`, setLang: 'Idioma',
     aboutTitle: 'DLSS 5 Swapper', aboutBody: 'Instal·la DLSS 5 als teus jocs i restaura els originals quan vulguis.', aboutBy: 'Creat per Rakan Alkhaldi',
   agoNow: 'ara mateix', agoMin: (n) => `fa ${n} min`, agoHour: (n) => `fa ${n} h`, agoDay: (n) => `fa ${n} d`,
-  artFound: (a, b) => `Caràtules: ${a} de ${b}`, libReady: (n, d) => `Biblioteca a punt — ${n} jocs, ${d} amb DirectX 12`
+  artFound: (a, b) => `Caràtules: ${a} de ${b}`, libReady: (n, d) => `Biblioteca a punt — ${n} jocs, ${d} amb DirectX 12`,
+  updateAvailable: (version) => `Actualització disponible: v${version} ↗`,
+  updateDownload: (version) => `Actualització disponible: v${version}`,
+  updateDownloading: (version, pct) => `S'està baixant v${version} — ${pct}%`,
+  updateDownloadingSize: (version, mb) => `S'està baixant v${version} — ${mb} MB`,
+  updateReady: (version) => `Reinicia per instal·lar v${version}`,
+  updateFailed: () => `L'actualització ha fallat — obre la pàgina de versions ↗`,
+  updateCheckFailed: () => `La comprovació d'actualitzacions no està disponible — això no vol dir que estiguis al dia.`
 });
 
 })();

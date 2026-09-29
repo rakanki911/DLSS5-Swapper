@@ -9,7 +9,7 @@ const { createRequire } = require('module');
 
 // The update lookup runs in the main process against the real GitHub endpoint.
 // Here the network is a stub, so the test is about what the app concludes.
-function load(t, { version = '2.2.1', fetchImpl } = {}) {
+function load(t, { version = '2.2.1', fetchImpl, packaged = false } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'swapper-update-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const main = path.resolve(__dirname, '../main.js');
@@ -18,7 +18,7 @@ function load(t, { version = '2.2.1', fetchImpl } = {}) {
   const calls = { count: 0 };
   const stubs = {
     electron: {
-      app: { setAppUserModelId() {}, whenReady: () => ({ then() {} }), on() {}, getPath: () => root, getVersion: () => version },
+      app: { setAppUserModelId() {}, whenReady: () => ({ then() {} }), on() {}, getPath: () => root, getVersion: () => version, isPackaged: packaged, quit() {} },
       BrowserWindow: { fromWebContents: () => null },
       Menu: { buildFromTemplate: () => ({ popup() {} }) },
       ipcMain: { handle: (name, fn) => handlers.set(name, fn) },
@@ -89,4 +89,39 @@ test('a failed lookup is distinguishable from being up to date', () => {
   const renderer = fs.readFileSync(path.join(__dirname, '../src/renderer/renderer.js'), 'utf8');
   assert.match(renderer, /if \(!answer\.latest\) \{[\s\S]*updateCheckFailed/,
     'the renderer separates the two before it decides there is no news');
+  assert.match(renderer, /answer\.canInstall/,
+    'packaged Windows copies download here instead of only opening GitHub');
+});
+
+test('the lookup names whether this copy can install the update itself', async (t) => {
+  const { handlers } = load(t, { fetchImpl: async () => release('v9.0.0') });
+  const answer = await handlers.get('update-check')();
+  assert.equal(answer.channel, 'link');
+  assert.equal(answer.canInstall, false, 'from source, or a release with no matching exe, still opens GitHub');
+  assert.equal(typeof answer.canInstall, 'boolean');
+});
+
+test('a packaged portable copy downloads when the matching exe is on the release', async (t) => {
+  const previous = process.env.PORTABLE_EXECUTABLE_DIR;
+  process.env.PORTABLE_EXECUTABLE_DIR = 'C:\\portable';
+  t.after(() => {
+    if (previous === undefined) delete process.env.PORTABLE_EXECUTABLE_DIR;
+    else process.env.PORTABLE_EXECUTABLE_DIR = previous;
+  });
+  const { handlers } = load(t, {
+    packaged: true,
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({
+        tag_name: 'v9.0.0',
+        assets: [
+          { name: 'DLSS5-Swapper-Setup-9.0.0.exe', browser_download_url: 'https://example.invalid/setup.exe' },
+          { name: 'DLSS5-Swapper-9.0.0-portable.exe', browser_download_url: 'https://example.invalid/portable.exe' }
+        ]
+      })
+    })
+  });
+  const answer = await handlers.get('update-check')();
+  assert.equal(answer.channel, 'portable');
+  assert.equal(answer.canInstall, true);
 });

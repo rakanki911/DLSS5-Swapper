@@ -24,7 +24,7 @@ function load(t, { gotLock = true } = {}) {
     restore() { this.restored++; this.minimized = false; },
     show() { this.shown++; },
     focus() { this.focused++; },
-    loadFile() {}, once() {}, on() {}, webContents: { on() {}, send() {} }
+    loadFile() {}, once() {}, on() {}, webContents: { on() {}, send() {}, setWindowOpenHandler() {} }
   };
   const stubs = {
     electron: {
