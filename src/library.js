@@ -6,6 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { lutris } = require('./core/lutris');
 
 // Entries that are tooling rather than games.
 const NOT_A_GAME = /redistributabl|steamworks common|directx|vcredist|proton|steam linux runtime|soundtrack/i;
@@ -469,7 +470,7 @@ function filterExcluded(games, excludedRoots = []) {
 }
 
 function discover(extraFolders = [], scanDrives = false, excludedRoots = [], findAutoRoots = autoRoots) {
-  const found = [...steam(), ...epic(), ...gog(), ...ubisoft(), ...xbox()];
+  const found = [...steam(), ...lutris(), ...epic(), ...gog(), ...ubisoft(), ...xbox()];
   const roots = (scanDrives ? findAutoRoots() : [])
     .filter((root) => !excludedRoots.some((excluded) => isInside(root, excluded)));
   for (const dir of roots) found.push(...folder(dir, 'My folders', true));

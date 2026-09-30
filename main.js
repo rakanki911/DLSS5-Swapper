@@ -14,6 +14,7 @@ const diagnostics = require('./src/core/diagnostics');
 const { scanGame } = require('./src/core/scan.js');
 const { discover, folder, dedupe, isInside, steam } = require('./src/library');
 const { contextForSteamGame, createSetupRunner } = require('./src/core/proton');
+const { contextForLutrisGame } = require('./src/core/lutris');
 const art = require('./src/steamart');
 const { backupRoot, saveActiveManifest, writeTracked, makeReShadeConfigWritable } = require('./src/core/apply.js');
 const { scanSource } = require('./src/core/scan.js');
@@ -1057,7 +1058,12 @@ ipcMain.handle('library', () => {
   const games = found.games.concat(
     state.manual
       .filter((dir) => fs.existsSync(dir))
-      .map((dir) => ({ launcher: 'Added by hand', id: null, name: path.basename(dir), dir, poster: null }))
+      .map((dir) => {
+        let lutris = null;
+        try { lutris = contextForLutrisGame(dir); } catch { /* installer reports invalid runner details */ }
+        const name = path.basename(dir);
+        return { launcher: lutris ? 'Lutris' : 'Added by hand', id: null, name, dir, poster: null };
+      })
   );
 
   const hidden = new Set(state.hidden.map((d) => d.toLowerCase()));
@@ -1747,9 +1753,9 @@ ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) =>
   const protonGame = process.platform === 'linux'
     ? steam().find((game) => path.resolve(game.dir) === path.resolve(dir))
     : null;
-  const proton = contextForSteamGame(protonGame);
+  const proton = contextForSteamGame(protonGame) || contextForLutrisGame(dir);
   if (process.platform === 'linux' && !proton) {
-    return { ok: false, code: 'errProtonRequired', message: 'This installer supports Windows games launched through Steam Proton. Launch the game once with Proton, then try again.' };
+    return { ok: false, code: 'errProtonRequired', message: 'No existing Steam Proton or Lutris Wine prefix matches this game. Add the game folder inside its configured prefix.' };
   }
   if (process.platform === 'linux' && api === 'vulkan') {
     return { ok: false, code: 'errLinuxVulkanUnsupported', message: 'The Vulkan Feeder route needs a host Vulkan layer and is not supported on Linux yet. Select a DirectX renderer in the game.' };
