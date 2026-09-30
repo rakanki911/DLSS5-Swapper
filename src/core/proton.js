@@ -29,22 +29,25 @@ function contextForSteamGame(game) {
 function createSetupRunner(context) {
   return (setupExe, args, log) => new Promise((resolve) => {
     log('runningSetup', { setup: path.basename(setupExe), args: args.slice(1).join(' ') });
-    const child = spawn(context.proton, ['run', setupExe, ...args], {
+    const child = spawn(context.command || context.proton, context.command ? [setupExe, ...args] : ['run', setupExe, ...args], {
       cwd: path.dirname(args[0]),
       env: {
         ...process.env,
+        ...(context.env || {}),
         WINEPREFIX: context.prefix,
+        ...(context.command ? {} : {
         STEAM_COMPAT_DATA_PATH: path.dirname(context.prefix),
         STEAM_COMPAT_CLIENT_INSTALL_PATH: context.steamRoot,
         STEAM_COMPAT_APP_ID: context.appid
+        })
       }
     });
     let output = '';
     child.stdout.on('data', (data) => { output += data.toString(); });
     child.stderr.on('data', (data) => { output += data.toString(); });
-    child.on('error', (error) => resolve({ code: -1, output: error.message }));
-    child.on('close', (code) => resolve({ code, output: output.trim() }));
-    setTimeout(() => { try { child.kill(); } catch {} }, 120000);
+    const timer = setTimeout(() => { try { child.kill(); } catch {} }, 120000);
+    child.on('error', (error) => { clearTimeout(timer); resolve({ code: -1, output: error.message }); });
+    child.on('close', (code) => { clearTimeout(timer); resolve({ code, output: output.trim() }); });
   });
 }
 

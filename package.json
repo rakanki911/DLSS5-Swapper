@@ -21,7 +21,8 @@
   "author": "Rakan Alkhaldi",
   "license": "MIT",
   "dependencies": {
-    "extract-zip": "^2.0.1"
+    "extract-zip": "^2.0.1",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "electron": "^33.2.0",

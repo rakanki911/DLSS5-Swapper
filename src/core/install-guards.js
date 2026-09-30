@@ -38,6 +38,24 @@ function executableLocked(exePath) {
 }
 
 async function assertGameClosed(gameDir, exePath, runner = run, locked = executableLocked) {
+  if (process.platform === 'linux' && runner === run) {
+    // Wine executables are not write-locked on Linux. Check process names
+    // instead of falling through to the Windows file-lock fallback.
+    const names = new Set([exePath && path.basename(exePath).toLowerCase(), 'dlss5-feed-host64.exe']);
+    for (const pid of await fs.promises.readdir('/proc')) {
+      if (!/^\d+$/.test(pid) || Number(pid) === process.pid) continue;
+      let comm, argv;
+      try {
+        comm = (await fs.promises.readFile(`/proc/${pid}/comm`, 'utf8')).trim().toLowerCase();
+        argv = (await fs.promises.readFile(`/proc/${pid}/cmdline`, 'utf8')).split('\0');
+      } catch { continue; } // exited process or another user's process
+      const executable = value => path.basename(value.replace(/\\/g, '/')).toLowerCase();
+      if (names.has(comm) || argv.slice(0, 2).some(value => names.has(executable(value)))) {
+        throw Object.assign(new Error(`Close the game and helper first: ${comm}`), { code: 'errGameRunning' });
+      }
+    }
+    return;
+  }
   const powershell = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32/WindowsPowerShell/v1.0/powershell.exe');
   let data;
   try {
