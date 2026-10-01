@@ -79,6 +79,14 @@ translations are Simplified Chinese. It currently recognizes `zh`, `zh-*` and
 Traditional Chinese localization. The pre-existing RenoDX v4.7 controls
 bridge is retained, but v4.7 native menu translation is outside these pins.
 
+Each game needs the rebuilt Swapper overlay installed beside its selected
+executable, as well as an explicit Chinese ReShade language setting. Updating
+the desktop application or translating a different game does not update an
+existing game installation. A game without this overlay still shows the
+original Feeder and RenoDX menus, even when ReShade's own navigation is Chinese.
+Close that game before applying an update, and preserve its current preset and
+rendering settings when installing the overlay and display translations.
+
 ReShade's built-in Generic Depth and Effect Runtime Sync pages, add-on metadata,
 third-party licenses, raw logs and technical identifiers remain in their
 original language. The Swapper help tab includes Chinese explanations of the
