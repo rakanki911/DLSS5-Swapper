@@ -63,8 +63,8 @@ const S = {
     hideConfirm: (name) => `Hide ${name} from the list? Nothing on disk changes and any installation stays. You can bring it back from Settings.`,
     optiDownloading: 'Downloading and verifying OptiScaler…', optiVerified: (version) => `Official OptiScaler release verified: ${version}.`,
     backendSwitching: 'Saving settings and switching backend…', backendRecovered: 'Interrupted switch recovered.',
-    navHome: 'Home', navGames: 'Games', navCommunity: 'Community', navHistory: 'History', navSettings: 'Settings', navAbout: 'About',
-    navOverlay: 'Overlay',
+    navHome: 'Home', navGames: 'Games', navChat: 'Chat', navCommunity: 'Community', navHistory: 'History', navSettings: 'Settings', navAbout: 'About',
+    navOverlay: 'Overlay', beta: 'BETA',
     ready: 'Ready', scanning: 'Scanning…', fetchingArt: 'Fetching art…',
     unsupportedRendererHint: 'Native DirectX 10 is not supported by Feeder. Select the game’s DirectX 11 mode if available. This renderer cannot be installed automatically.',
     legacyRendererHint: 'DX8/9 requires dgVoodoo2 → DirectX 11. The matching wrapper is downloaded from its official source on first install. Disable MSAA/SSAA in the game if depth is unavailable.',
@@ -384,8 +384,8 @@ The install will go through. If the neural pass never appears in game, 616.56 is
     artFound: (a, b) => `الصور: ${a} من ${b}`, libReady: (n, d) => `المكتبة جاهزة — ${n} لعبة، ${d} على DirectX 12`
   },
   zh: {
-    navHome: '主页', navGames: '游戏', navHistory: '历史', navSettings: '设置', navAbout: '关于',
-    navOverlay: '叠加层',
+    navHome: '主页', navGames: '游戏', navChat: '聊天', navCommunity: '社区', navHistory: '历史', navSettings: '设置', navAbout: '关于',
+    navOverlay: '叠加层', beta: '测试版',
     ready: '就绪', scanning: '扫描中…', fetchingArt: '获取封面…',
     dropTitle: '将游戏文件夹拖到这里', or: '或', browse: '浏览文件夹',
     recentTitle: '最近的游戏', viewAll: '查看全部', recentEmpty: '尚未安装 — 为游戏安装 DLSS 5 后会显示在这里。',

@@ -7,7 +7,7 @@ const protocol = require('./overlay-protocol');
 const preferences=require('./overlay-preferences');
 const { ipcMain } = require('electron');
 
-module.exports = async function startOverlayBridge({ BrowserWindow, userData, idleTakeoverMs = 5000 }) {
+module.exports = async function startOverlayBridge({ BrowserWindow, userData, language = 'en', idleTakeoverMs = 5000 }) {
   const token = crypto.randomBytes(16).toString('hex');
   const endpoint = path.join(userData, 'overlay-bridge.endpoint');
   // The add-on composes the same name from LAB_OVERLAY_PROFILE (see
@@ -25,7 +25,8 @@ module.exports = async function startOverlayBridge({ BrowserWindow, userData, id
   let runtimeStatus = null, commandTime = 0, commandCount = 0;
   const win = new BrowserWindow({ show: false, width: protocol.WIDTH, height: 900, transparent: true, frame: false,
     webPreferences: { preload: path.join(__dirname, '../overlay-preload.js'), offscreen: true, contextIsolation: true, sandbox: true, nodeIntegration: false, backgroundThrottling: false, spellcheck: false } });
-  const preferenceChanged=(dir,value)=>{if(dir===userData&&!closed&&!win.isDestroyed())win.webContents.send('lab-overlay-preferences',value);};
+  const preferenceChanged=(dir,value)=>{if(dir===userData&&!closed&&!win.isDestroyed())win.webContents.send('lab-overlay-preferences',{...value,language});};
+  const setLanguage=value=>{language=String(value);preferenceChanged(userData,preferences.read(userData));};
   const control = (event, command) => {
     if (closed || !client || event.sender !== win.webContents) return;
     if (Date.now() - commandTime > 1000) { commandTime = Date.now(); commandCount = 0; }
@@ -85,8 +86,8 @@ module.exports = async function startOverlayBridge({ BrowserWindow, userData, id
   win.webContents.on('render-process-gone', (_event, details) => { console.error('Lab overlay renderer stopped:', details.reason); close(); });
   win.on('closed', close);
   try {
-  await win.loadFile(path.join(__dirname, 'renderer/overlay-panel.html'));
-  win.webContents.send('lab-overlay-preferences',preferences.read(userData));
+  await win.loadFile(path.join(__dirname, 'renderer/overlay-panel.html'), { query: { lang: language } });
+  preferenceChanged(userData,preferences.read(userData));
   preferences.events.on('change',preferenceChanged);
   const height = Math.ceil(await win.webContents.executeJavaScript(`document.querySelector('#panel').getBoundingClientRect().height`));
   if (height < 1 || height > protocol.MAX_HEIGHT) { win.destroy(); throw Error('Overlay panel height exceeds its bounded surface'); }
@@ -179,5 +180,5 @@ module.exports = async function startOverlayBridge({ BrowserWindow, userData, id
     endpoint,
     pipeName
   });
-  return { window: win, endpoint, pipeName, state, getFrame: () => latest, getStatus:()=>runtimeStatus, close };
+  return { window: win, endpoint, pipeName, state, setLanguage, getFrame: () => latest, getStatus:()=>runtimeStatus, close };
 };

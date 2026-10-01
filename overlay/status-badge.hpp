@@ -27,6 +27,7 @@ constexpr float min_scale = 0.6f, max_scale = 3.f, grip = 20.f, reach = 26.f;
 
 struct badge {
     bool shown = false;
+    bool chinese = false;
     float scale = 1.f;
     // Placed on the first frame that knows the screen size. The panel opens at
     // the top left, so the card starts at the bottom left instead - they used
@@ -73,7 +74,8 @@ struct badge {
         // using. Nothing here asks ImGui to draw at another size: in 1.92 fonts
         // are baked on demand, and AddText with a size of our own choosing read
         // a null inside ReShade and took the game down with it.
-        const ImVec2 label = text_size(running ? "DLSS 5 On" : "DLSS 5 Off");
+        const char *state_label = chinese ? (running ? "DLSS 5 已开启" : "DLSS 5 已关闭") : (running ? "DLSS 5 On" : "DLSS 5 Off");
+        const ImVec2 label = text_size(state_label);
         const float bar = bar_h * scale;
         const float w = std::max(card_w * scale, label.x + 34.f);
         const float h = std::max(card_h * scale, label.y + 20.f + bar);
@@ -124,7 +126,7 @@ struct badge {
             // The plain overload only: current font, current size, no font
             // machinery of any kind.
             list->AddText(ImVec2(tl.x + (w - label.x) * .5f, tl.y + (h - bar - label.y) * .5f), ink,
-                          running ? "DLSS 5 On" : "DLSS 5 Off");
+                          state_label);
 
             // The grip exists only while the pointer is near, so a recording of
             // a card nobody is touching carries no furniture.

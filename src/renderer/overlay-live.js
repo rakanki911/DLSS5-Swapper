@@ -5,6 +5,7 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
   root._overlayDispose?.();
   const lifetime = new AbortController();
   const runtime = designOnly ? null : window.overlayRuntime;
+  const text = window.overlayText;
   const sample = { epoch:1, nrAvailable:true, nrEnabled:true, effects:true, tools:[], nrTools:[
     ['Structure Intensity',0,1,0,2], ['Global Tone Intensity',0,1,0,2],
     ['Enable DLSS Neural Rendering',1,1,0,1], ['Automatic / Character Mask',1,1,0,1],
@@ -19,8 +20,8 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
   let status = sample, epoch = 0, preview = true, connectedOnce = false, autoEpoch = 0;
   // Only reasons worth reading. While the bridge works the badge in the
   // header already says CONNECTED, so the line below it stays out of sight.
-  const nrNote = () => !status ? 'Waiting for game connection'
-    : status.nrAvailable ? '' : status.nrReason || 'RenoDX controls unavailable.';
+  const nrNote = () => !status ? text('Waiting for game connection')
+    : status.nrAvailable ? '' : text(status.nrReason || 'RenoDX controls unavailable.');
   const observer = new ResizeObserver(() => runtime?.resize(Math.ceil(root.getBoundingClientRect().height)));
   observer.observe(root);
   root._overlayDispose = () => { lifetime.abort(); observer.disconnect(); };
@@ -34,16 +35,16 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
   root.addEventListener('scroll',e=>{if(!e.target.classList?.contains('ol-dropdown-menu'))closeChoices();},{capture:true,signal:lifetime.signal});
   function choice(t) {
     const box=el('div','ol-dropdown'), trigger=el('button','ol-dropdown-trigger'), menu=el('div','ol-dropdown-menu');
-    trigger.type='button';trigger.dataset.liveId=t.id;trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');trigger.setAttribute('aria-label',t.name);
-    menu.hidden=true;menu.setAttribute('role','listbox');menu.setAttribute('aria-label',t.name);
+    trigger.type='button';trigger.dataset.liveId=t.id;trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');trigger.setAttribute('aria-label',text(t.name));
+    menu.hidden=true;menu.setAttribute('role','listbox');menu.setAttribute('aria-label',text(t.name));
     box.append(trigger,menu);
     const close=()=>{menu.hidden=true;trigger.setAttribute('aria-expanded','false');};
     trigger.updateChoice = tool => {
       const options=tool.options||t.options||[];
-      trigger.textContent=options[tool.value-t.min]||'Unavailable';
+      trigger.textContent=text(options[tool.value-t.min]||'Unavailable');
       if(JSON.stringify(options)!==menu.dataset.options) {
         menu.dataset.options=JSON.stringify(options);menu.replaceChildren(...options.map((text,i)=>{
-          const option=el('button','ol-dropdown-option',text);option.type='button';option.dataset.value=i+t.min;option.setAttribute('role','option');
+          const option=el('button','ol-dropdown-option',window.overlayText(text));option.type='button';option.dataset.value=i+t.min;option.setAttribute('role','option');
           option.onclick=()=>{send(t.id,t.kind,i+t.min);close();trigger.focus({preventScroll:true});};return option;
         }));
       }
@@ -73,7 +74,7 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
   }
   function editable(range) {
     const value = el('input', 'ol-number'); value.type = 'number'; value.dataset.liveId = range.dataset.liveId;
-    value.setAttribute('aria-label', `${range.closest('label').querySelector('span').textContent} value`);
+    value.setAttribute('aria-label', `${range.closest('label').querySelector('span').textContent} ${text('value')}`);
     range.nextElementSibling.replaceWith(value);
     range.addEventListener('input', () => { value.value = range.value; });
     const commit = () => {
@@ -90,23 +91,23 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
     if(feedChoices[t.id])t={...t,options:feedChoices[t.id],name:{306:'HDR contract',307:'Depth convention',308:'Work upscale',309:'HDR10 bridge'}[t.id]};
     const isChoice=t.kind===4||!!t.options;
     const row = el(isChoice?'div':'label', isChoice?'ol-choice':t.kind===0?'ol-slider':'ol-check ol-live-toggle');
-    row.title = `${t.effect || 'ReShade'} / ${t.name}`;
-    if(isChoice){row.append(el('span','',t.name),choice(t));target.append(row);return;}
+    row.title = `${t.effect || 'ReShade'} / ${text(t.name)}`;
+    if(isChoice){row.append(el('span','',text(t.name)),choice(t));target.append(row);return;}
     const input = el('input', ''); input.dataset.liveId = t.id;
     if (t.kind === 0) {
       input.type = 'range'; input.min = t.min; input.max = t.max; input.step = t.step;
-      row.append(el('span', '', t.name), input, el('output', '', ''));
+      row.append(el('span', '', text(t.name)), input, el('output', '', ''));
       editable(input);
-    } else { input.type = 'checkbox'; row.append(input, el('span', '', t.name)); }
+    } else { input.type = 'checkbox'; row.append(input, el('span', '', text(t.name))); }
     input.addEventListener('input', () => send(t.id, t.kind, [0, 4].includes(t.kind) ? Number(input.value) : Number(input.checked)));
     target.append(row);
   }
   function bindNr(panel) {
     for (const control of panel.querySelectorAll('input, button')) control.disabled = true;
-    panel.querySelector('.ol-master small').textContent = status===sample?'Preview only':status?.nrAvailable ? 'RenoDX live' : 'Waiting for RenoDX';
+    panel.querySelector('.ol-master small').textContent = text(status===sample?'Preview only':status?.nrAvailable ? 'RenoDX live' : 'Waiting for RenoDX');
     const badgeNote = panel.querySelector('.ol-badge small');
-    if (badgeNote) badgeNote.textContent = status===sample ? 'Preview only' : 'Shows DLSS 5 On/Off over the game';
-    panel.querySelector('.ol-prototype').textContent = status===sample?'PREVIEW':status?.nrAvailable ? 'CONNECTED' : 'NOT CONNECTED';
+    if (badgeNote) badgeNote.textContent = text(status===sample ? 'Preview only' : 'Shows DLSS 5 On/Off over the game');
+    panel.querySelector('.ol-prototype').textContent = text(status===sample?'PREVIEW':status?.nrAvailable ? 'CONNECTED' : 'NOT CONNECTED');
     const mapping = [[panel.querySelector('#olStructure'), 101], [panel.querySelector('#olTone'), 102],
       [panel.querySelector('.ol-master input'), 103], [panel.querySelector('.ol-badge input'), 50],
       [panel.querySelector('.ol-muted input[type=checkbox]'), 104],
@@ -116,20 +117,20 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
       input.addEventListener('input', () => send(id, input.type === 'range' ? 0 : 1, input.type === 'range' ? Number(input.value) : Number(input.checked)));
       if (input.type === 'range') editable(input);
     }
-    panel.querySelector('.ol-muted .ol-check small').textContent = 'RenoDX character mask';
+    panel.querySelector('.ol-muted .ol-check small').textContent = text('RenoDX character mask');
     const maskLabel = panel.querySelector('.ol-muted .ol-check');
-    for (const node of maskLabel.childNodes) if (node.nodeType === Node.TEXT_NODE && node.textContent.includes('MODEL AUTOMASK')) node.textContent = ' CHARACTER MASK ';
+    for (const node of maskLabel.childNodes) if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() === text('MODEL AUTOMASK')) node.textContent = ` ${text('CHARACTER MASK')} `;
     panel.querySelector('.ol-muted').classList.toggle('ol-muted', !status?.nrAvailable);
-    panel.querySelector('#olMaskStructure').previousElementSibling.textContent = 'Character/Skin Structure';
+    panel.querySelector('#olMaskStructure').previousElementSibling.textContent = text('Character/Skin Structure');
     const extra = panel.querySelector('.ol-group').parentElement;
-    extra.replaceChildren(el('h4', '', 'MORE RENODX CONTROLS'));
+    extra.replaceChildren(el('h4', '', text('MORE RENODX CONTROLS')));
     const tools = el('div', 'ol-additional'); extra.append(tools);
     for (const t of status?.nrTools || []) if (![101, 102, 103, 104, 105, 114].includes(t.id)) addTool(tools, t);
-    if (!status?.nrTools) tools.append(el('p', 'ol-live-note', 'Restart DLSS 5 Swapper and connect the updated overlay to load RenoDX controls.'));
+    if (!status?.nrTools) tools.append(el('p', 'ol-live-note', text('Restart DLSS 5 Swapper and connect the updated overlay to load RenoDX controls.')));
     const models = panel.querySelector('.ol-models');
-    models.parentElement.querySelector('h4').textContent = 'NR STYLE';
+    models.parentElement.querySelector('h4').textContent = text('NR STYLE');
     for (const [i, model] of [...models.children].entries()) {
-      model.textContent = `Model ${['A', 'B', 'C'][i]} · ${['Default', 'Natural', 'Cinematic'][i]}`;
+      model.textContent = `${text(`Model ${['A', 'B', 'C'][i]}`)} · ${text(['Default', 'Natural', 'Cinematic'][i])}`;
       model.dataset.styleValue = i;
       model.onclick = () => send(114, 4, i);
       model.classList.remove('selected'); model.setAttribute('aria-pressed', 'false');
@@ -137,18 +138,18 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
     // The style buttons stay above the scrollable advanced controls.
     extra.before(models.parentElement);
     if(status?.feedPresent){
-      const section=el('section','ol-feed-section');section.append(el('h4','','FEEDER CONTROLS'));
+      const section=el('section','ol-feed-section');section.append(el('h4','',text('FEEDER CONTROLS')));
       const feed=el('div','ol-additional');for(const t of status.feedTools||[])addTool(feed,t);
-      section.append(feed,el('p','ol-live-note ol-feed-status',status.feedReason));
+      section.append(feed,el('p','ol-live-note ol-feed-status',text(status.feedReason||'')));
       extra.after(section);
       // Keep the compact panel bounded: choose a backend section instead of
       // stacking two tall scroll areas. NR remains accessible above.
-      const toggle=el('button','ol-model','Show RenoDX extras');extra.before(toggle);extra.hidden=true;
-      toggle.onclick=()=>{extra.hidden=!extra.hidden;section.hidden=!extra.hidden;toggle.textContent=extra.hidden?'Show RenoDX extras':'Show Feeder controls';};
+      const toggle=el('button','ol-model',text('Show RenoDX extras'));extra.before(toggle);extra.hidden=true;
+      toggle.onclick=()=>{extra.hidden=!extra.hidden;section.hidden=!extra.hidden;toggle.textContent=text(extra.hidden?'Show RenoDX extras':'Show Feeder controls');};
     }
-    panel.querySelector('footer').textContent = status===sample?'Interactive design preview only. Changes here do not affect a game. The installed overlay connects automatically to the verified RenoDX build.':status?.nrAvailable
+    panel.querySelector('footer').textContent = text(status===sample?'Interactive design preview only. Changes here do not affect a game. The installed overlay connects automatically to the verified RenoDX build.':status?.nrAvailable
       ? 'Live RenoDX settings. A/B/C select NR Style, not AI models. Scroll More Controls; click a number to type. Home keeps the original tools available.'
-      : 'Waiting for the verified RenoDX build. Connection is automatic; a build this overlay does not know is refused. Original tools remain available.';
+      : 'Waiting for the verified RenoDX build. Connection is automatic; a build this overlay does not know is refused. Original tools remain available.');
   }
   function build() {
     window.mountOverlayPanel(root);
@@ -156,14 +157,14 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
     panel.classList.add('ol-connected');
     const modes = el('div', 'ol-models ol-live-modes');
     for (const [label, design] of [['Live tools', false], ['DLSS controls', true]]) {
-      const b = el('button', `ol-model ${preview === design ? 'selected' : ''}`, label);
+      const b = el('button', `ol-model ${preview === design ? 'selected' : ''}`, text(label));
       b.onclick = () => { preview = design; build(); update(); }; modes.append(b);
     }
     // Preserve the requested panel itself; optional FX tools never replace it
     // automatically and are not presented as a RenoDX connection.
     panel.after(modes);
     if(designOnly){
-      const backend=el('button','ol-preview-backend',sample.feedPresent?'Preview: Feeder + RenoDX':'Preview: RenoDX');
+      const backend=el('button','ol-preview-backend',text(sample.feedPresent?'Preview: Feeder + RenoDX':'Preview: RenoDX'));
       backend.onclick=()=>{
         sample.feedPresent=!sample.feedPresent;
         sample.feedReason='Design preview only. Feeder cfg controls; work resolution, filter and sharpness require DX11.';
@@ -175,10 +176,10 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
     }
     if(status!==sample){const note=el('p','ol-live-note ol-nr-status',nrNote());note.hidden=!note.textContent;modes.after(note);}
     if (preview) { bindNr(panel); return; }
-    panel.querySelector('.ol-prototype').textContent = status ? 'LIVE RESHADE' : 'DISCONNECTED';
-    panel.querySelector('.ol-eyebrow').textContent = 'DLSS 5 SWAPPER · INJECTED TOOLS';
+    panel.querySelector('.ol-prototype').textContent = text(status ? 'LIVE RESHADE' : 'DISCONNECTED');
+    panel.querySelector('.ol-eyebrow').textContent = text('DLSS 5 SWAPPER · INJECTED TOOLS');
     for (const element of [...panel.children]) if (element !== modes && element.tagName !== 'HEADER') element.remove();
-    const info = el('p', 'ol-live-note', status===sample?'Design preview; no game connection.':status?.nrAvailable ? 'RenoDX controls use its original callback. FX controls below are separate. Experimental adapter; original tool windows remain available.' : 'Waiting for compatible RenoDX. FX controls do not control DLSS.');
+    const info = el('p', 'ol-live-note', text(status===sample?'Design preview; no game connection.':status?.nrAvailable ? 'RenoDX controls use its original callback. FX controls below are separate. Experimental adapter; original tool windows remain available.' : 'Waiting for compatible RenoDX. FX controls do not control DLSS.'));
     panel.append(info);
     const tools = el('div', 'ol-live-tools'); panel.append(tools);
     const add = t => addTool(tools, t);
@@ -188,12 +189,13 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
       if (t.effect !== previousEffect) { tools.append(el('h4', 'ol-live-effect', t.effect)); previousEffect = t.effect; }
       add(t);
     }
-    if (!status?.tools.length) tools.append(el('p', 'ol-live-note', 'No separate .fx shader controls found. RenoDX controls above do not require .fx shaders.'));
-    panel.append(el('footer', 'ol-live-hotkey', `${root.dataset.overlayHotkey||'F8'}: show/hide · Drag header: move · Esc: close · Home: original tools`));
+    if (!status?.tools.length) tools.append(el('p', 'ol-live-note', text('No separate .fx shader controls found. RenoDX controls above do not require .fx shaders.')));
+    panel.append(el('footer', 'ol-live-hotkey', `${root.dataset.overlayHotkey||'F8'}: ${text('show/hide')} · ${text('Drag header: move')} · Esc: ${text('close')} · Home: ${text('original tools')}`));
+    window.localizeOverlayText(root);
   }
   function update() {
     const note = root.querySelector('.ol-nr-status'); if (note) { note.textContent = nrNote(); note.hidden = !note.textContent; }
-    const feedNote=root.querySelector('.ol-feed-status');if(feedNote)feedNote.textContent=status?.feedReason||'';
+    const feedNote=root.querySelector('.ol-feed-status');if(feedNote)feedNote.textContent=text(status?.feedReason||'');
     for (const input of root.querySelectorAll('[data-live-id]')) {
       const id = Number(input.dataset.liveId);
       const t = id >= 301 ? status?.feedPresent&&status.feedTools?.find(t=>t.id===id) : id === 0 ? { kind: 3, value: status?.effects ? 1 : 0, available: !!status } :
@@ -203,7 +205,7 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
         id >= 101 ? status?.nrAvailable && status.nrTools?.find(t => t.id === id) : status?.tools.find(t => t.id === id);
       input.disabled = !t?.available;
       if (!t || input.dataset.dragging || (document.activeElement === input && input.type === 'number')) continue;
-      input.title = `${t.effect} / ${t.name}`;
+      input.title = `${t.effect} / ${text(t.name)}`;
       if (input.type === 'range' || input.type === 'number') { input.min = t.min; input.max = t.max; input.step = t.step; input.value = Number(t.value).toFixed(2); }
       else if(input.updateChoice) input.updateChoice(t);
       else input.checked = !!t.value;
@@ -215,7 +217,9 @@ window.mountOverlayLive = (root, { designOnly = false } = {}) => {
       const selected = !model.disabled && Number(model.dataset.styleValue) === style.value;
       model.classList.toggle('selected', selected); model.setAttribute('aria-pressed', String(selected));
     }
+    window.localizeOverlayText(root);
   }
+  root._overlayRefreshLanguage = () => { build(); update(); };
   build(); update();
   runtime?.onStatus(value => {
     if (!value && !connectedOnce) return;

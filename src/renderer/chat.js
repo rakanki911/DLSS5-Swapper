@@ -30,7 +30,10 @@
       tooMany: 'You can attach up to 4 images.', tooLarge: 'Each original image may be up to 15 MB.',
       badImage: 'That image could not be read.', profile: 'Choose a community name in Settings before using mentions.',
       noGames: 'No matching community games.', label: 'Add label', chooseLabel: 'Choose a label', clearLabel: 'No label', dlssOn: 'DLSS 5 ON', dlssOff: 'DLSS 5 OFF',
-      fit: 'Fit', copied: 'Copied.', saved: 'Image saved.', online: 'Live updates connected'
+      fit: 'Fit', copied: 'Copied.', saved: 'Image saved.', online: 'Live updates connected',
+      unnamed: 'Anonymous', unavailable: 'Message unavailable', photo: 'Photo', message: 'Message', more: 'More', admin: 'ADMIN',
+      attach: 'Attach', send: 'Send', close: 'Close', attachment: 'Chat attachment',
+      previousImage: 'Previous image', nextImage: 'Next image', zoomOut: 'Zoom out', zoomIn: 'Zoom in'
     },
     ar: {
       nav: 'الشات', title: 'شات المجتمع', subtitle: 'شارك النتائج والصور واكتشافات الألعاب مع الجميع.',
@@ -50,10 +53,18 @@
       tooMany: 'يمكنك إرفاق 4 صور كحد أقصى.', tooLarge: 'الحد الأقصى للصورة الأصلية 15 ميجابايت.',
       badImage: 'تعذر قراءة هذه الصورة.', profile: 'اختر اسمًا للمجتمع من الإعدادات لاستخدام المنشن.',
       noGames: 'لا توجد ألعاب مطابقة.', label: 'اكتب تاق', chooseLabel: 'اختر تاق للصورة', clearLabel: 'بدون تاق', dlssOn: 'DLSS 5 ON', dlssOff: 'DLSS 5 OFF',
-      fit: 'ملاءمة', copied: 'تم النسخ.', saved: 'تم حفظ الصورة.', online: 'التحديث المباشر متصل'
+      fit: 'ملاءمة', copied: 'تم النسخ.', saved: 'تم حفظ الصورة.', online: 'التحديث المباشر متصل',
+      unnamed: 'Anonymous', unavailable: 'Message unavailable', photo: 'Photo', message: 'Message', more: 'More', admin: 'ADMIN',
+      attach: 'Attach', send: 'Send', close: 'Close', attachment: 'Chat attachment',
+      previousImage: 'Previous image', nextImage: 'Next image', zoomOut: 'Zoom out', zoomIn: 'Zoom in'
     }
   };
-  const words = () => L[(window.i18n?.getLang?.() || 'en').startsWith('ar') ? 'ar' : 'en'];
+  const words = () => {
+    const lang = window.i18n?.getLang?.() || 'en';
+    if (lang.startsWith('ar')) return L.ar;
+    if (lang === 'zh') return window.zhChat;
+    return L.en;
+  };
   const readJson = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; } };
   const state = {
     messages: [], etag: null, version: 0, hasMore: false, timer: null, busy: false, initial: true,
@@ -116,13 +127,13 @@
     const compact = sameAuthor(previous, message) && dayKey(previous.at) === dayKey(message.at);
     const by = message.by || {};
     const reactions = Object.entries(message.reactions || {}).filter(([, count]) => count > 0);
-    const quote = message.reply ? `<div class="chat-quote" data-chat-jump="${esc(message.reply.id)}"><div><b>${esc(message.reply.by?.name || (message.reply.unavailable ? 'Message unavailable' : 'Anonymous'))}</b><span>${esc(message.reply.body || (message.reply.hasImages ? '📷 Photo' : 'Message unavailable'))}</span></div></div>` : '';
+    const quote = message.reply ? `<div class="chat-quote" data-chat-jump="${esc(message.reply.id)}"><div><b>${esc(message.reply.by?.name || (message.reply.unavailable ? words().unavailable : words().unnamed))}</b><span>${esc(message.reply.body || (message.reply.hasImages ? '📷 ' + words().photo : words().unavailable))}</span></div></div>` : '';
     return `<article class="chat-message${compact ? ' compact' : ''}${by.admin ? ' admin' : ''}" data-chat-message="${message.id}">
       <span class="chat-avatar">${avatar(by)}</span><div class="chat-content">
-      ${compact ? '' : `<div class="chat-message-head"><span class="chat-author">${esc(by.name || 'Anonymous')}</span>${by.admin ? '<span class="chat-admin-tag">ADMIN</span>' : `<span class="chat-tag">#${esc(by.tag || '----')}</span>`}<time class="chat-time">${esc(ago(message.at))}</time>${message.editedAt ? `<span class="chat-edited">· ${esc(words().edited)}</span>` : ''}</div>`}
+      ${compact ? '' : `<div class="chat-message-head"><span class="chat-author">${esc(by.name || words().unnamed)}</span>${by.admin ? `<span class="chat-admin-tag">${esc(words().admin)}</span>` : `<span class="chat-tag">#${esc(by.tag || '----')}</span>`}<time class="chat-time">${esc(ago(message.at))}</time>${message.editedAt ? `<span class="chat-edited">· ${esc(words().edited)}</span>` : ''}</div>`}
       ${quote}${message.body ? `<div class="chat-body">${richBody(message.body)}</div>` : ''}${imagesHtml(message)}${gameCard(message.game)}
       <div class="chat-actions">${reactions.map(([emoji,count]) => `<button class="chat-reaction${state.mine[`${message.id}:${emoji}`] ? ' mine' : ''}" data-chat-react="${esc(emoji)}" type="button"><span>${esc(emoji)}</span><b>${count}</b></button>`).join('')}<button class="chat-react-add" data-chat-react="❤️" type="button">♡</button></div></div>
-      <div class="chat-quick-actions">${EMOJI.map(emoji => `<button data-chat-react="${esc(emoji)}" title="${esc(emoji)}" type="button">${esc(emoji)}</button>`).join('')}<button data-chat-reply title="${esc(words().reply)}" type="button">↩</button><button data-chat-menu title="More" type="button">•••</button></div>
+      <div class="chat-quick-actions">${EMOJI.map(emoji => `<button data-chat-react="${esc(emoji)}" title="${esc(emoji)}" type="button">${esc(emoji)}</button>`).join('')}<button data-chat-reply title="${esc(words().reply)}" type="button">↩</button><button data-chat-menu title="${esc(words().more)}" type="button">•••</button></div>
     </article>`;
   }
 
@@ -242,7 +253,7 @@
     const reply = state.editing || state.reply;
     const preview = $('chatReplyPreview');
     preview.classList.toggle('hidden', !reply);
-    if (reply) preview.innerHTML = `<b>${esc(state.editing ? words().editing : `${words().replying}: ${reply.by?.name || 'Anonymous'}`)}</b><span>${esc(reply.body || (reply.images?.length ? '📷 Photo' : reply.game?.title || 'Message'))}</span><button type="button" data-chat-cancel-reply>✕</button>`;
+    if (reply) preview.innerHTML = `<b>${esc(state.editing ? words().editing : `${words().replying}: ${reply.by?.name || words().unnamed}`)}</b><span>${esc(reply.body || (reply.images?.length ? '📷 ' + words().photo : reply.game?.title || words().message))}</span><button type="button" data-chat-cancel-reply aria-label="${esc(words().cancel)}">✕</button>`;
     const strip = $('chatAttachments');
     const has = state.attachments.length || state.game;
     strip.classList.toggle('hidden', !has);
@@ -559,6 +570,10 @@
     $('chatChoosePhotos').querySelector('b').textContent = w.photos; $('chatChoosePhotos').querySelector('span').textContent = w.photosSub;
     $('chatChooseGame').querySelector('b').textContent = w.game; $('chatChooseGame').querySelector('span').textContent = w.gameSub;
     document.querySelector('.chat-dialog-kicker').textContent = w.addTo;
+    const controls = { chatPlus: w.attach, chatSend: w.send, chatViewerClose: w.close, chatViewerPrev: w.previousImage, chatViewerNext: w.nextImage, chatZoomOut: w.zoomOut, chatZoomIn: w.zoomIn };
+    for (const [id, label] of Object.entries(controls)) if ($(id)) { $(id).setAttribute('aria-label', label); $(id).title = label; }
+    document.querySelectorAll('[data-chat-close]').forEach(button => { button.setAttribute('aria-label', w.close); button.title = w.close; });
+    $('chatViewerImage').alt = w.attachment;
     $('chatZoomReset').textContent = w.fit; paintDraft(); if (state.messages.length) paintMessages();
   }
   async function render() {

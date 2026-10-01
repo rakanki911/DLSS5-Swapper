@@ -37,6 +37,7 @@ const compatibility = require('./src/core/compatibility');
 const antiCheatWarning = require('./src/shared/anti-cheat-warning');
 const featureI18n = require('./src/shared/feature-i18n');
 const featureText = (key, ...args) => featureI18n.t(loadState().lang, key, ...args);
+const uiText = (english, chinese) => loadState().lang === 'zh' ? chinese : english;
 const vulkanLayer = require('./src/core/vulkan-layer');
 const { HistoryStore, knownFolders, fromManifests } = require('./src/core/history');
 const gameMenu = require('./src/core/game-menu');
@@ -449,14 +450,14 @@ app.whenReady().then(async () => {
   if (!singleInstance) return;
   // Registered here rather than at load: main.js is exercised in a plain vm
   // context by the tests, where src modules are stubbed and cannot be called.
-  require('./src/overlay-ipc')({ app, ipcMain, dialog, shell, window: () => win, bridge: () => overlayBridge });
+  require('./src/overlay-ipc')({ app, ipcMain, dialog, shell, window: () => win, bridge: () => overlayBridge, language: () => loadState().lang });
   createWindow();
   // The icon is there from launch, not only after the first close - somebody
   // who wants the app parked in the tray wants to see that it is.
   if (loadState().closeToTray !== false) ensureTray();
   if (communityUsed()) startNotices();
   try {
-    overlayBridge = await require('./src/overlay-bridge')({ BrowserWindow, userData: app.getPath('userData') });
+    overlayBridge = await require('./src/overlay-bridge')({ BrowserWindow, userData: app.getPath('userData'), language: loadState().lang || 'en' });
     if (quitting) overlayBridge.close();
   } catch (error) {
     if (!quitting) console.error('Overlay bridge:', error.message);
@@ -505,6 +506,7 @@ ipcMain.handle('set-lang', (_event, lang) => {
   const state = loadState();
   state.lang = lang;
   saveState(state);
+  overlayBridge?.setLanguage(lang);
   return lang;
 });
 
@@ -570,12 +572,12 @@ ipcMain.handle('save-diagnostics', async (event, dir, activity) => {
   const found = diagnostics.sources({ gameDir: dir, exeDir, userData });
   const list = found.length
     ? found.map(item => `\u2022 ${item.file}  (${Math.ceil(item.bytes / 1024)} KB)`).join('\n')
-    : 'No log files were found for this game yet.';
+    : uiText('No log files were found for this game yet.', '暂未找到这款游戏的日志文件。');
   const consent = await dialog.showMessageBox(window, {
-    type: 'question', title: 'Save diagnostics',
-    message: 'These files will be copied into one text file:',
-    detail: `${list}\n\nIt also records the app version, your GPU and driver, and this session's activity log. Game folder paths appear in it. Read it before attaching it anywhere.`,
-    buttons: ['Cancel', 'Choose where to save'], defaultId: 1, cancelId: 0
+    type: 'question', title: uiText('Save diagnostics', '保存诊断信息'),
+    message: uiText('These files will be copied into one text file:', '以下文件会合并到一个文本文件中：'),
+    detail: `${list}\n\n${uiText("It also records the app version, your GPU and driver, and this session's activity log. Game folder paths appear in it. Read it before attaching it anywhere.", '文件还会记录程序版本、显卡和驱动信息，以及本次操作日志，其中包含游戏文件夹路径。向他人发送前，请先检查内容。')}`,
+    buttons: [uiText('Cancel', '取消'), uiText('Choose where to save', '选择保存位置')], defaultId: 1, cancelId: 0
   });
   if (consent.response !== 1) return { ok: false, cancelled: true };
 
@@ -592,9 +594,9 @@ ipcMain.handle('save-diagnostics', async (event, dir, activity) => {
 
   const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const picked = await dialog.showSaveDialog(window, {
-    title: 'Save diagnostics',
+    title: uiText('Save diagnostics', '保存诊断信息'),
     defaultPath: path.join(app.getPath('documents'), `dlss5-swapper-diagnostics-${stamp}.txt`),
-    filters: [{ name: 'Text', extensions: ['txt'] }]
+    filters: [{ name: uiText('Text', '文本文件'), extensions: ['txt'] }]
   });
   if (picked.canceled || !picked.filePath) return { ok: false, cancelled: true };
   try {
@@ -794,20 +796,20 @@ ipcMain.handle('community-chat-save-image', async (event, source, suggestedName)
   try {
     const target = new URL(String(source || ''));
     if (target.protocol !== 'https:' || target.hostname !== 'media.rakanki.com' || !target.pathname.startsWith('/chat/')) {
-      return { ok: false, message: 'This is not a community chat image.' };
+      return { ok: false, message: uiText('This is not a community chat image.', '这不是社区聊天图片。') };
     }
     const window = BrowserWindow.fromWebContents(event.sender);
     const safeName = String(suggestedName || 'dlss5-chat-image').replace(/[^a-z0-9_-]+/gi, '-').slice(0, 80) || 'dlss5-chat-image';
     const picked = await dialog.showSaveDialog(window, {
-      title: 'Save chat image', defaultPath: path.join(app.getPath('pictures'), `${safeName}.webp`),
-      filters: [{ name: 'WebP image', extensions: ['webp'] }]
+      title: uiText('Save chat image', '保存聊天图片'), defaultPath: path.join(app.getPath('pictures'), `${safeName}.webp`),
+      filters: [{ name: uiText('WebP image', 'WebP 图片'), extensions: ['webp'] }]
     });
     if (picked.canceled || !picked.filePath) return { ok: false, cancelled: true };
     const response = await fetch(target, { redirect: 'error', signal: AbortSignal.timeout(30_000) });
     const announced = Number(response.headers.get('content-length')) || 0;
-    if (!response.ok || announced > 3 * 1024 * 1024) throw new Error('The image could not be downloaded safely.');
+    if (!response.ok || announced > 3 * 1024 * 1024) throw new Error(uiText('The image could not be downloaded safely.', '无法安全下载这张图片。'));
     const data = Buffer.from(await response.arrayBuffer());
-    if (data.length > 3 * 1024 * 1024) throw new Error('The image is larger than expected.');
+    if (data.length > 3 * 1024 * 1024) throw new Error(uiText('The image is larger than expected.', '图片大小超出预期。'));
     await fs.promises.writeFile(picked.filePath, data, { flag: 'wx' }).catch(async error => {
       if (error.code !== 'EEXIST') throw error;
       await fs.promises.writeFile(picked.filePath, data);
@@ -1119,7 +1121,7 @@ ipcMain.handle('scan', async (_event, dir) => {
 // ---------- editing the library ----------
 
 ipcMain.handle('add-folder', async () => {
-  const res = await dialog.showOpenDialog(win, { properties: ['openDirectory'], title: 'Scan this folder for games' });
+  const res = await dialog.showOpenDialog(win, { properties: ['openDirectory'], title: uiText('Scan this folder for games', '在此文件夹中扫描游戏') });
   if (res.canceled) return null;
   const state = loadState();
   if (!state.folders.includes(res.filePaths[0])) state.folders.push(res.filePaths[0]);
@@ -1164,7 +1166,7 @@ ipcMain.handle('exclude-root', (_event, dir) => {
 });
 
 ipcMain.handle('add-game', async () => {
-  const res = await dialog.showOpenDialog(win, { properties: ['openDirectory'], title: 'Add one game' });
+  const res = await dialog.showOpenDialog(win, { properties: ['openDirectory'], title: uiText('Add one game', '添加一款游戏') });
   if (res.canceled) return null;
   const state = loadState();
   if (!state.manual.includes(res.filePaths[0])) state.manual.push(res.filePaths[0]);
@@ -1175,8 +1177,8 @@ ipcMain.handle('add-game', async () => {
 ipcMain.handle('set-poster', async (_event, dir) => {
   const res = await dialog.showOpenDialog(win, {
     properties: ['openFile'],
-    title: 'Pick a poster',
-    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp'] }]
+    title: uiText('Pick a poster', '选择游戏封面'),
+    filters: [{ name: uiText('Images', '图片'), extensions: ['jpg', 'jpeg', 'png', 'webp'] }]
   });
   if (res.canceled) return null;
 
@@ -1388,8 +1390,8 @@ ipcMain.handle('addon-toggle', (_event, file, on) => {
 // the window is filled in and confirmed.
 ipcMain.handle('addon-pick', async () => {
   const res = await dialog.showOpenDialog(win, {
-    title: 'Add an add-on build',
-    filters: [{ name: 'ReShade add-on', extensions: ['addon64', 'addon'] }],
+    title: uiText('Add an add-on build', '添加插件版本'),
+    filters: [{ name: uiText('ReShade add-on', 'ReShade 插件'), extensions: ['addon64', 'addon'] }],
     properties: ['openFile']
   });
   if (res.canceled || !res.filePaths.length) return null;
@@ -1912,6 +1914,7 @@ ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) =>
     history().list([{ dir, name: gameName(dir) }], error => send({ code: 'historySaveWarning', params: { error: error.message } }));
     const manifest = await backends.install({
       gameDir: dir,
+      language: loadState().lang,
       exePath: target.path,
       api,
       apiLabel: target.apiLabel,

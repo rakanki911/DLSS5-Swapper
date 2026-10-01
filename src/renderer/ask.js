@@ -36,7 +36,7 @@
   /**
    * @returns {Promise<boolean>} true when the action was confirmed.
    */
-  function ask({ kicker = 'DLSS 5 Swapper', title = '', body = '', confirm = 'OK', cancel = 'Cancel', icon = 'question', tone = 'danger' } = {}) {
+  function ask({ kicker = 'DLSS 5 Swapper', title = '', body = '', confirm = root.i18n?.t?.('confirm') || 'OK', cancel = root.i18n?.t?.('cancel') || 'Cancel', icon = 'question', tone = 'danger' } = {}) {
     const dialog = element();
     dialog.className = `ask ask-${tone === 'accent' ? 'accent' : 'danger'}`;
     dialog.innerHTML = `

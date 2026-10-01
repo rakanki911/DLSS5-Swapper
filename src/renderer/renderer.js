@@ -10,6 +10,7 @@ const gameFilters = window.gameFilters;
 
 const ORDER = ['Steam', 'Epic Games', 'GOG', 'Xbox', 'Ubisoft', 'Added by hand', 'My folders'];
 const rank = (l) => (ORDER.indexOf(l) === -1 ? ORDER.length : ORDER.indexOf(l));
+const sourceLabel = source => source === 'Added by hand' ? t('sourceManual') : source === 'My folders' ? t('sourceFolders') : source;
 const short = (v) => (v ? String(v).replace(/\.0$/, '') : null);
 const initials = (name) =>
   name.replace(/[^A-Za-z0-9 ]/g, '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || '?';
@@ -262,7 +263,7 @@ function renderGames() {
       if (launcher === null) return `<div class="grid">${list.map(cardMarkup).join('')}</div>`;
       const ready = list.filter(gameFilters.canInstall).length;
       return `<section class="group">
-        <div class="group-head"><h4>${esc(launcher)}</h4><span class="count">${list.length}</span>
+        <div class="group-head"><h4>${esc(sourceLabel(launcher))}</h4><span class="count">${list.length}</span>
         <button type="button" class="ready filter-chip" data-ready-filter="${esc(launcher)}" aria-pressed="${filters.dlss === 'ready'}">${t('readyFor', ready)}</button></div>
         <div class="grid">${list.map(cardMarkup).join('')}</div>
       </section>`;
@@ -665,12 +666,12 @@ async function load() {
   state.newDlss = (await window.lab.details(state.games[0] ? state.games[0].dir : '')).newDlss;
   renderGames();
   renderRecent();
-  log(`Found ${state.games.length} games across ${new Set(state.games.map((g) => g.launcher)).size} sources`);
+  log(t('libraryFound', state.games.length, new Set(state.games.map((g) => g.launcher)).size));
   await scanAll();
 }
 
 async function pickGame(dir) {
-  log(`Scanning: ${dir}`);
+  log(t('scanningFolder', dir));
   const cached = await window.lab.scan(dir);
   let game = state.games.find((g) => g.dir === dir);
   if (!game) {
@@ -681,7 +682,7 @@ async function pickGame(dir) {
   if (game) {
     game.cached = cached;
     renderGames();
-    log(`Game: ${cached.exe || '—'} (${cached.api || 'unknown'})`);
+    log(t('scannedGame', cached.exe || '—', cached.api || t('logUnknown')));
     openSheet(dir);
   }
 }
@@ -718,7 +719,7 @@ function dlssValue(have, next, upToDate) {
 
 // An executable whose renderer could not be read says so, rather than showing
 // the word null where an API belongs.
-const exeLine = (e) => `${e.rel}  —  ${e.apiLabel || t('unknownApi')}  —  ${e.bitness || '?'}-bit  —  ${MB(e.size)}`;
+const exeLine = (e) => `${e.rel}  —  ${e.apiLabel || t('unknownApi')}  —  ${t('gameBitness', e.bitness || '?')}  —  ${MB(e.size)}`;
 
 function chosenExe(d, dir) {
   const want = exeChoice.get(dir);
@@ -744,7 +745,7 @@ function exePicker(d, dir) {
                     data-path="${esc(e.path)}" role="option" title="${esc(e.rel)}">
               <span class="tick">${e.path === chosen.path ? '✓' : ''}</span>
               <span class="exe-name">${esc(e.rel)}</span>
-              <span class="exe-meta"><span>${esc(e.apiLabel || t('unknownApi'))}</span><span>${e.bitness || '?'}-bit · ${MB(e.size)}</span></span>
+              <span class="exe-meta"><span>${esc(e.apiLabel || t('unknownApi'))}</span><span>${esc(t('gameBitness', e.bitness || '?'))} · ${MB(e.size)}</span></span>
             </button>`).join('')}
         </div>
       </div>
@@ -929,7 +930,7 @@ async function openSheet(dir, keepLog = false) {
   if (!keepLog) jobLines = [];
 
   $('overlay').classList.remove('hidden');
-  $('sheet').innerHTML = '<div class="pad" style="color:var(--dim)">Reading the folder…</div>';
+  $('sheet').innerHTML = `<div class="pad" style="color:var(--dim)">${esc(t('readingFolder'))}</div>`;
 
   const [d, art] = await Promise.all([
     window.lab.details(dir),
@@ -962,14 +963,14 @@ async function openSheet(dir, keepLog = false) {
   $('sheet').innerHTML = modernSheet ? window.theme2.sheetMarkup(sheetContext) : `
     <div class="hero${hero ? '' : ' empty'}">
       ${hero ? `<img src="${hero}" alt="">` : ''}
-      <button class="close" id="sheetClose"><svg viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <button class="close" id="sheetClose" title="${esc(t('t2Close'))}" aria-label="${esc(t('t2Close'))}"><svg viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div class="sheet-body">
       <div class="head">
         <div class="cover">${cover ? `<img src="${cover}" alt="">` : esc(initials(g.name))}</div>
         <div class="who">
           <h3>${esc(info ? info.name : g.name)}</h3>
-          <div class="meta">${[g.launcher, info && info.released, info && info.genres && info.genres.join(', '),
+          <div class="meta">${[sourceLabel(g.launcher), info && info.released, info && info.genres && info.genres.join(', '),
               info && info.rating ? info.rating + '/100' : null].filter(Boolean).map(esc).join(' · ')}</div>
           <div class="path">${esc(g.dir)}</div>
         </div>
@@ -983,7 +984,7 @@ async function openSheet(dir, keepLog = false) {
 
       <div class="specs" data-title="${esc(t('sheetFacts'))}">
         ${showExeFact && pick ? spec(t('fExe'), esc(pick.rel.split(/[\/]/).pop()), null, pick.rel) : ''}
-        ${pick ? spec(t('fArchitecture'), `${pick.bitness || '?'}-bit`) : ''}
+        ${pick ? spec(t('fArchitecture'), esc(t('gameBitness', pick.bitness || '?'))) : ''}
         ${spec(t('fApi'), esc((pick && selectedApi(pick, dir).label) || reasonText(d.reason) || '—'), pick && selectedApi(pick, dir).api === 'dxgi' ? 'on' : 'off')}
         ${spec(t('installedBackend'), esc(d.installedRoute === 'optiscaler' ? 'OptiScaler DLSS-NR' : d.installedRoute ? 'ReShade' : t('none')), d.installedRoute ? 'on' : 'off')}
         ${spec('DLSS', pick && selectedRoute(d, pick, dir) === 'optiscaler' ? esc(inGameDlss || t('none')) : dlssValue(inGameDlss, d.newDlss, upToDate))}
@@ -1114,7 +1115,7 @@ async function runJob(kind, dir) {
   document.querySelectorAll('#sheet select, #exeSelect, #sheetClose').forEach(e => { e.disabled = true; });
   install.textContent = kind === 'install' ? t('installing') : t('install');
   jobLines = [];
-  jobLog(kind === 'install' ? '--- installing ---' : '--- restoring ---');
+  jobLog(t(kind === 'install' ? 'jobInstalling' : 'jobRestoring'));
 
   const pick = sheetDetails ? chosenExe(sheetDetails, dir) : null;
 
@@ -1156,8 +1157,8 @@ async function runJob(kind, dir) {
   install.textContent = t('install');
 
   if (res.ok) {
-    jobLog(kind === 'install' ? `done - ${res.replaced} replaced, ${res.added} added` : 'done - originals restored');
-    log(`${kind === 'install' ? 'Installed' : 'Restored'}: ${dir}`);
+    jobLog(kind === 'install' ? t('jobInstalled', res.replaced, res.added) : t('jobRestored'));
+    log(t(kind === 'install' ? 'loggedInstalled' : 'loggedRestored', dir));
     if ($('view-history').classList.contains('active')) await renderHistory();
     // Recent Games tracks what was actually swapped, not what was browsed.
     state.recents = await window.lab.touch(dir);
@@ -1168,7 +1169,7 @@ async function runJob(kind, dir) {
     setTimeout(() => { if (sheetGame?.dir === dir) openSheet(dir, true); }, 400);
   } else {
     const translated = res.code && t(res.code);
-    jobLog(res.cancelled ? t('operationCancelled') : 'failed: ' + (translated && translated !== res.code ? translated : (res.message || res.code)));
+    jobLog(res.cancelled ? t('operationCancelled') : t('jobFailed', translated && translated !== res.code ? translated : (res.message || res.code)));
     if (!res.cancelled && res.message && translated && translated !== res.code && res.message !== res.code) jobLog(res.message);
     install.disabled = false;
     // A failed external ReShade setup can still have changed files. Re-read
@@ -1211,6 +1212,11 @@ function applyLang(code) {
   for (const node of document.querySelectorAll('[data-i18n]')) {
     node.textContent = t(node.dataset.i18n);
   }
+  for (const [id, key] of [['themeBtn', 'setSkins'], ['winMin', 'windowMinimize'], ['winClose', 't2Close']]) {
+    $(id).title = t(key);
+    $(id).setAttribute('aria-label', t(key));
+  }
+  $('view-overlays').setAttribute('aria-label', t('navOverlay'));
   // Anything drawn from data has to be rebuilt, not just relabelled.
   renderLog();
   renderRecent();

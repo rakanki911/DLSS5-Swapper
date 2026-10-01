@@ -28,7 +28,7 @@
         </button>
         <button class="nav-item" data-view="chat">
           <svg viewBox="0 0 24 24"><path d="M5 5h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 3v-4.5A2 2 0 0 1 3 15V7a2 2 0 0 1 2-2z"/><path d="M7 10h10M7 14h6"/></svg>
-          <span id="navChat">Chat</span><i class="dot"></i><b class="chat-nav-unread hidden" id="chatNavUnread"></b>
+          <span id="navChat" data-i18n="navChat">Chat</span><i class="dot"></i><b class="chat-nav-unread hidden" id="chatNavUnread"></b>
         </button>
         <button class="nav-item" data-view="community">
           <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.7M16 3.3a4 4 0 0 1 0 7.4"/></svg>
@@ -160,7 +160,7 @@
           <div><div class="community-title-row"><h3 id="communityTitle">Community-tested games</h3><span class="beta-tag" title="This feature is new and still being tested">BETA</span></div><p class="hint" id="communitySubtitle">Real results from DLSS 5 Swapper users.</p></div>
           <div class="community-heading-actions">
             <button class="glass-btn sm" id="communityRefresh">Refresh</button>
-            <span class="community-game-total" id="communityGameTotal" role="status" aria-live="polite">— games</span>
+            <span class="community-game-total" id="communityGameTotal" role="status" aria-live="polite">—</span>
           </div>
         </div>
         <div class="community-filters" role="search" aria-labelledby="communityTitle">
@@ -227,7 +227,7 @@
       <!-- SETTINGS -->
       <section class="view" id="view-overlays" aria-label="Overlay">
         <div class="section-head">
-          <div><h3>Overlay <span class="ol-badge">BETA</span></h3><p class="hint" id="olSubtitle"></p></div>
+          <div><h3><span data-i18n="navOverlay">Overlay</span> <span class="ol-badge" data-i18n="beta">BETA</span></h3><p class="hint" id="olSubtitle"></p></div>
           <div class="row ol-toolbar"><label class="ol-install-switch"><input type="checkbox" role="switch" id="olEnabled"><span id="olEnabledLabel">Install with DLSS</span></label><button class="ghost sm" id="olSource">Developer files</button><button class="ghost sm" id="olHotkey">Hotkey · F8</button><button class="ghost sm" id="olCustom">Create theme</button><button class="glass-btn sm" id="olAdd">＋ Add</button></div>
         </div>
         <p id="olStatus" role="status" aria-live="polite"></p>
@@ -246,7 +246,7 @@
           <p id="olCustomError" role="status"></p>
           <div class="row"><button id="olCustomCancel" class="ghost">Cancel</button><button id="olCustomSave" class="glass-btn">Save</button></div>
         </dialog>
-        <dialog id="olHotkeyDialog" class="ol-dialog ol-hotkey-dialog"><h3>Overlay hotkey</h3><p id="olKeyHelp">Click the field, then press your shortcut. Ctrl, Alt and Shift are supported. Home / Escape stay reserved for ReShade.</p><button id="olKeyCapture" class="ghost">F8</button><p id="olKeyError" role="status"></p><div class="row"><button id="olKeyCancel" class="ghost">Cancel</button><button id="olKeySave" class="glass-btn">Save</button></div></dialog>
+        <dialog id="olHotkeyDialog" class="ol-dialog ol-hotkey-dialog"><h3 id="olKeyTitle">Overlay hotkey</h3><p id="olKeyHelp">Click the field, then press your shortcut. Ctrl, Alt and Shift are supported. Home / Escape stay reserved for ReShade.</p><button id="olKeyCapture" class="ghost">F8</button><p id="olKeyError" role="status"></p><div class="row"><button id="olKeyCancel" class="ghost">Cancel</button><button id="olKeySave" class="glass-btn">Save</button></div></dialog>
       </section>
 
       <section class="view" id="view-settings">
@@ -356,12 +356,14 @@
   <div id="gameMenu" class="ctx-menu hidden" role="menu" aria-hidden="true"></div>
   <div id="copyFeedback" class="copy-feedback hidden" role="status" aria-live="polite"></div>
 
+  <script src="overlay-i18n.js"></script>
   <script src="overlay-panel.js"></script>
   <script src="overlay-live.js"></script>
   <script src="overlay-gallery.js"></script>
   <script src="i18n.js"></script>
   <script src="i18n-extra.js"></script>
   <script src="../shared/feature-i18n.js"></script>
+  <script src="i18n-zh.js"></script>
   <script src="game-filters.js"></script>
   <script src="mentions.js"></script>
   <script src="ask.js"></script>

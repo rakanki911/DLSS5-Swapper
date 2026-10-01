@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <cstring>
 #include "live-controls.hpp"
+#include "native-i18n.hpp"
 #include "renodx-ui-bridge.hpp"
 #include "feeder-controls.hpp"
 #include "status-badge.hpp"
@@ -325,7 +326,7 @@ void draw(reshade::api::effect_runtime *runtime) {
     }
     if (!bridge.connected() || bridge.pixels.empty()) {
         release_texture(runtime, s); s.dragging = s.focused = s.hovered = false; s.last_status.clear();
-        ImGui::TextWrapped("DLSS 5 Swapper must remain open. Waiting for the shared panel design (one test game at a time)...");
+        ImGui::TextWrapped("%s", native_i18n::use_chinese(runtime) ? "请保持 DLSS 5 Swapper 开启，正在等待共享面板（一次连接一个测试游戏）…" : "DLSS 5 Swapper must remain open. Waiting for the shared panel design (one test game at a time)...");
         return;
     }
     if (s.uploaded != bridge.sequence) {
@@ -336,7 +337,7 @@ void draw(reshade::api::effect_runtime *runtime) {
         auto device = runtime->get_device();
         if (!device->create_resource(desc, &data, resource_usage::shader_resource, &s.texture) ||
             !device->create_resource_view(s.texture, resource_usage::shader_resource, resource_view_desc(format::r8g8b8a8_unorm), &s.view)) {
-            release_texture(runtime, s); ImGui::TextUnformatted("The renderer could not create the panel surface."); return;
+            release_texture(runtime, s); ImGui::TextUnformatted(native_i18n::use_chinese(runtime) ? "无法创建面板画面。" : "The renderer could not create the panel surface."); return;
         }
         s.uploaded = bridge.sequence;
     }
@@ -432,12 +433,18 @@ void draw(reshade::api::effect_runtime *runtime) {
 void reloaded(reshade::api::effect_runtime *runtime) { state_for(runtime).live.dirty = true; }
 void controls(reshade::api::effect_runtime *runtime) {
     auto &s = state_for(runtime);
-    ImGui::TextWrapped("Optional compact overlay. Choose its hotkey on the Overlay page in DLSS 5 Swapper (default F8). Home keeps the original tools available.");
-    if (ImGui::Button("Open compact overlay")) { panel_open = true; runtime->open_overlay(false, reshade::api::input_source::none); }
-    ImGui::TextWrapped("Keep DLSS 5 Swapper open. Drag the panel header to move it. Escape closes only the compact panel. While the panel is open the game receives no mouse or keyboard input.");
-    ImGui::TextWrapped("The compact panel automatically connects to a verified RenoDX build using an experimental adapter. It redirects RenoDX's UI dispatch temporarily; unsupported builds are refused. Original settings are saved by RenoDX.");
+    const bool chinese = native_i18n::use_chinese(runtime);
+    ImGui::TextWrapped("%s", chinese ? "可选的紧凑面板。可在 DLSS 5 Swapper 的“叠加层”页面选择快捷键，默认是 F8。按 Home 仍可使用原有工具。" : "Optional compact overlay. Choose its hotkey on the Overlay page in DLSS 5 Swapper (default F8). Home keeps the original tools available.");
+    if (ImGui::Button(chinese ? "打开紧凑面板###Open compact overlay" : "Open compact overlay")) { panel_open = true; runtime->open_overlay(false, reshade::api::input_source::none); }
+    ImGui::TextWrapped("%s", chinese ? "请保持 DLSS 5 Swapper 开启。拖动面板标题可移动它；Escape 只关闭紧凑面板。面板打开时，游戏暂停接收鼠标和键盘输入。" : "Keep DLSS 5 Swapper open. Drag the panel header to move it. Escape closes only the compact panel. While the panel is open the game receives no mouse or keyboard input.");
+    ImGui::TextWrapped("%s", chinese ? "紧凑面板通过实验性连接方式使用已核验的 RenoDX 版本，不支持的版本会停止连接。原有设置仍由 RenoDX 保存。" : "The compact panel automatically connects to a verified RenoDX build using an experimental adapter. It redirects RenoDX's UI dispatch temporarily; unsupported builds are refused. Original settings are saved by RenoDX.");
+    if (ImGui::CollapsingHeader(chinese ? "第三方页面与组件说明###Third-party pages and information" : "Third-party pages and information")) {
+        ImGui::TextWrapped("%s", chinese ? "Generic Depth（通用深度）：帮助选择与游戏画面对应的深度图。Effect Runtime Sync（效果实例同步）：在存在多个效果实例时同步状态。这两页是 ReShade 的内置页面，保留官方名称和说明。" : "Generic Depth selects the depth buffer corresponding to the game scene. Effect Runtime Sync synchronizes state between effect runtimes. These built-in ReShade pages retain their official names and descriptions.");
+        ImGui::TextWrapped("%s", chinese ? "DLSS5 Feeder 为没有原生 DLSS 的游戏提供颜色、深度和运动数据。RenoDX 的 DLSS 5 Neural Rendering（DLSS 5 神经渲染）页面提供神经渲染设置。组件版本、作者、许可证和原始组件说明保留原文，便于核对官方版本。" : "DLSS5 Feeder supplies color, depth and motion data for games without native DLSS. RenoDX's DLSS 5 Neural Rendering page provides neural-rendering settings. Component versions, authors, licenses and original component descriptions retain their official text.");
+    }
 }
 void compact_draw(reshade::api::effect_runtime *runtime) {
+    native_i18n::tick(runtime);
 #ifdef LAB_RENODX_PROBE
     nr_probe::tick(runtime);
 #endif
@@ -449,6 +456,7 @@ void compact_draw(reshade::api::effect_runtime *runtime) {
     status_card.shown = true; status_card.loaded = true;
 #endif
     status_card.load(runtime);
+    status_card.chinese = native_i18n::use_chinese(runtime);
     // Drawn at the end of every path, not the start: the last window submitted
     // is the topmost one, and the card must never end up beneath the panel.
     // It follows the mouse only while ReShade is holding it - our panel, or its
@@ -500,6 +508,7 @@ void compact_draw(reshade::api::effect_runtime *runtime) {
 extern "C" __declspec(dllexport) bool AddonInit(HMODULE addon, HMODULE reshade_module) {
     if (registered) return true;
     if (!reshade::register_addon(addon, reshade_module)) return false;
+    native_i18n::startup();
     reshade::register_overlay("DLSS 5 Swapper", controls);
     reshade::register_event<reshade::addon_event::destroy_effect_runtime>(destroy);
     reshade::register_event<reshade::addon_event::reshade_reloaded_effects>(reloaded);
@@ -514,6 +523,12 @@ extern "C" __declspec(dllexport) void AddonUninit(HMODULE addon, HMODULE reshade
     reshade::unregister_event<reshade::addon_event::destroy_effect_runtime>(destroy);
     reshade::unregister_event<reshade::addon_event::reshade_reloaded_effects>(reloaded);
     reshade::unregister_overlay("DLSS 5 Swapper", controls);
+    {
+        // Let any temporary RenoDX capture table restore its prior dispatch
+        // before the translator restores the original add-on slots.
+        std::lock_guard<std::mutex> capture_lock(nr_live::invocation);
+        native_i18n::shutdown();
+    }
     while (!surfaces.empty()) destroy(surfaces.begin()->first);
     reshade::unregister_addon(addon, reshade_module); registered = false;
 }

@@ -76,4 +76,5 @@ window.mountOverlayPanel = (root, footer = 'Design inspired by the NVIDIA refere
     for (const item of root.querySelectorAll('.ol-model')) { item.classList.toggle('selected', item === model); item.setAttribute('aria-pressed', String(item === model)); }
   };
   if (!root.dataset.rangeBinding) { window.bindOverlayRanges(root); root.dataset.rangeBinding = 'true'; }
+  window.localizeOverlayText(root);
 };
