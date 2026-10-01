@@ -4,6 +4,7 @@
 // pointers are callback-local; never retain them or write NR globals by offset.
 #pragma once
 #include "renodx-ui-probe.hpp"
+#include "native-i18n.hpp"
 #include <mutex>
 namespace nr_live {
 struct field {
@@ -16,7 +17,7 @@ struct controls;
 inline thread_local controls *current = nullptr;
 inline std::mutex invocation;
 struct controls {
-    bool enabled = true, active = false;
+    bool enabled = true, active = false, chinese = false;
     std::string reason = "Bridge is off";
     HMODULE checked = nullptr;
     // Which pinned build is loaded. Null means one this adapter cannot drive.
@@ -148,6 +149,7 @@ struct controls {
     }
     void tick(reshade::api::effect_runtime *runtime) { decide(runtime); announce(); }
     void decide(reshade::api::effect_runtime *runtime) {
+        chinese = native_i18n::use_chinese(runtime);
         if (!enabled) { clear(); reason = "Bridge is off"; return; }
         HMODULE module = GetModuleHandleW(L"renodx-dlss5.addon64");
         if (!module) { clear(); reason = "RenoDX is not loaded"; return; }
@@ -155,8 +157,14 @@ struct controls {
         if (!build) { clear(); reason = "Unsupported RenoDX binary; this build drives RenoDX 6.5.3 and v4.7"; return; }
         auto base = reinterpret_cast<unsigned char *>(module);
         auto slot = reinterpret_cast<const imgui_function_table **>(base + build->slot);
+        const auto dispatch = *slot;
         original = imgui_function_table_instance();
-        if (*slot != original) { clear(); reason = "Unexpected ImGui interface; bridge refused"; return; }
+        // The only permitted replacement is our exact, pinned translator.
+        // Capture still receives the original English labels and normal widget
+        // pointers; restore the translator afterwards, rather than disabling it.
+        if (dispatch != original && native_i18n::known_original(module, dispatch) != original) {
+            clear(); reason = "Unexpected ImGui interface; bridge refused"; return;
+        }
         // Validate the in-memory initialization and registration sites as well
         // as the on-disk hash. Never guess offsets for another build: each one
         // brings its own, and an unrecognised file never reaches this point.
@@ -177,14 +185,14 @@ struct controls {
         ImGui::SetNextWindowPos(ImVec2(-30000, -30000)); ImGui::SetNextWindowSize(ImVec2(600, 1000));
         ImGui::Begin("##NRLabAdapter", nullptr, ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground);
         auto atomic_slot = reinterpret_cast<void *volatile *>(base + build->slot);
-        if (InterlockedCompareExchangePointer(atomic_slot, &table, const_cast<imgui_function_table *>(original)) != original) {
+        if (InterlockedCompareExchangePointer(atomic_slot, &table, const_cast<imgui_function_table *>(dispatch)) != dispatch) {
             ImGui::End(); clear(); reason = "UI dispatch changed; bridge refused"; return;
         }
         {
             struct guard {
                 void *volatile *slot; const imgui_function_table *old; imgui_function_table *temporary;
                 ~guard() { InterlockedCompareExchangePointer(slot, const_cast<imgui_function_table *>(old), temporary); current = nullptr; }
-            } restore {atomic_slot, original, &table};
+            } restore {atomic_slot, dispatch, &table};
             current = this;
             reinterpret_cast<void (*)(reshade::api::effect_runtime *)>(base + build->overlay)(runtime);
         }
@@ -196,7 +204,7 @@ struct controls {
     }
     std::string json() const {
         std::ostringstream out; out.imbue(std::locale::classic());
-        out << ",\"nrAvailable\":" << (active ? "true" : "false") << ",\"nrReason\":" << lab_live::quoted(reason)
+        out << ",\"nrAvailable\":" << (active ? "true" : "false") << ",\"nrReason\":" << lab_live::quoted(chinese ? native_i18n::lookup(reason.c_str()) : reason)
             << ",\"nrEnabled\":" << (enabled ? "true" : "false") << ",\"nrTools\":[";
         for (size_t i = 0; i < fields.size(); ++i) {
             const auto &f = fields[i]; if (i) out << ',';

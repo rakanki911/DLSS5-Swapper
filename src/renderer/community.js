@@ -5,6 +5,9 @@
   const L = {
     en: {
       title: 'Community-tested games', subtitle: 'Real results from DLSS 5 Swapper users.', refresh: 'Refresh', search: 'Search games', route: 'Route', api: 'Rendering API', result: 'Result',
+      admin: 'ADMIN', close: 'Close', betaHint: 'This feature is new and still being tested',
+      workingHint: 'Game runs great', issuesHint: 'Minor or major issues', brokenHint: 'Doesn’t run or crashes',
+      commentPlaceholder: 'Write a comment about your experience, settings, or issues…',
       showAllReports: 'Show all reports', scopeAll: 'Everyone', scopeMine: 'My games', scopeReports: 'My comments', mineHint: 'Only the games installed on this PC', reportsHint: 'The games you reported on', reportsTotal: n => `You reported on ${n} game${n === 1 ? '' : 's'}`, reportsEmpty: 'You have not reported on any game yet.', showingMine: n => `Your ${n} report${n === 1 ? '' : 's'}`, sortLabel: 'Sort', sortRecent: 'Most recent', sortReports: 'Most reports', sortTitle: 'A–Z', noReportsYet: n => `On this PC, no reports yet · ${n}`, noReportsHint: 'Open one to install it - then be the first to say how it went.', installedBadge: 'DLSS 5 installed', onPc: 'On this PC', gpuLabel: 'Graphics card', allGpus: 'All graphics cards', myGpu: model => `My card · ${model}`, mineEmpty: 'None of the games on this PC have community reports yet.', mineTotal: n => `${n} of your games have reports`, showingGpu: (model, n) => `${n} report${n === 1 ? '' : 's'} on ${model}`, allRoutes: 'All routes', allApis: 'All APIs', allResults: 'All results', working: 'Working', issues: 'Works with issues', broken: 'Not working', mixed: 'Mixed', clear: 'Clear filters', loading: 'Loading community results…', empty: 'No matching community reports yet.', offline: 'Community service is unavailable. Check your connection and try again.',
       reports: n => `${n} report${n === 1 ? '' : 's'}`, comments: n => `${n} comment${n === 1 ? '' : 's'}`, noComments: 'No comments yet.', updated: 'Live updates are on while this card is open.',
       share: 'Share your result', shareHint: 'Share your result and help the community.', why: 'Your report helps improve compatibility for everyone.', routeUsed: 'Route used', choose: 'Choose…', unknown: 'No results yet', yourResult: 'Your result', optionalComment: 'Optional comment', sent: 'Data that will be sent', cancel: 'Cancel', submit: 'Submit report', submitting: 'Submitting…', chooseRoute: 'Choose the route you actually used.', chooseVerdict: 'Choose your result.', sentOk: 'Your report was added to the community.',
@@ -39,6 +42,9 @@
     },
     ar: {
       title: 'ألعاب اختبرها المجتمع', subtitle: 'نتائج حقيقية من مستخدمي DLSS 5 Swapper.', refresh: 'تحديث', search: 'بحث عن لعبة', route: 'طريقة التثبيت', api: 'واجهة الرسوم', result: 'النتيجة',
+      admin: 'ADMIN', close: 'Close', betaHint: 'This feature is new and still being tested',
+      workingHint: 'Game runs great', issuesHint: 'Minor or major issues', brokenHint: 'Doesn’t run or crashes',
+      commentPlaceholder: 'Write a comment about your experience, settings, or issues…',
       showAllReports: 'اعرض كل التقارير', scopeAll: 'الجميع', scopeMine: 'ألعابي', scopeReports: 'تعليقاتي', mineHint: 'الألعاب المثبّتة على جهازك فقط', reportsHint: 'الألعاب التي كتبت عنها تقريرًا', reportsTotal: n => `كتبت عن ${n} لعبة`, reportsEmpty: 'لم تكتب تقريرًا عن أي لعبة بعد.', showingMine: n => `تقاريرك: ${n}`, sortLabel: 'الترتيب', sortRecent: 'الأحدث', sortReports: 'الأكثر تقارير', sortTitle: 'أبجديًا', noReportsYet: n => `على جهازك، بلا تقارير بعد · ${n}`, noReportsHint: 'افتح أيًّا منها لتثبّت عليه، ثم كن أول من يكتب النتيجة.', installedBadge: 'DLSS 5 مثبّت', onPc: 'على جهازك', gpuLabel: 'كرت الشاشة', allGpus: 'كل كروت الشاشة', myGpu: model => `كرتي · ${model}`, mineEmpty: 'لا توجد تقارير من المجتمع لأي لعبة على جهازك حتى الآن.', mineTotal: n => `${n} من ألعابك عليها تقارير`, showingGpu: (model, n) => `${n} تقرير على ${model}`, allRoutes: 'كل الطرق', allApis: 'كل الواجهات', allResults: 'كل النتائج', working: 'تعمل', issues: 'تعمل مع مشاكل', broken: 'لا تعمل', mixed: 'نتائج مختلطة', clear: 'مسح الفلاتر', loading: 'جاري تحميل نتائج المجتمع…', empty: 'لا توجد تقارير مطابقة حتى الآن.', offline: 'خدمة المجتمع غير متاحة. تحقق من اتصالك وحاول مجددًا.',
       reports: n => `${n} تقرير`, comments: n => `${n} تعليق`, noComments: 'لا توجد تعليقات بعد.', updated: 'التحديث المباشر يعمل أثناء فتح هذه البطاقة.',
       share: 'شارك نتيجتك', shareHint: 'شارك نتيجتك وساعد المجتمع.', why: 'بلاغك يحسّن التوافق للجميع.', routeUsed: 'طريقة التثبيت المستخدمة', choose: 'اختر…', unknown: 'لا نتائج بعد', yourResult: 'نتيجتك', optionalComment: 'تعليق اختياري', sent: 'البيانات التي سيتم إرسالها', cancel: 'إلغاء', submit: 'إرسال التقرير', submitting: 'جاري الإرسال…', chooseRoute: 'اختر طريقة التثبيت التي استخدمتها فعليًا.', chooseVerdict: 'اختر نتيجتك.', sentOk: 'تمت إضافة تقريرك إلى المجتمع.',
@@ -127,7 +133,10 @@
   }
 
   const saveMine = () => { try { localStorage.setItem(MINE_KEY, JSON.stringify(state.mine)); } catch { /* private window, or storage off */ } };
-  const text = () => L[(window.i18n?.getLang?.() || 'en').startsWith('ar') ? 'ar' : 'en'];
+  const text = () => {
+    const lang = window.i18n?.getLang?.() || 'en';
+    return lang === 'zh' ? window.zhCommunity : L[lang.startsWith('ar') ? 'ar' : 'en'];
+  };
   const totals = verdicts => Object.values(verdicts || {}).reduce((sum, row) => ({ green: sum.green + (row.green || 0), yellow: sum.yellow + (row.yellow || 0), red: sum.red + (row.red || 0) }), { green: 0, yellow: 0, red: 0 });
   const statusClass = status => ['working', 'mixed', 'broken'].includes(status) ? status : 'unknown';
   const statusText = status => status === 'working' ? text().working : status === 'broken' ? text().broken : status === 'mixed' ? text().mixed : text().unknown;
@@ -274,7 +283,7 @@
     ? `<img class="community-admin-avatar" src="${esc(by.avatar)}" alt="" referrerpolicy="no-referrer">`
     : `<span class="community-avatar" aria-hidden="true">${avatars[Number(by?.icon) || 0] || avatars[0]}</span>`;
   const identity = by => `<b>${esc(by?.name || text().unnamed)}</b>${by?.admin
-    ? '<span class="community-admin-badge">ADMIN</span>'
+    ? `<span class="community-admin-badge">${esc(text().admin)}</span>`
     : `<small>#${esc(by?.tag || '----')}</small>`}`;
 
   function applyLanguage() {
@@ -290,7 +299,17 @@
     paintGpuOptions();
     setOption('communityReportRoute', '', s.choose); setOption('communityReportApi', '', s.choose);
     const verdictLabels = [s.working, s.issues, s.broken];
-    document.querySelectorAll('.community-verdicts button span').forEach((node, index) => { node.textContent = verdictLabels[index]; });
+    const verdictHints = [s.workingHint, s.issuesHint, s.brokenHint];
+    document.querySelectorAll('.community-verdicts button').forEach((button, index) => {
+      const label = button.querySelector('b') || button.querySelector('span');
+      if (label) label.textContent = verdictLabels[index];
+      const hint = button.querySelector('small');
+      if (hint) hint.textContent = verdictHints[index];
+    });
+    for (const id of ['communityCardClose', 'communityReportClose']) if ($(id)) { $(id).setAttribute('aria-label', s.close); $(id).title = s.close; }
+    if ($('communityReportComment')) $('communityReportComment').placeholder = s.commentPlaceholder;
+    const beta = $('view-community')?.querySelector('.beta-tag');
+    if (beta) { beta.textContent = window.i18n.t('beta'); beta.title = s.betaHint; }
   }
 
   function cardMarkup(card) {

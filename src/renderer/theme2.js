@@ -217,7 +217,7 @@
       const games = (state.games || [])
         .filter((game) => !text || game.name.toLowerCase().includes(text))
         .slice(0, 8)
-        .map((game) => ({ kind: 'game', name: game.name, sub: game.launcher || '', art: game.poster?.url || null, run: () => { closePalette(); openSheet(game.dir); } }));
+        .map((game) => ({ kind: 'game', name: game.name, sub: sourceLabel(game.launcher) || '', art: game.poster?.url || null, run: () => { closePalette(); openSheet(game.dir); } }));
       const views = [...document.querySelectorAll('.nav-item')]
         .map((nav) => ({ view: nav.dataset.view, label: nav.querySelector('span')?.textContent || nav.dataset.view }))
         .filter((item) => text && item.label.toLowerCase().includes(text))
@@ -337,12 +337,12 @@
     const backend = d.installedRoute === 'optiscaler' ? 'OptiScaler DLSS-NR' : d.installedRoute ? 'ReShade' : t('none');
     const size = pick && pick.size ? `${Math.round(pick.size / 1048576)} MB` : null;
     const exeName = pick ? pick.rel.split(/[\\/]/).pop() : null;
-    const exeMeta = [api && api.label, pick && pick.bitness ? `${pick.bitness}-bit` : null, size].filter(Boolean).join(' — ');
+    const exeMeta = [api && api.label, pick && pick.bitness ? t('gameBitness', pick.bitness) : null, size].filter(Boolean).join(' — ');
     const tile = (label, value, tone, hint) => `<div class="gp-tile${tone ? ' ' + tone : ''}">
         <span>${esc(label)}${hint ? icon(ICONS.info, 12) : ''}</span><strong>${value}</strong>
       </div>`;
     const now = new Date();
-    const stamp = `${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const stamp = `${now.toLocaleDateString(state.lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const recent = (state.recents || [])
       .map((row) => ({ at: row.at, game: (state.games || []).find((one) => one.dir === row.dir) }))
       .filter((row) => row.game).slice(0, 3);
@@ -437,7 +437,7 @@
                 <span class="gp-live"><i></i>${esc(routeName)}</span>
               </div>
               <div class="gp-tiles">
-                ${tile(t('fArchitecture'), esc(pick && pick.bitness ? `${pick.bitness}-bit` : '—'))}
+                ${tile(t('fArchitecture'), esc(pick && pick.bitness ? t('gameBitness', pick.bitness) : '—'))}
                 ${tile(t('fApi'), esc((api && api.label) || reasonText(d.reason) || '—'))}
                 ${tile(t('installedBackend'), esc(backend), d.installedRoute ? 'on' : '')}
                 ${tile('DLSS', esc(inGameDlss || t('none')), upToDate ? 'on' : '')}

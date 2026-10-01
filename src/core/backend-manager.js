@@ -109,7 +109,9 @@ async function install(config, log = () => {}) {
       manifest.route = config.route;
       for (const [rel, text] of Object.entries(profile)) await core.writeTracked(manifest, config.gameDir, journal.safePath(config.gameDir, rel), text, { kind: 'config' });
     }
-    return core.applySwap(config, log);
+    const manifest = await core.applySwap(config, log);
+    await require('./game-ui-localization').apply(config, manifest, core.writeTracked);
+    return manifest;
   }
   return journal.transaction(config.gameDir, async () => {
     if (!old && config.route !== 'optiscaler') {
@@ -145,6 +147,7 @@ async function install(config, log = () => {}) {
         (code, params) => log({ code, params }), config.gameDir, manifest);
     }
     if (config.route === 'optiscaler' && old && old.route !== 'optiscaler') manifest.previousReShadeRoute = old.route;
+    await require('./game-ui-localization').apply(config, manifest, core.writeTracked);
     await core.saveActiveManifest(config.gameDir, manifest);
     return manifest;
   });
