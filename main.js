@@ -15,6 +15,7 @@ const { scanGame } = require('./src/core/scan.js');
 const { discover, folder, dedupe, isInside, steam } = require('./src/library');
 const { contextForSteamGame, createSetupRunner } = require('./src/core/proton');
 const art = require('./src/steamart');
+const wiki = require('./src/pcgamingwiki');
 const { backupRoot, saveActiveManifest, writeTracked, makeReShadeConfigWritable } = require('./src/core/apply.js');
 const { scanSource } = require('./src/core/scan.js');
 const pe = require('./src/core/pe.js');
@@ -1450,6 +1451,11 @@ ipcMain.handle('community-palette-merge', (_event, palettes) =>
 // under the old rule fetch again instead of keeping a bad banner forever.
 const ART_RULES = 4;
 
+// A game nothing can art is not looked up again on every launch, but it is
+// looked up again after a week: Steam publishes capsules for app ids after the
+// fact, so a miss this week can be a hit the next.
+const ART_RETRY_AFTER = 7 * 24 * 60 * 60 * 1000;
+
 // A community card is a game somebody else has, so there is no folder to key
 // its artwork by - but a card keyed "steam:<appid>" carries the appid itself,
 // which is the best lookup there is. Everything else falls back to the title.
@@ -1533,11 +1539,37 @@ ipcMain.handle('community-art', async (_event, key, title) => {
   }
 });
 
+// The box art PCGamingWiki has for a game Steam only has an app id for. A
+// failure here is not a failure of the lookup: Steam's art, or none, stands.
+async function wikiCover(name, dest, key) {
+  try {
+    const fallback = await wiki.look(name);
+    if (!fallback) return null;
+    return pathToFileURL(await wiki.download(fallback.url, path.join(dest, key + '-cover.jpg'))).href;
+  } catch {
+    return null;
+  }
+}
+
 ipcMain.handle('art-fetch', async (_event, dir, name, appid) => {
   const state = loadState();
   const key = keyFor(dir);
   const cached = state.art && state.art[key];
-  if (cached && cached.rules === ART_RULES) return cached;
+  // A record holding no picture is not a result worth keeping: the lookup
+  // succeeded and every download failed, which is exactly what an app id with
+  // no published capsule looks like. Serving that back is what left those cards
+  // on two initials for good, so only a record with artwork in it counts.
+  if (cached && cached.rules === ART_RULES) {
+    if (cached.cover || cached.hero) return cached;
+    if (Date.now() - (cached.failedAt || 0) < ART_RETRY_AFTER) return cached;
+  }
+
+  const remember = (record) => {
+    state.art = state.art || {};
+    state.art[key] = record;
+    saveState(state);
+    return record;
+  };
 
   try {
     const hit = await art.look(name, appid);
@@ -1554,10 +1586,14 @@ ipcMain.handle('art-fetch', async (_event, dir, name, appid) => {
     record.hero = await grab(hit.heroUrl, '-hero.jpg');
     if (!record.hero && hit.heroFallbackUrl) record.hero = await grab(hit.heroFallbackUrl, '-hero.jpg');
 
-    state.art = state.art || {};
-    state.art[key] = record;
-    saveState(state);
-    return record;
+    // No portrait capsule on the CDN for this app id, which happens for
+    // released games too. PCGamingWiki usually has the box art already.
+    if (!record.cover) record.cover = await wikiCover(record.name || name, dest, key);
+
+    // Remembered even when nothing was found, so the same lookups are not made
+    // again on every launch - but they are made again after a week.
+    if (!record.cover && !record.hero) record.failedAt = Date.now();
+    return remember(record);
   } catch (err) {
     return { error: err.message };
   }
