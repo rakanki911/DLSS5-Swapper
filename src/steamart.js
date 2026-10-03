@@ -145,4 +145,4 @@ async function download(url, dest) {
 // Nothing to configure, so it is always on.
 const available = () => true;
 
-module.exports = { available, look, download, cleanName };
+module.exports = { available, look, download, cleanName, pick };
